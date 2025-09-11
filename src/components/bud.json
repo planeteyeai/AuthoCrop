@@ -1,0 +1,152 @@
+{
+    "fertilizer_schedule": [
+      {
+        "method": "3-bud",
+        "stages": [
+          {
+            "stage": "Germination",
+            "days": "0–30",
+            "N_kg_ha": "35-40",
+            "P_kg_ha": "90-110",
+            "K_kg_ha": "10--20"
+          },
+          {
+            "stage": "Tillering",
+            "days": "31–90",
+            "N_kg_ha": "85-90",
+            "P_kg_ha": "80-90",
+            "K_kg_ha": "15-25"
+          },
+          {
+            "stage": "Grand Growth",
+            "days": "91–210",
+            "N_kg_ha": "155-160",
+            "P_kg_ha": "80-90",
+            "K_kg_ha": "60-70"
+          },
+          {
+            "stage": "Maturity&Ripening",
+            "days": "211–360",
+            "N_kg_ha": "70-80",
+            "P_kg_ha": "45-60",
+            "K_kg_ha": "35-45"
+          }
+        ],
+        "total": {
+          "N_kg_ha": 357,
+          "P_kg_ha": 357,
+          "K_kg_ha": 143
+        }
+      },
+      {
+        "method": "2-bud",
+        "stages": [
+          {
+            "stage": "Germination",
+            "days": "0–30",
+            "N_kg_ha": "25-35",
+            "P_kg_ha": "80-90",
+            "K_kg_ha": "10--20"
+          },
+          {
+            "stage": "Tillering",
+            "days": "31–90",
+            "N_kg_ha": "70-75",
+            "P_kg_ha": "65-75",
+            "K_kg_ha": "15-20"
+          },
+          {
+            "stage": "Grand Growth",
+            "days": "91–210",
+            "N_kg_ha": "130-135",
+            "P_kg_ha": "65-75",
+            "K_kg_ha": "50-60"
+          },
+          {
+            "stage": "Maturity&Ripening",
+            "days": "211–360",
+            "N_kg_ha": "50-60",
+            "P_kg_ha": "50-60",
+            "K_kg_ha": "30-40"
+          }
+        ],
+        "total": {
+          "N_kg_ha": 300,
+          "P_kg_ha": 300,
+          "K_kg_ha": 120
+        }
+      },
+      {
+        "method": "1-bud",
+        "stages": [
+          {
+            "stage": "Germination",
+            "days": "0–30",
+            "N_kg_ha": "25-30",
+            "P_kg_ha": "80-90",
+            "K_kg_ha": "10--20"
+          },
+          {
+            "stage": "Tillering",
+            "days": "31–90",
+            "N_kg_ha": "75-80",
+            "P_kg_ha": "75-80",
+            "K_kg_ha": "15-20"
+          },
+          {
+            "stage": "Grand Growth",
+            "days": "91–210",
+            "N_kg_ha": "130-140",
+            "P_kg_ha": "75-80",
+            "K_kg_ha": "50-60"
+          },
+          {
+            "stage": "Maturity",
+            "days": "211–360",
+            "N_kg_ha": "50-60",
+            "P_kg_ha": "50-60",
+            "K_kg_ha": "30-35"
+          }
+        ],
+        "total": {
+          "N_kg_ha": 313,
+          "P_kg_ha": 313,
+          "K_kg_ha": 125
+        }
+      },
+      {
+        "method": "1-bud STIP",
+        "stages": [
+          {
+            "stage": "Germination",
+            "days": "0–45",
+            "N_kg_ha": "35-40",
+            "P_kg_ha": "30-40",
+            "K_kg_ha": "10--20"
+          },
+          {
+            "stage": "Tillering",
+            "days": "46–90",
+            "N_kg_ha": "70-75",
+            "P_kg_ha": "70-75",
+            "K_kg_ha": "30-35"
+          },
+          {
+            "stage": "Grand Growth",
+            "days": "91–210",
+            "N_kg_ha": "170-180",
+            "P_kg_ha": "170-180",
+            "K_kg_ha": "70-80"
+          },
+          {
+            "stage": "Maturity",
+            "days": "211–365",
+            "N_kg_ha": "60-70",
+            "P_kg_ha": "60-70",
+            "K_kg_ha": "25-30"
+          }
+        ]
+      }
+    ]
+  }
+  

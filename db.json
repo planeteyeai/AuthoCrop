@@ -1,0 +1,596 @@
+{
+  "fieldofficertasks": [
+    {
+      "id": "1",
+      "selectedDate": "2025-05-14",
+      "farmerName": "Ravi Kumar",
+      "itemName": "Pest Control",
+      "status": "InProcess"
+    },
+    {
+      "id": "2",
+      "selectedDate": "2025-05-15",
+      "farmerName": "Asha Patil",
+      "itemName": "Irrigation Check",
+      "status": "Completed"
+    },
+    {
+      "id": "3",
+      "selectedDate": "2025-05-14",
+      "farmerName": "Sunil Mehta",
+      "itemName": "Fertilizer Application",
+      "status": "InProcess"
+    },
+    {
+      "id": "85a6",
+      "selectedDate": "2025-05-16",
+      "farmerName": "sdsd",
+      "itemName": "sdsd",
+      "description": "dsd",
+      "status": "Completed"
+    },
+    {
+      "id": "1751432055351",
+      "itemName": "weather",
+      "description": "defcrdf",
+      "fieldOfficer": "filed@crops",
+      "team": "irrigation",
+      "selectedDate": "Fri Jul 04 2025",
+      "message": "edrertfetgyr",
+      "assignedTime": "2025-07-02T04:54:15.351Z",
+      "status": "InProcess"
+    },
+    {
+      "id": "1751450212596",
+      "itemName": "weather",
+      "description": "sdzsedfdgr",
+      "fieldOfficer": "filed@crops",
+      "team": "irrigation",
+      "selectedDate": "Sat Jul 05 2025",
+      "message": "cbvgcdfvbhfgh",
+      "assignedTime": "2025-07-02T09:56:52.596Z",
+      "status": "InProcess"
+    },
+    {
+      "id": "1751450834625",
+      "itemName": "irrigation",
+      "description": "ccv c dcxvfcv",
+      "fieldOfficer": "",
+      "team": "irrigation",
+      "selectedDate": "Sun Jul 06 2025",
+      "message": "sc dvfc vdxfv",
+      "assignedTime": "2025-07-02T10:07:14.625Z"
+    },
+    {
+      "id": "1751451060517",
+      "itemName": "irrigation",
+      "description": "dsewdf",
+      "fieldOfficer": "filed@crops",
+      "team": "irrigation",
+      "selectedDate": "Sun Jul 06 2025",
+      "message": "qwsqwedwer",
+      "assignedTime": "2025-07-02T10:11:00.517Z",
+      "status": "Completed"
+    },
+    {
+      "id": "1751451941208",
+      "itemName": "alert",
+      "description": "alerrt",
+      "fieldOfficer": "filed@crops",
+      "team": "pest",
+      "selectedDate": "Mon Jul 07 2025",
+      "message": "werwerfetgrju",
+      "assignedTime": "2025-07-02T10:25:41.208Z"
+    },
+    {
+      "id": "1751452022127",
+      "itemName": "alert",
+      "description": "a",
+      "fieldOfficer": "filed@crops",
+      "team": "",
+      "selectedDate": "Wed Jul 02 2025",
+      "message": "asadxssfdrgftgh",
+      "assignedTime": "2025-07-02T10:27:02.127Z"
+    },
+    {
+      "id": "1751522885724",
+      "itemName": "weather",
+      "description": "scdfdv",
+      "fieldOfficer": "filed@crops",
+      "team": "irrigation",
+      "selectedDate": "Tue Jul 08 2025",
+      "message": "dfvbfgb",
+      "assignedTime": "2025-07-03T06:08:05.724Z"
+    },
+    {
+      "id": "1751523083170",
+      "itemName": "irrigation",
+      "description": "cdcd",
+      "fieldOfficer": "filed@crops",
+      "team": "irrigation",
+      "selectedDate": "Fri Jul 11 2025",
+      "message": "xdcdfvfgbhgyhj",
+      "assignedTime": "2025-07-03T06:11:23.170Z"
+    },
+    {
+      "id": "1751523198490",
+      "itemName": "weather",
+      "description": "xcsd",
+      "fieldOfficer": "filed@crops",
+      "team": "irrigation",
+      "selectedDate": "Sat Jul 12 2025",
+      "message": "sdsefcdegr",
+      "assignedTime": "2025-07-03T06:13:18.490Z"
+    },
+    {
+      "id": "1751523642001",
+      "itemName": "irrigation",
+      "description": "egfhj,m",
+      "fieldOfficer": "filed@crops",
+      "team": "irrigation",
+      "selectedDate": "Sun Jul 13 2025",
+      "message": "sadfdghbngfhthyt",
+      "assignedTime": "2025-07-03T06:20:42.001Z"
+    },
+    {
+      "id": "1751523968873",
+      "itemName": "irrigation",
+      "description": "edfdvgfcxgh",
+      "fieldOfficer": "filed@crops",
+      "team": "irrigation",
+      "selectedDate": "Mon Jul 14 2025",
+      "message": "sasfedrgfvbgrdte5efg",
+      "assignedTime": "2025-07-03T06:26:08.873Z"
+    },
+    {
+      "id": "1751882050233",
+      "itemName": "irrigation",
+      "description": "irrigation",
+      "fieldOfficer": "filed@crops",
+      "team": "irrigation",
+      "selectedDate": "Wed Jul 02 2025",
+      "message": "fvfvf",
+      "assignedTime": "2025-07-07T09:54:10.233Z"
+    },
+    {
+      "id": "1751972827477",
+      "itemName": "irrigation",
+      "description": "irrigation",
+      "fieldOfficer": "filed@crops",
+      "team": "",
+      "selectedDate": "Tue Jul 08 2025",
+      "message": "need irrigation",
+      "assignedTime": "2025-07-08T11:07:07.477Z"
+    },
+    {
+      "id": "1751973374757",
+      "itemName": "irrigation",
+      "description": "sxsxdsdc",
+      "fieldOfficer": "filed@crops",
+      "team": "",
+      "selectedDate": "Tue Jul 08 2025",
+      "message": "swefergtr5ty667",
+      "assignedTime": "2025-07-08T11:16:14.756Z"
+    },
+    {
+      "id": "1751973828092",
+      "itemName": "pest",
+      "description": "pest",
+      "fieldOfficer": "filed@crops",
+      "team": "",
+      "selectedDate": "Wed Jul 09 2025",
+      "message": "pest detected ",
+      "assignedTime": "2025-07-08T11:23:48.092Z"
+    },
+    {
+      "id": "1751974190580",
+      "itemName": "weather",
+      "description": "weather ",
+      "fieldOfficer": "filed@crops",
+      "team": "",
+      "selectedDate": "Tue Jul 08 2025",
+      "message": "weather not ok ",
+      "assignedTime": "2025-07-08T11:29:50.580Z"
+    },
+    {
+      "id": "1751975152368",
+      "itemName": "alert",
+      "description": "",
+      "fieldOfficer": "filed@crops",
+      "team": "",
+      "selectedDate": "Mon Jul 14 2025",
+      "message": "",
+      "assignedTime": "2025-07-08T11:45:52.368Z",
+      "status": "InProcess"
+    }
+  ],
+  "farmtasks": [
+    {
+      "id": "1",
+      "date": "2025-05-01",
+      "itemName": "Irrigation",
+      "description": "Check dsd levels"
+    },
+    {
+      "id": "2",
+      "date": "2025-05-05",
+      "itemName": "Irrigation",
+      "description": "Check sddff levels"
+    },
+    {
+      "id": "3",
+      "date": "2025-05-11",
+      "itemName": "Irrigation",
+      "description": "Check water levels"
+    },
+    {
+      "id": "6090",
+      "date": "2025-05-16",
+      "itemName": "sdsd",
+      "description": "dsd"
+    }
+  ],
+  "farms": [
+    {
+      "id": "1754306114810",
+      "farmerInfo": {
+        "first_name": "rishi",
+        "last_name": "Chaudhary",
+        "username": "rishi123",
+        "email": "admin@planeteyefarm.ai",
+        "phone_number": "9874561231",
+        "address": "Nashik",
+        "taluka": "Niphad",
+        "state": "Maharashtra",
+        "district": "Nashik"
+      },
+      "plots": [
+        {
+          "id": "plot-1754306075372",
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [
+                  73.855228,
+                  18.519417
+                ],
+                [
+                  73.855233,
+                  18.519329
+                ],
+                [
+                  73.855392,
+                  18.519334
+                ],
+                [
+                  73.855377,
+                  18.519436
+                ],
+                [
+                  73.855228,
+                  18.519417
+                ]
+              ]
+            ]
+          },
+          "area": {
+            "sqm": 172.93009144436448,
+            "ha": 0.017293009144436447,
+            "acres": 0.04273195623885378
+          },
+          "GroupGatNo": "155",
+          "GatNoId": "20",
+          "village": "Nashik",
+          "pin_code": "414605",
+          "variety": "sugarcane",
+          "plantation_Type": "Adsali",
+          "plantation_Method": "1 bud (SHP Method)",
+          "plantation_Date": "2025-08-02",
+          "irrigation_Type": "",
+          "plants_Per_Acre": "",
+          "spacing_A": "",
+          "spacing_B": "",
+          "flow_Rate": "",
+          "emitters": "",
+          "motor_Horsepower": "",
+          "pipe_Width": "",
+          "distance_From_Motor": ""
+        }
+      ],
+      "totalArea": {
+        "sqm": 172.93009144436448,
+        "ha": 0.017293009144436447,
+        "acres": 0.04273195623885378
+      },
+      "location": {
+        "lat": "",
+        "lng": ""
+      },
+      "documents": [],
+      "createdAt": "2025-08-04T11:15:14.810Z"
+    },
+    {
+      "id": "1754312013155",
+      "farmerInfo": {},
+      "plots": [
+        {
+          "id": "plot-1754311959530",
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [
+                  73.855176,
+                  18.51993
+                ],
+                [
+                  73.855176,
+                  18.51977
+                ],
+                [
+                  73.855327,
+                  18.519775
+                ],
+                [
+                  73.8553,
+                  18.519948
+                ],
+                [
+                  73.855176,
+                  18.51993
+                ]
+              ]
+            ]
+          },
+          "area": {
+            "sqm": 270.2274285248317,
+            "ha": 0.027022742852483166,
+            "acres": 0.06677465184812059
+          },
+          "GroupGatNo": "1233",
+          "GatNoId": "02",
+          "village": "nashik",
+          "pin_code": "414055",
+          "variety": "sugarcane",
+          "plantation_Type": "Adsali",
+          "plantation_Method": "2 bud",
+          "plantation_Date": "2025-08-02",
+          "irrigation_Type": "",
+          "plants_Per_Acre": "",
+          "spacing_A": "",
+          "spacing_B": "",
+          "flow_Rate": "",
+          "emitters": "",
+          "motor_Horsepower": "",
+          "pipe_Width": "",
+          "distance_From_Motor": ""
+        }
+      ],
+      "totalArea": {
+        "sqm": 270.2274285248317,
+        "ha": 0.027022742852483166,
+        "acres": 0.06677465184812059
+      },
+      "location": {
+        "lat": "",
+        "lng": ""
+      },
+      "documents": [],
+      "createdAt": "2025-08-04T12:53:33.155Z"
+    }
+  ],
+  "stocklist": [
+    {
+      "id": "1",
+      "itemName": "Forklift",
+      "make": "Toyota",
+      "itemType": "Transport",
+      "yearMake": "2018",
+      "estimateCost": "30000",
+      "status": "Working",
+      "remark": "Used for warehouse transport"
+    },
+    {
+      "id": 1751361193041,
+      "itemName": "tractor",
+      "itemType": "Logistic",
+      "make": "2021",
+      "yearOfMake": "2022",
+      "estimateCost": "25545",
+      "status": "Not working",
+      "remark": "n bbhhghy"
+    }
+  ],
+  "vendorlist": [
+    {
+      "id": "1",
+      "vendorName": "ABC Logistics",
+      "email": "contact@abclogistics.com",
+      "mobile": "9876543210",
+      "gstin": "27ABCDE1234F2Z5",
+      "state": "Maharashtra",
+      "city": "Mumbai",
+      "address": "Plot No. 24, MIDC Industrial Area, Andheri (E)"
+    },
+    {
+      "id": 1751350032361,
+      "vendorName": "dedfesd",
+      "email": "takeesnigdha@ewret.com",
+      "mobile": "9146579454",
+      "gstin": "45785\\7",
+      "state": "Mizoram",
+      "city": "sdefredg",
+      "address": "Zadvfzsdhbgtfghng"
+    }
+  ],
+  "orderlist": [
+    {
+      "id": "1",
+      "vendorName": "ABC Logistics",
+      "invoiceDate": "2025-05-19",
+      "invoiceNumber": "INV-1001",
+      "state": "Maharashtra",
+      "itemName": "Forklift",
+      "yearMake": "2018",
+      "estimateCost": "30000",
+      "remark": "Used for warehouse transport"
+    },
+    {
+      "id": "2",
+      "vendorName": "XYZ Supplies",
+      "invoiceDate": "2025-04-15",
+      "invoiceNumber": "INV-1002",
+      "state": "Karnataka",
+      "itemName": "Pallet Jack",
+      "yearMake": "2020",
+      "estimateCost": "15000",
+      "remark": "For internal goods movement"
+    },
+    {
+      "id": "3",
+      "vendorName": "Fast Movers",
+      "invoiceDate": "2025-03-10",
+      "invoiceNumber": "INV-1003",
+      "state": "Tamil Nadu",
+      "itemName": "Conveyor Belt",
+      "yearMake": "2019",
+      "estimateCost": "50000",
+      "remark": "Used in packaging unit"
+    },
+    {
+      "id": "9a97",
+      "vendor": "Snigdha",
+      "invoiceDate": "2025-07-24",
+      "invoiceNumber": "23243454",
+      "selectedState": "Gujarat",
+      "items": [
+        {
+          "id": "1751350088720",
+          "itemName": "546",
+          "yearOfMake": "2021",
+          "estimateCost": "54452",
+          "remark": "sawteerd"
+        }
+      ]
+    },
+    {
+      "id": "d18b",
+      "vendor": "Snigdha",
+      "invoiceDate": "2025-07-24",
+      "invoiceNumber": "2413",
+      "selectedState": "Mizoram",
+      "items": [
+        {
+          "id": "1751350140719",
+          "itemName": "sdaewesde",
+          "yearOfMake": "45786",
+          "estimateCost": "[]g frsder",
+          "remark": "yujgt"
+        }
+      ]
+    },
+    {
+      "id": "f578",
+      "vendor": "Sid",
+      "invoiceDate": "2025-07-11",
+      "invoiceNumber": "23101",
+      "selectedState": "Meghalaya",
+      "items": [
+        {
+          "id": "1751350637837",
+          "itemName": "ewewewr",
+          "yearOfMake": "2021",
+          "estimateCost": "202111",
+          "remark": "i dgdfgb fedrfgd"
+        }
+      ]
+    },
+    {
+      "id": 1751351030821,
+      "vendorName": "Snigdha",
+      "invoiceDate": "2025-07-23",
+      "invoiceNumber": "2025410",
+      "state": "Manipur",
+      "itemName": "tractor",
+      "yearMake": "2021",
+      "estimateCost": "230122",
+      "remark": "yg"
+    },
+    {
+      "id": 1751351229190,
+      "vendorName": "Snigdha",
+      "invoiceDate": "2025-07-19",
+      "invoiceNumber": "202111",
+      "state": "Arunachal Pradesh",
+      "itemName": "45242",
+      "yearMake": "2012",
+      "estimateCost": "5",
+      "remark": ""
+    },
+    {
+      "id": 1751351242741,
+      "vendorName": "Sid",
+      "invoiceDate": "2025-07-18",
+      "invoiceNumber": "5445454",
+      "state": "Bihar",
+      "itemName": "tractor",
+      "yearMake": "2012",
+      "estimateCost": "252412",
+      "remark": "irrigation"
+    },
+    {
+      "id": 1751359764273,
+      "vendorName": "Snigdha",
+      "invoiceDate": "2025-07-25",
+      "invoiceNumber": "5785628",
+      "state": "Assam",
+      "itemName": "ewfrejr",
+      "yearMake": "2021",
+      "estimateCost": "54852",
+      "remark": "ewedwef"
+    }
+  ],
+  "bookinglist": [
+    {
+      "itemName": "Tractor",
+      "userRole": "Farmer",
+      "startDate": "2025-05-20",
+      "endDate": "2025-05-22",
+      "status": "Book",
+      "id": "67e1"
+    },
+    {
+      "id": "60c3",
+      "itemName": "tracktor",
+      "userRole": "Field Officer",
+      "startDate": "2025-05-17",
+      "endDate": "2025-05-06",
+      "status": "Book"
+    },
+    {
+      "id": "1884",
+      "itemName": "tracktor",
+      "userRole": "Manager",
+      "startDate": "2025-06-15",
+      "endDate": "2025-06-19",
+      "status": "Book"
+    },
+    {
+      "id": "15e5",
+      "itemName": "tracktor",
+      "userRole": "Manager",
+      "startDate": "2025-06-15",
+      "endDate": "2025-06-19",
+      "status": "Book"
+    },
+    {
+      "id": "04fe",
+      "itemName": "tracktor",
+      "userRole": "Manager",
+      "startDate": "2025-06-15",
+      "endDate": "2025-06-19",
+      "status": "Book"
+    }
+  ]
+}
