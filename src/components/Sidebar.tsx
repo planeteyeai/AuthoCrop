@@ -14,6 +14,7 @@ import { BiWater } from 'react-icons/bi';
 import { GiGrowth, GiPriceTag,GiNewspaper } from 'react-icons/gi';
 import { MdPestControl } from 'react-icons/md';
 import { size } from 'lodash';
+import  Contactuser  from '../components/Contactuser';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -98,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       case 'fieldofficer':
         return [
           renderMenu('DataVista', <BarChart3 size={20} />, ['ViewFarmerPlot']),
-          renderMenu('User Desk', <Users size={20} />, ['AddFarm', 'Farmlist']),
+          renderMenu('User Desk', <Users size={20} />, ['AddFarm', 'Farmlist','Contactuser']),
           renderMenu('MyTask', <Calendar size={20} />, ['TaskCalendar', 'Tasklist']),
           renderMenu('Plan & Book', <Calendar size={20} />, ['Add Booking', 'Booking List']),
         ];
