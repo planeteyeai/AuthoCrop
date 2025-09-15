@@ -15,6 +15,7 @@ interface User {
   address: string;
 }
 
+
 interface AddusersProps {
   setUsers: React.Dispatch<React.SetStateAction<User[]>>;
   users: User[];
@@ -54,7 +55,7 @@ export const Addusers: React.FC<AddusersProps> = ({ setUsers, users }) => {
       email: formData.email,
       first_name: formData.first_name,
       last_name: formData.last_name,
-      role: formData.role,
+      role_id: formData.role === 'admin' ? 4 : 2,
       phone_number: formData.phone_number,
       address: formData.address,
     };
