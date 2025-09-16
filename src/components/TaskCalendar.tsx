@@ -650,6 +650,7 @@ const TaskCalendar: React.FC = () => {
               );
             }
             
+            
             return (
               <div className="space-y-3">
                 {dateTasks.map((task: Task, idx: number) => (
