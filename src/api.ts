@@ -18,11 +18,38 @@ const api = axios.create({
 // Add auth token if available
 api.interceptors.request.use((config) => {
   const token = getAuthToken();
+  console.log('🔐 API Request Interceptor:');
+  console.log('  URL:', config.url);
+  console.log('  Method:', config.method);
+  console.log('  Token found:', !!token);
+  console.log('  Token preview:', token ? `${token.substring(0, 20)}...` : 'No token');
+  
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+    console.log('  ✅ Bearer token added to request');
+  } else {
+    console.log('  ❌ No token available - request will be sent without authentication');
   }
+  
   return config;
 });
+
+// Add response interceptor to handle authentication errors
+api.interceptors.response.use(
+  (response) => {
+    console.log('📡 API Response:', response.status, response.config.url);
+    return response;
+  },
+  (error) => {
+    console.log('❌ API Error:', error.response?.status, error.config?.url);
+    if (error.response?.status === 401) {
+      console.log('🔐 Authentication failed - token may be invalid or expired');
+    } else if (error.response?.status === 403) {
+      console.log('🚫 Access forbidden - insufficient permissions');
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Send OTP to email
 export const sendOtp = (email: string) => {
@@ -109,6 +136,7 @@ export const addBooking = (data: {
 export const getFarms = () => {
   return api.get('/farms/');
 };
+
 
 // Get farms with farmer details
 export const getFarmsWithFarmerDetails = () => {
@@ -277,6 +305,10 @@ export const getUsers = () => {
   return api.get('/users/');
 };
 
+export const getContactDetails = () => {
+  return api.get('/users/contact-details/');
+};
+
 // Farmer Registration API (role_id = 1 for Farmer) - No authentication required
 export const registerFarmer = (data: {
   username: string;
@@ -304,7 +336,7 @@ export const registerFarmer = (data: {
 export const sendOTPForRegistration = async (email: string): Promise<void> => {
   try {
     console.log('Sending OTP to:', email);
-    const otpResponse = await axios.post(`${API_BASE_URL}/otp/`, {
+    await axios.post(`${API_BASE_URL}/otp/`, {
       email: email
     }, {
       headers: {
@@ -524,9 +556,9 @@ export const getFarmerProfile = async () => {
       total_plots: 0,
       total_farms: 0,
       total_irrigations: 0,
-      crop_types: [],
-      plantation_types: [],
-      irrigation_types: [],
+      crop_types: [] as string[],
+      plantation_types: [] as string[],
+      irrigation_types: [] as string[],
       total_farm_area: 0
     };
     

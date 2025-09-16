@@ -72,7 +72,7 @@ enum View {
 }
 
 interface AppProps {
-  userRole: "manager" | "admin" | "fieldofficer" | "farmer";
+  userRole: "manager" | "admin" | "fieldofficer" | "farmer"|"owner";
   onLogout: () => void;
 }
 
@@ -240,7 +240,7 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
       case "manager":
         console.log('Rendering ManagerHomeGrid');
         return <ManagerHomeGrid onMenuClick={handleMenuSelect} />;
-      case "admin":
+      case "owner":
         console.log('Rendering OwnerHomeGrid');
         return <OwnerHomeGrid onMenuClick={handleMenuSelect} />;
       case "fieldofficer":

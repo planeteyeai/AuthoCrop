@@ -17,7 +17,8 @@ import {
   ChevronUp,
   Star
 } from 'lucide-react';
-import { getUsers } from '../api';
+import { getContactDetails } from '../api';
+import { getUserRole } from '../utils/auth';
 
 interface Contact {
   id: number;
@@ -35,6 +36,75 @@ interface ContactuserProps {
   users?: any[];
   setUsers?: React.Dispatch<React.SetStateAction<any[]>>;
 }
+
+// Role-based filtering function
+const filterContactsByRole = (contacts: Contact[], currentUserRole: string): Contact[] => {
+  console.log('🔍 Filtering contacts for role:', currentUserRole);
+  console.log('📋 Available contacts:', contacts.length);
+  
+  switch (currentUserRole.toLowerCase()) {
+    case 'fieldofficer':
+      // Field Officer can see: Farmers, Managers, Owners, Field Officers
+      const fieldOfficerContacts = contacts.filter(contact => {
+        const role = contact.role?.toLowerCase() || '';
+        return role === 'farmer' || role === 'manager' || role === 'owner' || role === 'admin' || role === 'fieldofficer' || role === 'field_officer';
+      });
+      console.log('👨‍💼 Field Officer can see:', fieldOfficerContacts.length, 'contacts');
+      console.log('🔍 Field Officer filtered contacts:', fieldOfficerContacts.map(c => ({ name: c.name, role: c.role })));
+      return fieldOfficerContacts;
+      
+    case 'manager':
+      // Manager can see: Owners, Field Officers
+      const managerContacts = contacts.filter(contact => {
+        const role = contact.role?.toLowerCase() || '';
+        return role === 'owner' || role === 'admin' || role === 'fieldofficer' || role === 'field_officer';
+      });
+      console.log('👨‍💼 Manager can see:', managerContacts.length, 'contacts');
+      return managerContacts;
+      
+    case 'owner':
+    case 'admin':
+      // Owner/Admin can see: Field Officers, Managers
+      const ownerContacts = contacts.filter(contact => {
+        const role = contact.role?.toLowerCase() || '';
+        return role === 'fieldofficer' || role === 'field_officer' || role === 'manager';
+      });
+      console.log('👑 Owner/Admin can see:', ownerContacts.length, 'contacts');
+      console.log('🔍 Owner/Admin filtered contacts:', ownerContacts.map(c => ({ name: c.name, role: c.role })));
+      return ownerContacts;
+      
+    case 'farmer':
+      // Farmer can see: Field Officers, Managers
+      const farmerContacts = contacts.filter(contact => {
+        const role = contact.role?.toLowerCase() || '';
+        return role === 'fieldofficer' || role === 'field_officer' || role === 'manager';
+      });
+      console.log('🌾 Farmer can see:', farmerContacts.length, 'contacts');
+      return farmerContacts;
+      
+    default:
+      // Default: show all contacts
+      console.log('❓ Unknown role, showing all contacts');
+      return contacts;
+  }
+};
+
+// Get role-based description for header
+const getRoleBasedDescription = (currentUserRole: string): string => {
+  switch (currentUserRole.toLowerCase()) {
+    case 'fieldofficer':
+      return 'Connect with farmers, managers, owners, and other field officers in your network';
+    case 'manager':
+      return 'Connect with owners and field officers under your management';
+    case 'owner':
+    case 'admin':
+      return 'Connect with field officers and managers in your organization';
+    case 'farmer':
+      return 'Connect with field officers and managers for support';
+    default:
+      return 'Connect with your team members and send messages';
+  }
+};
 
 const Contactuser: React.FC<ContactuserProps> = () => {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
@@ -55,35 +125,102 @@ const Contactuser: React.FC<ContactuserProps> = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await getUsers();
-        console.log('API Response:', response);
+        const response = await getContactDetails();
+        console.log('=== CONTACT DETAILS API RESPONSE ===');
+        console.log('Full Response:', response);
+        console.log('Response Status:', response.status);
+        console.log('Response Headers:', response.headers);
         console.log('Response Data:', response.data);
+        console.log('Response Data Type:', typeof response.data);
+        console.log('Is Array:', Array.isArray(response.data));
+        console.log('Response Data Keys:', response.data ? Object.keys(response.data) : 'No keys');
         
         let usersData = response.data;
         
         // Handle different API response formats
         if (usersData && typeof usersData === 'object') {
+          console.log('Processing object response...');
+          
           // If response has a 'results' property (common in paginated APIs)
           if (Array.isArray(usersData.results)) {
+            console.log('Found results array:', usersData.results.length, 'items');
             usersData = usersData.results;
           }
           // If response has a 'data' property
           else if (Array.isArray(usersData.data)) {
+            console.log('Found data array:', usersData.data.length, 'items');
             usersData = usersData.data;
           }
           // If response has a 'users' property
           else if (Array.isArray(usersData.users)) {
+            console.log('Found users array:', usersData.users.length, 'items');
             usersData = usersData.users;
+          }
+          // If response has a 'contacts' property with role-based structure
+          else if (usersData.contacts && typeof usersData.contacts === 'object') {
+            console.log('Found contacts object:', usersData.contacts);
+            console.log('Contacts object keys:', Object.keys(usersData.contacts));
+            
+            // Handle role-based contacts structure: {owner: {...}, field_officers: [...], farmers: [...]}
+            const allContacts: any[] = [];
+            
+            // Process each role category
+            Object.keys(usersData.contacts).forEach(roleKey => {
+              const roleData = usersData.contacts[roleKey];
+              console.log(`Processing ${roleKey}:`, roleData);
+              
+              if (Array.isArray(roleData)) {
+                // If it's an array (like field_officers: [], farmers: [])
+                roleData.forEach(contact => {
+                  allContacts.push({
+                    ...contact,
+                    role: roleKey === 'field_officers' ? 'fieldofficer' : 
+                          roleKey === 'farmers' ? 'farmer' : 
+                          roleKey === 'managers' ? 'manager' :
+                          roleKey.replace('_', '') // Convert 'field_officers' to 'fieldofficer', 'farmers' to 'farmer', 'managers' to 'manager'
+                  });
+                });
+                console.log(`Added ${roleData.length} contacts from ${roleKey}`);
+              } else if (roleData && typeof roleData === 'object' && roleData.id) {
+                // If it's a single object (like owner: {...})
+                allContacts.push({
+                  ...roleData,
+                  role: roleKey
+                });
+                console.log(`Added 1 contact from ${roleKey}`);
+              }
+            });
+            
+            usersData = allContacts;
+            console.log(`✅ Total contacts extracted: ${allContacts.length}`);
+            console.log('📋 All extracted contacts with roles:', allContacts.map(c => ({ name: c.name, role: c.role })));
+          }
+          // If response has a 'contact_details' property
+          else if (Array.isArray(usersData.contact_details)) {
+            console.log('Found contact_details array:', usersData.contact_details.length, 'items');
+            usersData = usersData.contact_details;
+          }
+          // If it's an object with user properties, try to extract users
+          else if (usersData.user_list && Array.isArray(usersData.user_list)) {
+            console.log('Found user_list array:', usersData.user_list.length, 'items');
+            usersData = usersData.user_list;
+          }
+          else {
+            console.log('No recognized array property found. Available properties:', Object.keys(usersData));
+            console.log('Full response object:', usersData);
           }
         }
         
         // Check if usersData is an array
         if (!Array.isArray(usersData)) {
-          console.error('API response is not an array:', usersData);
-          console.error('Response structure:', typeof usersData, usersData);
-          setError('Invalid data format received from server. Expected an array of users.');
+          console.error('❌ API response is not an array after processing');
+          console.error('Final usersData:', usersData);
+          console.error('Type:', typeof usersData);
+          setError(`Invalid data format received from server. Expected an array of users, but got: ${typeof usersData}. Please check the API response format.`);
           return;
         }
+        
+        console.log('✅ Successfully extracted array with', usersData.length, 'users');
         
         // Transform API data to Contact format
         const contactsData: Contact[] = usersData.map((user: any) => {
@@ -94,19 +231,27 @@ const Contactuser: React.FC<ContactuserProps> = () => {
           
           return {
             id: user.id,
-            name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
-            phone: user.phone_number || 'N/A',
+            name: user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Unknown',
+            phone: user.phone || user.phone_number || 'N/A',
             email: user.email || 'N/A',
             role: typeof user.role === 'object' ? (user.role?.name || user.role?.display_name || 'user') : (user.role || 'user'),
-            username: user.username,
+            username: user.username || user.name || 'unknown',
             isOnline: Math.random() > 0.5, // Simulate online status
             lastSeen: new Date(Date.now() - Math.random() * 86400000).toLocaleTimeString(),
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random&color=fff&size=128`
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || user.username || 'User')}&background=random&color=fff&size=128`
           };
         });
         
         console.log('Transformed contacts:', contactsData);
-        setContacts(contactsData);
+        
+        // Apply role-based filtering
+        const currentUserRole = getUserRole();
+        const filteredContacts = filterContactsByRole(contactsData, currentUserRole || '');
+        console.log('Current user role:', currentUserRole);
+        console.log('Filtered contacts for role:', filteredContacts.length);
+        
+        setContacts(filteredContacts);
+        setFilteredContacts(filteredContacts);
       } catch (err: any) {
         console.error('Error fetching contacts:', err);
         console.error('Error details:', err.response?.data);
@@ -249,11 +394,13 @@ const Contactuser: React.FC<ContactuserProps> = () => {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 Team Contacts
               </h1>
-              <p className="text-gray-600 mt-2">Connect with your team members and send messages</p>
+              <p className="text-gray-600 mt-2">
+                {getRoleBasedDescription(getUserRole() || '')}
+              </p>
             </div>
             
             {/* Stats */}
-            <div className="flex gap-4">
+            {/* <div className="flex gap-4">
               <div className="bg-blue-50 rounded-xl p-4 text-center">
                 <div className="text-2xl font-bold text-blue-600">{contacts.length}</div>
                 <div className="text-sm text-gray-600">Total Contacts</div>
@@ -264,7 +411,7 @@ const Contactuser: React.FC<ContactuserProps> = () => {
                 </div>
                 <div className="text-sm text-gray-600">Online Now</div>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
 
@@ -364,9 +511,9 @@ const Contactuser: React.FC<ContactuserProps> = () => {
                                     alt={contact.name}
                                     className="w-12 h-12 rounded-full object-cover"
                                   />
-                                  {contact.isOnline && (
+                                  {/* {contact.isOnline && (
                                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-                                  )}
+                                  )} */}
                                 </div>
 
                                 {/* Contact Info */}
@@ -387,8 +534,8 @@ const Contactuser: React.FC<ContactuserProps> = () => {
                                         onClick={(e) => e.stopPropagation()}
                                       >
                                         <Phone size={14} />
-                                        {contact.phone}
-                                      </a>
+                      {contact.phone}
+                    </a>
                                     )}
                                     {contact.email !== 'N/A' && (
                                       <a 

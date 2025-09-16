@@ -5,7 +5,7 @@ import Login from '../components/Login';
 import App from '../App';
 import { getAuthToken, getUserRole, clearAuthData, setAuthData } from '../utils/auth';
 
-export type UserRole = "manager" | "admin" | "fieldofficer" | "farmer";
+export type UserRole = "manager" | "admin" | "fieldofficer" | "farmer" | "owner";
 
 const AppRoutesContent: React.FC = () => {
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ const AppRoutesContent: React.FC = () => {
           1: 'farmer',
           2: 'fieldofficer', 
           3: 'manager',
-          4: 'admin'
+          4: 'owner'
         };
 
         if (userData.role && typeof userData.role === 'object' && userData.role.name) {

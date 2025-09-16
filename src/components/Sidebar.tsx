@@ -21,7 +21,7 @@ interface SidebarProps {
   onMenuSelect: (menu: string) => void;
   onHomeClick: () => void;
   onLogout: () => void;
-  userRole: 'farmer' | 'admin' | 'fieldofficer' | 'manager';
+  userRole: 'farmer' | 'admin' | 'fieldofficer' | 'manager' | 'owner';
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -85,6 +85,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
           renderMenu('BlogCard',<GiPriceTag size={20}/>),
         ];
       case 'admin':
+        return [
+          renderMenu('DataVista', <BarChart3 size={20} />, [
+            'Farm Crop Status',
+            'Harvesting Planning',
+            'Agroclimatic',
+            'Resources',
+            'Plot Birde View',
+          ]),
+          renderMenu('TeamConnect', <List size={20} />, ['Team List']),
+          renderMenu('User Desk', <Users size={20} />, ['Contactuser']),
+          
+        ];
+      case 'owner':
         return [
           renderMenu('DataVista', <BarChart3 size={20} />, [
             'Farm Crop Status',

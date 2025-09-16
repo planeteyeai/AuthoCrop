@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Satellite, Leaf, Mail, Key } from 'lucide-react';
 import { setAuthData } from '../utils/auth';
 
-export type UserRole = "manager" | "admin" | "fieldofficer" | "farmer";
+export type UserRole = "manager" | "admin" | "fieldofficer" | "farmer" | "owner";
 
 interface LoginProps {
   onLoginSuccess: (role: UserRole, token: string) => void;
@@ -108,7 +108,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         1: 'farmer',
         2: 'fieldofficer', 
         3: 'manager',
-        4: 'admin'
+        4: 'owner'
       };
       
       if (userData.role && typeof userData.role === 'object' && userData.role.name) {
@@ -148,7 +148,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               break;
             } else if (typeof userData[key] === 'string') {
               const lowerRole = userData[key].toLowerCase();
-              if (['farmer', 'fieldofficer', 'manager', 'admin'].includes(lowerRole)) {
+              if (['farmer', 'fieldofficer', 'manager', 'admin', 'owner'].includes(lowerRole)) {
                 foundRole = lowerRole;
                 break;
               }
@@ -166,7 +166,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       }
 
       // Validate role
-      if (!userRole || !['manager', 'admin', 'fieldofficer', 'farmer'].includes(userRole)) {
+      if (!userRole || !['manager', 'admin', 'fieldofficer', 'farmer', 'owner'].includes(userRole)) {
         throw new Error('Invalid user role');
       }
 

@@ -15,7 +15,6 @@ interface User {
   address: string;
 }
 
-
 interface AddusersProps {
   setUsers: React.Dispatch<React.SetStateAction<User[]>>;
   users: User[];
