@@ -73,6 +73,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     );
   };
 
+
+  
   const getMenuItems = () => {
     switch (userRole) {
       case 'farmer':
