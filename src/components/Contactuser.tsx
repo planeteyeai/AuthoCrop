@@ -64,10 +64,10 @@ const filterContactsByRole = (contacts: Contact[], currentUserRole: string): Con
       
     case 'owner':
     case 'admin':
-      // Owner/Admin can see: Field Officers, Managers
+      // Owner/Admin can see: Field Officers, Managers, Farmers
       const ownerContacts = contacts.filter(contact => {
         const role = contact.role?.toLowerCase() || '';
-        return role === 'fieldofficer' || role === 'field_officer' || role === 'manager';
+        return role === 'fieldofficer' || role === 'field_officer' || role === 'manager' || role === 'farmer';
       });
       console.log('👑 Owner/Admin can see:', ownerContacts.length, 'contacts');
       console.log('🔍 Owner/Admin filtered contacts:', ownerContacts.map(c => ({ name: c.name, role: c.role })));
@@ -98,7 +98,7 @@ const getRoleBasedDescription = (currentUserRole: string): string => {
       return 'Connect with owners and field officers under your management';
     case 'owner':
     case 'admin':
-      return 'Connect with field officers and managers in your organization';
+      return 'Connect with field officers, managers, and farmers in your organization';
     case 'farmer':
       return 'Connect with field officers and managers for support';
     default:
@@ -107,7 +107,7 @@ const getRoleBasedDescription = (currentUserRole: string): string => {
 };
 
 const Contactuser: React.FC<ContactuserProps> = () => {
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [selectedContacts, setSelectedContacts] = useState<Contact[]>([]);
   const [message, setMessage] = useState('');
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
@@ -236,7 +236,7 @@ const Contactuser: React.FC<ContactuserProps> = () => {
             email: user.email || 'N/A',
             role: typeof user.role === 'object' ? (user.role?.name || user.role?.display_name || 'user') : (user.role || 'user'),
             username: user.username || user.name || 'unknown',
-            isOnline: Math.random() > 0.5, // Simulate online status
+            // isOnline: Math.random() > 0.5, // Simulate online status
             lastSeen: new Date(Date.now() - Math.random() * 86400000).toLocaleTimeString(),
             avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || user.username || 'User')}&background=random&color=fff&size=128`
           };
@@ -287,11 +287,44 @@ const Contactuser: React.FC<ContactuserProps> = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedContact && message) {
-      console.log(`Message sent to ${selectedContact.name}: ${message}`);
+    if (selectedContacts.length > 0 && message) {
+      const contactNames = selectedContacts.map(c => c.name).join(', ');
+      console.log(`Message sent to ${contactNames}: ${message}`);
       setMessage('');
       setMessageSent(true);
       setTimeout(() => setMessageSent(false), 3000);
+    }
+  };
+
+  const toggleContactSelection = (contact: Contact) => {
+    setSelectedContacts(prev => {
+      const isSelected = prev.some(c => c.id === contact.id);
+      if (isSelected) {
+        return prev.filter(c => c.id !== contact.id);
+      } else {
+        return [...prev, contact];
+      }
+    });
+  };
+
+  const toggleSelectAllForRole = (roleContacts: Contact[]) => {
+    const allSelected = roleContacts.every(contact => 
+      selectedContacts.some(c => c.id === contact.id)
+    );
+    
+    if (allSelected) {
+      // Deselect all contacts in this role
+      setSelectedContacts(prev => 
+        prev.filter(contact => !roleContacts.some(roleContact => roleContact.id === contact.id))
+      );
+    } else {
+      // Select all contacts in this role
+      setSelectedContacts(prev => {
+        const newSelections = roleContacts.filter(contact => 
+          !prev.some(c => c.id === contact.id)
+        );
+        return [...prev, ...newSelections];
+      });
     }
   };
 
@@ -467,12 +500,12 @@ const Contactuser: React.FC<ContactuserProps> = () => {
                   Object.entries(contactsByRole).map(([role, roleContacts]) => (
                     <div key={role} className="border border-gray-100 rounded-xl overflow-hidden">
                       {/* Role Header */}
-                      <div 
-                        className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 cursor-pointer hover:from-gray-100 hover:to-gray-200 transition-all duration-200"
-                        onClick={() => toggleRoleExpansion(role)}
-                      >
+                      <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
+                          <div 
+                            className="flex items-center gap-3 cursor-pointer hover:from-gray-100 hover:to-gray-200 transition-all duration-200 flex-1"
+                            onClick={() => toggleRoleExpansion(role)}
+                          >
                             {getRoleIcon(role)}
                             <h3 className="text-lg font-semibold text-gray-800 capitalize">
                               {role.replace(/([A-Z])/g, ' $1').trim()}
@@ -481,10 +514,23 @@ const Contactuser: React.FC<ContactuserProps> = () => {
                               {roleContacts.length}
                             </span>
                           </div>
-                          {expandedRoles.has(role) ? 
-                            <ChevronUp className="w-5 h-5 text-gray-500" /> : 
-                            <ChevronDown className="w-5 h-5 text-gray-500" />
-                          }
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleSelectAllForRole(roleContacts);
+                              }}
+                              className="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                            >
+                              {roleContacts.every(contact => 
+                                selectedContacts.some(c => c.id === contact.id)
+                              ) ? 'Deselect All' : 'Select All'}
+                            </button>
+                            {expandedRoles.has(role) ? 
+                              <ChevronUp className="w-5 h-5 text-gray-500 cursor-pointer" onClick={() => toggleRoleExpansion(role)} /> : 
+                              <ChevronDown className="w-5 h-5 text-gray-500 cursor-pointer" onClick={() => toggleRoleExpansion(role)} />
+                            }
+                          </div>
                         </div>
                       </div>
 
@@ -495,10 +541,10 @@ const Contactuser: React.FC<ContactuserProps> = () => {
                             <div
                               key={contact.id}
                               onClick={() => {
-                                setSelectedContact(contact);
+                                toggleContactSelection(contact);
                               }}
                               className={`group relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                                selectedContact?.id === contact.id 
+                                selectedContacts.some(c => c.id === contact.id)
                                   ? 'border-blue-500 bg-blue-50 shadow-lg' 
                                   : 'border-gray-100 hover:border-blue-300 bg-white'
                               }`}
@@ -520,9 +566,9 @@ const Contactuser: React.FC<ContactuserProps> = () => {
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 mb-1">
                                     <h4 className="font-semibold text-gray-900 truncate">{contact.name}</h4>
-                                    {contact.isOnline && (
+                                    {/* {contact.isOnline && (
                                       <span className="text-xs text-green-600 font-medium">Online</span>
-                                    )}
+                                    )} */}
                                   </div>
                                   <p className="text-sm text-gray-600 mb-2">@{contact.username}</p>
                                   
@@ -534,8 +580,8 @@ const Contactuser: React.FC<ContactuserProps> = () => {
                                         onClick={(e) => e.stopPropagation()}
                                       >
                                         <Phone size={14} />
-                      {contact.phone}
-                    </a>
+                                        {contact.phone}
+                                      </a>
                                     )}
                                     {contact.email !== 'N/A' && (
                                       <a 
@@ -554,14 +600,14 @@ const Contactuser: React.FC<ContactuserProps> = () => {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setSelectedContact(contact);
+                                    toggleContactSelection(contact);
                                   }}
                                   className="opacity-0 group-hover:opacity-100 p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-all duration-200"
                                 >
                                   <MessageCircle size={18} />
                                 </button>
                               </div>
-                  </div>
+                            </div>
                 ))}
                         </div>
                       )}
@@ -581,32 +627,41 @@ const Contactuser: React.FC<ContactuserProps> = () => {
                 <h3 className="text-xl font-semibold text-gray-800">Send Message</h3>
               </div>
 
-              {selectedContact ? (
+              {selectedContacts.length > 0 ? (
                 <div className="space-y-6">
-                  {/* Selected Contact Card */}
+                  {/* Selected Contacts */}
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={selectedContact.avatar}
-                        alt={selectedContact.name}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900">{selectedContact.name}</h4>
-                        <p className="text-sm text-gray-600">@{selectedContact.username}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          {getRoleIcon(selectedContact.role)}
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRoleColor(selectedContact.role)}`}>
-                            {selectedContact.role}
-                          </span>
-                        </div>
-                      </div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-gray-900">
+                        Selected Contacts ({selectedContacts.length})
+                      </h4>
                       <button
-                        onClick={() => setSelectedContact(null)}
+                        onClick={() => setSelectedContacts([])}
                         className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                       >
                         <X size={18} />
                       </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedContacts.map((contact) => (
+                        <div key={contact.id} className="flex items-center gap-2 bg-white rounded-lg p-2 border">
+                          <img
+                            src={contact.avatar}
+                            alt={contact.name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{contact.name}</p>
+                            <p className="text-xs text-gray-500">@{contact.username}</p>
+                          </div>
+                          <button
+                            onClick={() => toggleContactSelection(contact)}
+                            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
                     </div>
             </div>
 
@@ -647,8 +702,8 @@ const Contactuser: React.FC<ContactuserProps> = () => {
               ) : (
                 <div className="text-center py-12">
                   <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h4 className="text-lg font-semibold text-gray-600 mb-2">Select a contact</h4>
-                  <p className="text-gray-500">Choose a team member to start a conversation</p>
+                  <h4 className="text-lg font-semibold text-gray-600 mb-2">Select contacts</h4>
+                  <p className="text-gray-500">Choose one or more team members to start a conversation</p>
                 </div>
               )}
             </div>
