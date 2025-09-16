@@ -539,6 +539,11 @@ export const calculatePolygonArea = (coordinates: [number, number][]): number =>
 };
 
 
+// Get farmer profile using the dedicated my-profile endpoint
+export const getFarmerMyProfile = () => {
+  return api.get('/farms/my-profile/');
+};
+
 // Farmer profile API function - uses existing endpoints
 export const getFarmerProfile = async () => {
   try {
