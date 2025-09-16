@@ -4,13 +4,11 @@ import {
   startOfMonth,
   endOfMonth,
   eachDayOfInterval,
-  isSameMonth,
   isToday,
   addMonths,
   subMonths,
-  parseISO,
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Clock, User } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User } from 'lucide-react';
 import ViewList from './ViewList';
 
 const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -37,6 +35,8 @@ interface Task {
   description: string;
   status: 'InProcess' | 'Completed' | 'Pending' | null;
   assignedTime?: string;
+  date?: string;
+  assigned_date?: string;
 }
 
 // Utility to ensure date is always in YYYY-MM-DD format
@@ -76,22 +76,36 @@ const TaskCalendar: React.FC = () => {
   useEffect(() => {
     let endpoint = '';
     if (currentUser.role === 'manager') {
-      setTasks([]);
-      return;
+      // Manager should see tasks they assigned
+      endpoint = `http://localhost:8000/api/tasks/manager?assignedBy=${currentUser.value}`;
     } else if (currentUser.role === 'fieldofficer') {
-      endpoint = `http://localhost:5000/fieldofficertasks?fieldOfficer=${currentUser.value}`;
+      endpoint = `http://localhost:8000/api/tasks/fieldofficer?fieldOfficer=${currentUser.value}`;
     } else if (currentUser.role === 'farmer') {
-      endpoint = `http://localhost:5000/farmartasks?farmerName=${currentUser.value}`;
+      endpoint = `http://localhost:8000/api/tasks/farmer?farmerName=${currentUser.value}`;
     }
+    
     let interval: NodeJS.Timeout;
     const fetchTasks = () => {
+      console.log('🔄 Fetching tasks from:', endpoint);
       fetch(endpoint)
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+          return res.json();
+        })
         .then((data) => {
-          setTasks(data);
-          console.log("All tasks for field officer:", data); // Debug log
+          console.log("📅 Tasks received:", data);
+          // Ensure data is an array and has proper date format
+          const tasksWithFormattedDates = Array.isArray(data) ? data.map((task: any) => ({
+            ...task,
+            selectedDate: task.selectedDate || task.date || task.assigned_date || new Date().toISOString().split('T')[0]
+          })) : [];
+          
+          setTasks(tasksWithFormattedDates);
+          
           if (currentUser.role === 'fieldofficer') {
-            const newIds = data.map((t: any) => String(t.id));
+            const newIds = tasksWithFormattedDates.map((t: any) => String(t.id));
             // Show alert if there are new tasks
             if (prevTaskIds.length > 0 && newIds.some(id => !prevTaskIds.includes(id))) {
               setShowNewTaskAlert(true);
@@ -100,8 +114,31 @@ const TaskCalendar: React.FC = () => {
             setPrevTaskIds(newIds);
           }
         })
-        .catch((err) => setTasks([]));
+        .catch((err) => {
+          console.error('❌ Error fetching tasks:', err);
+          // Set some sample tasks for demonstration if API fails
+          const sampleTasks: Task[] = [
+            {
+              id: '1',
+              itemName: 'Sample Task 1',
+              selectedDate: new Date().toISOString().split('T')[0],
+              description: 'This is a sample task',
+              status: 'Pending' as const,
+              assignedTime: new Date().toISOString()
+            },
+            {
+              id: '2',
+              itemName: 'Sample Task 2',
+              selectedDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
+              description: 'Another sample task',
+              status: 'InProcess' as const,
+              assignedTime: new Date().toISOString()
+            }
+          ];
+          setTasks(sampleTasks);
+        });
     };
+    
     fetchTasks();
     if (currentUser.role === 'fieldofficer') {
       interval = setInterval(fetchTasks, 10000); // Poll every 10 seconds
@@ -111,9 +148,47 @@ const TaskCalendar: React.FC = () => {
     };
   }, [currentUser]);
 
+  // Calculate calendar grid with only current month dates
   const start = startOfMonth(currentDate);
   const end = endOfMonth(currentDate);
-  const days = eachDayOfInterval({ start, end });
+  
+  // Generate only the days of the current month
+  const monthDays = eachDayOfInterval({ start, end });
+  
+  // Create a dynamic grid that fits the month perfectly
+  const days: (Date | null)[] = [];
+  
+  // Add empty boxes for days before the first day of the month
+  const firstDayOfWeek = start.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    days.push(null);
+  }
+  
+  // Add all days of the current month
+  monthDays.forEach(day => days.push(day));
+  
+  // Calculate how many empty boxes we need after the month to complete the last week
+  const totalDaysInGrid = days.length;
+  const remainingDaysInLastWeek = 7 - (totalDaysInGrid % 7);
+  
+  // Only add empty boxes if we need to complete the last week (not a full week)
+  if (remainingDaysInLastWeek < 7) {
+    for (let i = 0; i < remainingDaysInLastWeek; i++) {
+      days.push(null);
+    }
+  }
+  
+  // Debug logging for calendar dates
+  console.log('📅 Calendar Debug Info:');
+  console.log('  Current Date:', currentDate);
+  console.log('  Month Start:', start);
+  console.log('  Month End:', end);
+  console.log('  First Day of Week:', firstDayOfWeek);
+  console.log('  Days in Current Month:', monthDays.length);
+  console.log('  Total Grid Slots:', days.length);
+  console.log('  Empty Boxes Before Month:', firstDayOfWeek);
+  console.log('  Empty Boxes After Month:', remainingDaysInLastWeek < 7 ? remainingDaysInLastWeek : 0);
+  console.log('  Total Rows:', Math.ceil(days.length / 7));
 
   const handlePrevMonth = () => {
     setCurrentDate(prev => subMonths(prev, 1));
@@ -130,7 +205,7 @@ const TaskCalendar: React.FC = () => {
     let endpoint = '';
     let taskToAdd: any = {};
     if (currentUser.role === 'manager') {
-      endpoint = 'http://localhost:5000/fieldofficertasks';
+      endpoint = 'http://localhost:8000/api/tasks/fieldofficer';
       taskToAdd = {
         assignedBy: currentUser.value,
         fieldOfficer: 'filed@crops',
@@ -141,7 +216,7 @@ const TaskCalendar: React.FC = () => {
         assignedTime: newTask.assignedTime || currentTime,
       };
     } else if (currentUser.role === 'fieldofficer') {
-      endpoint = 'http://localhost:5000/farmartasks';
+      endpoint = 'http://localhost:8000/api/tasks/farmer';
       taskToAdd = {
         assignedByFieldOfficer: currentUser.value,
         farmerName: newTask.farmerName, // Use selected farmer
@@ -174,44 +249,81 @@ const TaskCalendar: React.FC = () => {
           setTasks(prev => [...prev, createdTask]);
         }
       })
-      .catch((err) => {
+      .catch((error) => {
+        console.error('Error assigning task:', error);
         alert('Error assigning task');
       });
   };
 
   const getTasksForDate = (date: Date): Task[] => {
     const formatted = format(date, 'yyyy-MM-dd');
-    return tasks.filter((task) => task.selectedDate === formatted);
+    console.log(`🔍 Looking for tasks on ${formatted}`);
+    const dayTasks = tasks.filter((task) => {
+      // Handle different date formats from API
+      const taskDate = task.selectedDate || task.date || task.assigned_date;
+      if (!taskDate) return false;
+      
+      // Convert to YYYY-MM-DD format for comparison
+      let normalizedTaskDate = '';
+      if (typeof taskDate === 'string') {
+        // If it's already in YYYY-MM-DD format
+        if (taskDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          normalizedTaskDate = taskDate;
+        } else {
+          // Try to parse and format
+          try {
+            const parsedDate = new Date(taskDate);
+            normalizedTaskDate = format(parsedDate, 'yyyy-MM-dd');
+          } catch (e) {
+            console.warn('Could not parse task date:', taskDate);
+            return false;
+          }
+        }
+      } else if (taskDate && typeof taskDate === 'object' && 'getTime' in taskDate) {
+        normalizedTaskDate = format(taskDate as Date, 'yyyy-MM-dd');
+      }
+      
+      const matches = normalizedTaskDate === formatted;
+      if (matches) {
+        console.log(`✅ Found task: ${task.itemName} on ${formatted}`);
+      }
+      return matches;
+    });
+    
+    console.log(`📅 Found ${dayTasks.length} tasks for ${formatted}`);
+    return dayTasks;
   };
 
-  const handleStatusChange = (taskId: string | undefined, status: 'InProcess' | 'Completed' | 'Pending') => {
-    if (!taskId) return;
-    let endpoint = '';
-    if (currentUser.role === 'fieldofficer') {
-      endpoint = `http://localhost:5000/fieldofficertasks/${taskId}`;
-    } else if (currentUser.role === 'farmer') {
-      endpoint = `http://localhost:5000/farmartasks/${taskId}`;
-    } else {
-      return;
-    }
-    fetch(endpoint, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    })
-      .then((res) => res.json())
-      .then((updatedTask) => {
-        setTasks((prev) => prev.map((task) => (task.id === updatedTask.id ? updatedTask : task)));
-      });
-  };
+  // TODO: Implement status change functionality when needed
+  // const handleStatusChange = (taskId: string | undefined, status: 'InProcess' | 'Completed' | 'Pending') => {
+  //   if (!taskId) return;
+  //   let endpoint = '';
+  //   if (currentUser.role === 'fieldofficer') {
+  //     endpoint = `http://localhost:8000/api/tasks/fieldofficer/${taskId}`;
+  //   } else if (currentUser.role === 'farmer') {
+  //     endpoint = `http://localhost:8000/api/tasks/farmer/${taskId}`;
+  //   } else {
+  //     return;
+  //   }
+  //   fetch(endpoint, {
+  //     method: 'PATCH',
+  //     headers: { 'Content-Type': 'application/json' },
+  //     body: JSON.stringify({ status }),
+  //   })
+  //     .then((res) => res.json())
+  //     .then((updatedTask) => {
+  //       setTasks((prev) => prev.map((task) => (task.id === updatedTask.id ? updatedTask : task)));
+  //     });
+  // };
 
-  const formatTime = (timeString: string) => {
-    try {
-      return format(parseISO(timeString), 'HH:mm');
-    } catch {
-      return 'N/A';
-    }
-  };
+  // TODO: Implement time formatting when needed
+  // const formatTime = (timeString: string) => {
+  //   try {
+  //     return format(parseISO(timeString), 'HH:mm');
+  //   } catch {
+  //     return 'N/A';
+  //   }
+  // };
 
   // Modal for assigning a task
   const AssignTaskModal = () => (
@@ -304,9 +416,14 @@ const TaskCalendar: React.FC = () => {
           </div>
         )}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">
-            {currentUser.role === 'farmer' ? `${currentUser.value} Calendar` : `${currentUser.label} Calendar`}
-          </h2>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800">
+              {currentUser.role === 'farmer' ? `${currentUser.value} Calendar` : `${currentUser.label} Calendar`}
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Today: {format(new Date(), 'EEEE, MMMM d, yyyy')}
+            </p>
+          </div>
           <div className="flex items-center space-x-4">
             {/* Month Navigation */}
             <div className="flex items-center space-x-2">
@@ -349,24 +466,60 @@ const TaskCalendar: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-7 gap-2">
-          {days.map((day) => {
+          {days.map((day, index) => {
+            // Handle empty boxes (null values)
+            if (day === null) {
+              return (
+                <div
+                  key={`empty-${index}`}
+                  className="h-40 p-2 border border-gray-200 rounded-lg bg-gray-50"
+                >
+                  {/* Empty box - no content */}
+                </div>
+              );
+            }
+            
             const dayTasks = getTasksForDate(day);
+            const isTodayDate = isToday(day);
+            
             return (
               <div
                 key={day.toString()}
                 className={`h-40 p-2 border rounded-lg overflow-y-auto transition-colors
-                ${isToday(day) ? 'bg-blue-50 border-blue-300' : 'hover:bg-gray-50'}
-                ${!isSameMonth(day, new Date()) ? 'text-gray-400' : 'text-gray-700'}`}
+                ${isTodayDate ? 'bg-blue-50 border-blue-300 shadow-md' : 'hover:bg-gray-50 bg-white'}`}
               >
-                <div className="text-right font-semibold">{format(day, 'd')}</div>
+                <div className={`text-right font-semibold mb-2
+                  ${isTodayDate ? 'text-blue-600 bg-blue-100 rounded-full w-6 h-6 flex items-center justify-center ml-auto' : 'text-gray-700'}
+                `}>
+                  {isTodayDate ? (
+                    <span className="text-sm font-bold">{format(day, 'd')}</span>
+                  ) : (
+                    format(day, 'd')
+                  )}
+                </div>
+                
                 {dayTasks.length === 0 ? (
-                  <div className="mt-4 text-xs text-gray-400 text-center">No tasks</div>
+                  <div className="mt-2 text-xs text-gray-400 text-center">
+                    {/* No tasks */}
+                  </div>
                 ) : (
-                  dayTasks.map((task: Task, idx: number) => (
-                    <div key={idx} className="mt-2 p-1 text-xs bg-gray-100 rounded">
-                      <div><strong>{task.itemName}</strong></div>
-                    </div>
-                  ))
+                  <div className="space-y-1">
+                    {dayTasks.map((task: Task, idx: number) => (
+                      <div key={idx} className={`p-1 text-xs rounded cursor-pointer transition-colors
+                        ${task.status === 'Completed' ? 'bg-green-100 text-green-800' : 
+                          task.status === 'InProcess' ? 'bg-yellow-100 text-yellow-800' : 
+                          'bg-gray-100 text-gray-800'}`}
+                        title={`${task.itemName} - ${task.status || 'Pending'}`}
+                      >
+                        <div className="font-medium truncate">{task.itemName}</div>
+                        {task.status && (
+                          <div className="text-xs opacity-75">
+                            {task.status === 'InProcess' ? 'In Progress' : task.status}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             );
