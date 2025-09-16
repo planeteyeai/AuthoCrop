@@ -10,6 +10,7 @@ import {
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, User } from 'lucide-react';
 import ViewList from './ViewList';
+import { getContactDetails } from '../api';
 
 const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -20,10 +21,13 @@ const USERS = [
 ];
 
 // Add this constant for available farmers
-const FARMERS = [
-  { label: 'AjayDhale', value: 'AjayDhale' },
-  // Add more farmers here if needed
-];
+interface Farmer {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+}
 
 interface Task {
   id?: string;
@@ -58,19 +62,98 @@ const TaskCalendar: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [farmers, setFarmers] = useState<Farmer[]>([]);
+  const [loadingFarmers, setLoadingFarmers] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [newTask, setNewTask] = useState<Omit<Task, 'status' | 'id'> & { assignedTime: string }>({
     selectedDate: '',
     itemName: '',
     description: '',
     assignedTime: '',
     fieldOfficer: '',
-    farmerName: FARMERS[0].value, // Default to AjayDhale
+    farmerName: '', // Will be set when farmers are loaded
     assignedBy: '',
   });
 
   // Notification state for new tasks
   const [showNewTaskAlert, setShowNewTaskAlert] = useState(false);
   const [prevTaskIds, setPrevTaskIds] = useState<string[]>([]);
+
+  // Fetch farmers for field officer
+  useEffect(() => {
+    const fetchFarmers = async () => {
+      if (currentUser.role === 'fieldofficer') {
+        try {
+          setLoadingFarmers(true);
+          console.log('🌾 Fetching farmers for field officer:', currentUser.value);
+          
+          const response = await getContactDetails();
+          console.log('📋 Contact details response:', response.data);
+          
+          // Extract farmers from the response
+          let farmersData: Farmer[] = [];
+          
+          if (response.data && response.data.contacts) {
+            const contacts = response.data.contacts;
+            
+            // Get farmers from the contacts
+            if (contacts.farmers && Array.isArray(contacts.farmers)) {
+              farmersData = contacts.farmers.map((farmer: any) => ({
+                id: farmer.id,
+                name: farmer.name || `${farmer.first_name || ''} ${farmer.last_name || ''}`.trim() || farmer.username || 'Unknown',
+                username: farmer.username || 'unknown',
+                email: farmer.email || 'N/A',
+                phone: farmer.phone || farmer.phone_number || 'N/A'
+              }));
+            }
+          }
+          
+          console.log('🌾 Farmers found:', farmersData);
+          setFarmers(farmersData);
+          
+          // Set default farmer if available
+          if (farmersData.length > 0 && !newTask.farmerName) {
+            setNewTask(prev => ({
+              ...prev,
+              farmerName: farmersData[0].username
+            }));
+          }
+          
+        } catch (error) {
+          console.error('❌ Error fetching farmers:', error);
+          // Set some sample farmers for demonstration
+          const sampleFarmers: Farmer[] = [
+            {
+              id: 1,
+              name: 'Ajay Dhale',
+              username: 'AjayDhale',
+              email: 'ajay@example.com',
+              phone: '9876543210'
+            },
+            {
+              id: 2,
+              name: 'Rajesh Patil',
+              username: 'rajesh_patil',
+              email: 'rajesh@example.com',
+              phone: '9876543211'
+            }
+          ];
+          setFarmers(sampleFarmers);
+          setNewTask(prev => ({
+            ...prev,
+            farmerName: sampleFarmers[0].username
+          }));
+        } finally {
+          setLoadingFarmers(false);
+        }
+      } else {
+        // Clear farmers for non-field officer roles
+        setFarmers([]);
+      }
+    };
+
+    fetchFarmers();
+  }, [currentUser]);
 
   // Fetch tasks for the current user (with polling for field officer)
   useEffect(() => {
@@ -196,6 +279,10 @@ const TaskCalendar: React.FC = () => {
 
   const handleNextMonth = () => {
     setCurrentDate(prev => addMonths(prev, 1));
+  };
+
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date);
   };
 
   // Assignment logic
@@ -325,81 +412,108 @@ const TaskCalendar: React.FC = () => {
   //   }
   // };
 
-  // Modal for assigning a task
+  // Modal for assigning a task - Responsive
   const AssignTaskModal = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 p-4">
+      <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <h3 className="text-lg font-bold mb-4">Assign Task</h3>
-        <div className="mb-3">
-          <label className="block text-sm font-medium mb-1">Task Name</label>
-          <input
-            type="text"
-            className="w-full border rounded px-3 py-2"
-            value={newTask.itemName}
-            onChange={e => setNewTask({ ...newTask, itemName: e.target.value })}
-            placeholder="Enter task name"
-          />
-        </div>
-        {currentUser.role === 'fieldofficer' && (
-          <div className="mb-3">
-            <label className="block text-sm font-medium mb-1">Farmer</label>
-            <select
-              className="w-full border rounded px-3 py-2"
-              value={newTask.farmerName}
-              onChange={e => setNewTask({ ...newTask, farmerName: e.target.value })}
-            >
-              {FARMERS.map(f => (
-                <option key={f.value} value={f.value}>{f.label}</option>
-              ))}
-            </select>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Task Name</label>
+            <input
+              type="text"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={newTask.itemName}
+              onChange={e => setNewTask({ ...newTask, itemName: e.target.value })}
+              placeholder="Enter task name"
+            />
           </div>
-        )}
-        <div className="mb-3">
-          <label className="block text-sm font-medium mb-1">Description</label>
-          <textarea
-            className="w-full border rounded px-3 py-2"
-            value={newTask.description}
-            onChange={e => setNewTask({ ...newTask, description: e.target.value })}
-            placeholder="Enter task description"
-          />
+          
+          {currentUser.role === 'fieldofficer' && (
+            <div>
+              <label className="block text-sm font-medium mb-1">Farmer</label>
+              {loadingFarmers ? (
+                <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 text-gray-500">
+                  Loading farmers...
+                </div>
+              ) : farmers.length > 0 ? (
+                <select
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={newTask.farmerName}
+                  onChange={e => setNewTask({ ...newTask, farmerName: e.target.value })}
+                >
+                  <option value="">Select a farmer</option>
+                  {farmers.map(farmer => (
+                    <option key={farmer.id} value={farmer.username}>
+                      {farmer.name} ({farmer.username})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="w-full border border-red-300 rounded-lg px-3 py-2 bg-red-50 text-red-600">
+                  No farmers found under this field officer
+                </div>
+              )}
+            </div>
+          )}
+          
+          <div>
+            <label className="block text-sm font-medium mb-1">Description</label>
+            <textarea
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              rows={3}
+              value={newTask.description}
+              onChange={e => setNewTask({ ...newTask, description: e.target.value })}
+              placeholder="Enter task description"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-1">Date</label>
+            <input
+              type="date"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={newTask.selectedDate}
+              onChange={e => setNewTask({ ...newTask, selectedDate: e.target.value })}
+            />
+          </div>
         </div>
-        <div className="mb-3">
-          <label className="block text-sm font-medium mb-1">Date</label>
-          <input
-            type="date"
-            className="w-full border rounded px-3 py-2"
-            value={newTask.selectedDate}
-            onChange={e => setNewTask({ ...newTask, selectedDate: e.target.value })}
-          />
-        </div>
-        <div className="flex justify-end gap-2 mt-4">
+        
+        <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
           <button
-            className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+            className="w-full sm:w-auto px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors font-medium"
             onClick={() => setShowModal(false)}
-          >Cancel</button>
+          >
+            Cancel
+          </button>
           <button
-            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+            className="w-full sm:w-auto px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium"
             onClick={handleAssignTask}
-          >Assign</button>
+          >
+            Assign Task
+          </button>
         </div>
       </div>
     </div>
   );
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
+    <div className="p-3 sm:p-6 bg-gray-100 min-h-screen">
       {/* Only show user selector for manager and farmer roles */}
       {(currentUser.role === 'manager' || currentUser.role === 'farmer') && (
-        <div className="mb-4 flex items-center space-x-4">
-          <User className="w-4 h-4 text-gray-600" />
-          <span className="text-sm font-medium text-gray-700">Current User:</span>
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+          <div className="flex items-center space-x-2">
+            <User className="w-4 h-4 text-gray-600" />
+            <span className="text-sm font-medium text-gray-700">Current User:</span>
+          </div>
           <select
             value={currentUser.value}
             onChange={e => {
               const user = USERS.find(u => u.value === e.target.value)!;
               setCurrentUser(user);
             }}
-            className="px-3 py-1 border border-gray-300 rounded text-sm"
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-auto focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             {USERS.map(u => (
               <option key={u.value} value={u.value}>{u.label} ({u.value})</option>
@@ -408,25 +522,29 @@ const TaskCalendar: React.FC = () => {
         </div>
       )}
 
-      <div className="w-full p-4 bg-white rounded-lg shadow-md">
+      <div className="w-full p-4 sm:p-6 bg-white rounded-lg shadow-md">
         {showModal && <AssignTaskModal />}
         {showNewTaskAlert && (
-          <div className="mb-4 p-3 bg-green-100 text-green-800 rounded shadow text-center font-semibold">
+          <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-lg shadow text-center font-semibold">
             New task assigned to you!
           </div>
         )}
-        <div className="flex items-center justify-between mb-4">
+        
+        {/* Header Section - Responsive */}
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 space-y-4 lg:space-y-0">
           <div>
-            <h2 className="text-xl font-semibold text-gray-800">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
               {currentUser.role === 'farmer' ? `${currentUser.value} Calendar` : `${currentUser.label} Calendar`}
             </h2>
             <p className="text-sm text-gray-600 mt-1">
               Today: {format(new Date(), 'EEEE, MMMM d, yyyy')}
             </p>
           </div>
-          <div className="flex items-center space-x-4">
+          
+          {/* Controls Section - Responsive */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
             {/* Month Navigation */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-center space-x-2">
               <button
                 onClick={handlePrevMonth}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -434,7 +552,7 @@ const TaskCalendar: React.FC = () => {
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <span className="text-lg font-medium text-gray-700 min-w-[120px] text-center">
+              <span className="text-base sm:text-lg font-medium text-gray-700 min-w-[120px] text-center">
                 {format(currentDate, 'MMMM yyyy')}
               </span>
               <button
@@ -445,11 +563,12 @@ const TaskCalendar: React.FC = () => {
                 <ChevronRight className="w-5 h-5" />
               </button>
             </div>
-            {/* Only show assign button for manager and field officer */}
+            
+            {/* Assign Task Button */}
             {(currentUser.role === 'manager' || currentUser.role === 'fieldofficer') && (
               <button
                 onClick={() => setShowModal(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
                 Assign Task
               </button>
@@ -457,80 +576,121 @@ const TaskCalendar: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-2 mb-2">
+        {/* Calendar Grid - Clean Design */}
+        <div className="grid grid-cols-7 gap-0 mb-4">
           {weekDays.map((day) => (
-            <div key={day} className="text-center font-medium text-gray-600 py-2">
+            <div key={day} className="text-center font-medium text-gray-600 py-3 text-sm border-b border-gray-200">
               {day}
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-0 border border-gray-200 rounded-lg overflow-hidden">
           {days.map((day, index) => {
             // Handle empty boxes (null values)
             if (day === null) {
               return (
                 <div
                   key={`empty-${index}`}
-                  className="h-40 p-2 border border-gray-200 rounded-lg bg-gray-50"
+                  className="h-16 sm:h-20 lg:h-24 border-r border-b border-gray-200 bg-gray-50 last:border-r-0"
                 >
                   {/* Empty box - no content */}
                 </div>
               );
             }
             
-            const dayTasks = getTasksForDate(day);
             const isTodayDate = isToday(day);
             
             return (
               <div
                 key={day.toString()}
-                className={`h-40 p-2 border rounded-lg overflow-y-auto transition-colors
-                ${isTodayDate ? 'bg-blue-50 border-blue-300 shadow-md' : 'hover:bg-gray-50 bg-white'}`}
+                onClick={() => handleDateClick(day)}
+                className={`h-16 sm:h-20 lg:h-24 border-r border-b border-gray-200 last:border-r-0 flex items-center justify-center transition-colors cursor-pointer
+                ${isTodayDate ? 'bg-blue-100 text-blue-600 font-semibold' : 
+                  selectedDate && format(selectedDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd') ? 'bg-green-100 text-green-600 font-semibold' :
+                  'hover:bg-gray-50 bg-white text-gray-700'}`}
               >
-                <div className={`text-right font-semibold mb-2
-                  ${isTodayDate ? 'text-blue-600 bg-blue-100 rounded-full w-6 h-6 flex items-center justify-center ml-auto' : 'text-gray-700'}
-                `}>
-                  {isTodayDate ? (
-                    <span className="text-sm font-bold">{format(day, 'd')}</span>
-                  ) : (
-                    format(day, 'd')
-                  )}
-                </div>
-                
-                {dayTasks.length === 0 ? (
-                  <div className="mt-2 text-xs text-gray-400 text-center">
-                    {/* No tasks */}
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    {dayTasks.map((task: Task, idx: number) => (
-                      <div key={idx} className={`p-1 text-xs rounded cursor-pointer transition-colors
-                        ${task.status === 'Completed' ? 'bg-green-100 text-green-800' : 
-                          task.status === 'InProcess' ? 'bg-yellow-100 text-yellow-800' : 
-                          'bg-gray-100 text-gray-800'}`}
-                        title={`${task.itemName} - ${task.status || 'Pending'}`}
-                      >
-                        <div className="font-medium truncate">{task.itemName}</div>
-                        {task.status && (
-                          <div className="text-xs opacity-75">
-                            {task.status === 'InProcess' ? 'In Progress' : task.status}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <span className={`text-sm sm:text-base
+                  ${isTodayDate ? 'font-bold' : 
+                    selectedDate && format(selectedDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd') ? 'font-bold' :
+                    'font-medium'}`}>
+                  {format(day, 'd')}
+                </span>
               </div>
             );
           })}
         </div>
       </div>
+
+      {/* Tasks Section - Shows tasks for selected date or today */}
+      <div className="mt-6 sm:mt-8">
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
+              {selectedDate ? `${format(selectedDate, 'MMMM d, yyyy')} Tasks` : "Today's Tasks"}
+            </h2>
+            {selectedDate && (
+              <button
+                onClick={() => setSelectedDate(null)}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Show Today's Tasks
+              </button>
+            )}
+          </div>
+          {(() => {
+            const targetDate = selectedDate || new Date();
+            const dateTasks = getTasksForDate(targetDate);
+            
+            if (dateTasks.length === 0) {
+              return (
+                <p className="text-gray-500 text-sm">
+                  {selectedDate ? `No tasks scheduled for ${format(selectedDate, 'MMMM d, yyyy')}` : 'No tasks scheduled for today'}
+                </p>
+              );
+            }
+            
+            return (
+              <div className="space-y-3">
+                {dateTasks.map((task: Task, idx: number) => (
+                  <div key={idx} className={`p-3 rounded-lg border-l-4
+                    ${task.status === 'Completed' ? 'bg-green-50 border-green-400' : 
+                      task.status === 'InProcess' ? 'bg-yellow-50 border-yellow-400' : 
+                      'bg-gray-50 border-gray-400'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium text-gray-800">{task.itemName}</h3>
+                        {task.description && (
+                          <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+                        )}
+                        {task.assignedTime && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Assigned: {new Date(task.assignedTime).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium
+                        ${task.status === 'Completed' ? 'bg-green-100 text-green-800' : 
+                          task.status === 'InProcess' ? 'bg-yellow-100 text-yellow-800' : 
+                          'bg-gray-100 text-gray-800'}`}>
+                        {task.status === 'InProcess' ? 'In Progress' : (task.status || 'Pending')}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
       {/* Show ViewList for farmer (AjayDhale) below the calendar */}
       {currentUser.role === 'farmer' && (
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">{currentUser.value} Task List</h2>
-          <ViewList />
+        <div className="mt-6 sm:mt-8">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">{currentUser.value} Task List</h2>
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <ViewList />
+          </div>
         </div>
       )}
     </div>

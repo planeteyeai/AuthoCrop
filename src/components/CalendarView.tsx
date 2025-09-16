@@ -10,6 +10,7 @@ import {
   subMonths,
 } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { getContactDetails } from '../api';
 
 const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -24,12 +25,22 @@ interface Task {
   assignedTime?: string;
 }
 
+interface FieldOfficer {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+}
+
 const CalendarView: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldOfficers, setFieldOfficers] = useState<FieldOfficer[]>([]);
+  const [loadingFieldOfficers, setLoadingFieldOfficers] = useState(false);
 
   const [task, setTask] = useState<Omit<Task, 'id'>>({
     itemName: '',
@@ -51,9 +62,77 @@ const CalendarView: React.FC = () => {
       .catch(() => setTasks([]));
   }, []);
 
+  // Fetch field officers for the dropdown
+  useEffect(() => {
+    const fetchFieldOfficers = async () => {
+      try {
+        setLoadingFieldOfficers(true);
+        const response = await getContactDetails();
+        console.log('Field Officers API Response:', response);
+        
+        let fieldOfficersData: FieldOfficer[] = [];
+        
+        if (response.data && response.data.contacts) {
+          // Extract field officers from the contacts object
+          if (response.data.contacts.field_officers && Array.isArray(response.data.contacts.field_officers)) {
+            fieldOfficersData = response.data.contacts.field_officers.map((officer: any) => ({
+              id: officer.id,
+              name: officer.name || `${officer.first_name || ''} ${officer.last_name || ''}`.trim() || officer.username || 'Unknown',
+              username: officer.username || 'unknown',
+              email: officer.email || 'N/A',
+              phone: officer.phone || officer.phone_number || 'N/A'
+            }));
+          }
+        }
+        
+        setFieldOfficers(fieldOfficersData);
+        console.log('Field Officers loaded:', fieldOfficersData);
+      } catch (error) {
+        console.error('Error fetching field officers:', error);
+        // Fallback to sample data if API fails
+        const sampleFieldOfficers: FieldOfficer[] = [
+          {
+            id: 1,
+            name: 'John Doe',
+            username: 'filed@crops',
+            email: 'john.doe@example.com',
+            phone: '+1234567890'
+          }
+        ];
+        setFieldOfficers(sampleFieldOfficers);
+      } finally {
+        setLoadingFieldOfficers(false);
+      }
+    };
+
+    fetchFieldOfficers();
+  }, []);
+
+  // Calculate calendar grid with empty boxes for realistic calendar layout
   const start = startOfMonth(currentDate);
   const end = endOfMonth(currentDate);
-  const days = eachDayOfInterval({ start, end });
+  const monthDays = eachDayOfInterval({ start, end });
+  
+  // Create days array with empty boxes for proper calendar grid
+  const days: (Date | null)[] = [];
+  const firstDayOfWeek = start.getDay();
+  
+  // Add empty boxes for days before the first day of the month
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    days.push(null);
+  }
+  
+  // Add all days of the current month
+  monthDays.forEach(day => days.push(day));
+  
+  // Add empty boxes to complete the last week if needed
+  const totalDaysInGrid = days.length;
+  const remainingDaysInLastWeek = 7 - (totalDaysInGrid % 7);
+  if (remainingDaysInLastWeek < 7) {
+    for (let i = 0; i < remainingDaysInLastWeek; i++) {
+      days.push(null);
+    }
+  }
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
@@ -129,28 +208,49 @@ const CalendarView: React.FC = () => {
         </div>
 
         {/* Weekday Headers */}
-        <div className="grid grid-cols-7 gap-2 mb-2">
+        <div className="grid grid-cols-7 gap-0 mb-4">
           {weekDays.map((day) => (
-            <div key={day} className="text-center font-medium text-gray-600 py-2">
+            <div key={day} className="text-center font-medium text-gray-600 py-3 text-sm border-b border-gray-200">
               {day}
             </div>
           ))}
         </div>
 
-        {/* Calendar Days */}
-        <div className="grid grid-cols-7 gap-2">
-          {days.map((day) => (
-            <button
-              key={day.toString()}
-              onClick={() => handleDateClick(day)}
-              className={`h-24 p-2 border rounded-lg transition-colors text-left
-                ${isToday(day) ? 'bg-blue-50 border-blue-300' : 'hover:bg-gray-50'}
-                ${!isSameMonth(day, currentDate) ? 'text-gray-400' : 'text-gray-700'}
-              `}
-            >
-              <div className="text-right">{format(day, 'd')}</div>
-            </button>
-          ))}
+        {/* Calendar Days - Realistic Calendar Grid */}
+        <div className="grid grid-cols-7 gap-0 border border-gray-200 rounded-lg overflow-hidden">
+          {days.map((day, index) => {
+            // Handle empty boxes (null values)
+            if (day === null) {
+              return (
+                <div
+                  key={`empty-${index}`}
+                  className="h-16 sm:h-20 lg:h-24 border-r border-b border-gray-200 bg-gray-50 last:border-r-0"
+                >
+                  {/* Empty box - no content */}
+                </div>
+              );
+            }
+            
+            const isTodayDate = isToday(day);
+            const isCurrentMonth = isSameMonth(day, currentDate);
+            
+            return (
+              <button
+                key={day.toString()}
+                onClick={() => handleDateClick(day)}
+                className={`h-16 sm:h-20 lg:h-24 border-r border-b border-gray-200 last:border-r-0 flex items-center justify-center transition-colors cursor-pointer
+                  ${isTodayDate ? 'bg-blue-100 text-blue-600 font-semibold' : 
+                    'hover:bg-gray-50 bg-white text-gray-700'}
+                  ${!isCurrentMonth ? 'text-gray-400' : ''}
+                `}
+              >
+                <span className={`text-sm sm:text-base
+                  ${isTodayDate ? 'font-bold' : 'font-medium'}`}>
+                  {format(day, 'd')}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -183,15 +283,29 @@ const CalendarView: React.FC = () => {
           />
 
           <label className="block mb-2 font-medium">Select Field Officer</label>
-          <select
-            name="fieldOfficer"
-            value={task.fieldOfficer}
-            onChange={handleChange}
-            className="w-full mb-4 p-2 border border-gray-300 rounded"
-          >
-            <option value="">Select Officer</option>
-            <option value="filed@crops">filed@crops</option>
-          </select>
+          {loadingFieldOfficers ? (
+            <div className="w-full mb-4 p-2 border border-gray-300 rounded bg-gray-100 text-gray-500">
+              Loading field officers...
+            </div>
+          ) : fieldOfficers.length > 0 ? (
+            <select
+              name="fieldOfficer"
+              value={task.fieldOfficer}
+              onChange={handleChange}
+              className="w-full mb-4 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Select Field Officer</option>
+              {fieldOfficers.map(officer => (
+                <option key={officer.id} value={officer.username}>
+                  {officer.name} ({officer.username})
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="w-full mb-4 p-2 border border-red-300 rounded bg-red-50 text-red-600">
+              No field officers found under this manager
+            </div>
+          )}
 
           <label className="block mb-2 font-medium">Select Team</label>
           <select
