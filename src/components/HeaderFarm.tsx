@@ -146,6 +146,7 @@ export const Header: React.FC<HeaderFarmProps> = () => {
         <div className="text-white text-center font-medium text-sm">
           Report Date: {formattedDate}
         </div>
+        
 
         {/* Right: Plot Information */}
         <div className="flex items-center">

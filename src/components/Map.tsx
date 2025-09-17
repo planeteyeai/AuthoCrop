@@ -93,6 +93,7 @@ if (typeof document !== 'undefined' && !document.querySelector('#map-tooltip-sty
   document.head.appendChild(styleSheet);
 }
 
+
 // Enhanced classification ranges combining both approaches
 const CLASS_RANGES = {
   VV: [

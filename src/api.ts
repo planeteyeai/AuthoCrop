@@ -1018,6 +1018,7 @@ export const getKMLData = async () => {
   }
 };
 
+
 // Get KML data with authentication (if needed)
 export const getKMLDataWithAuth = async (token?: string) => {
   const headers: any = {

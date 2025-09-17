@@ -159,6 +159,7 @@ interface FarmerProfile {
   };
 }
 
+
 export const useFarmerProfile = () => {
   const [profile, setProfile] = useState<FarmerProfile | null>(null);
   const [loading, setLoading] = useState(true);

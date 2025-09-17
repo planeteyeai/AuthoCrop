@@ -813,6 +813,7 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
     }
   };
 
+  
   return (
     <div className="w-full max-w-xs sm:max-w-sm md:max-w-md p-2 sm:p-4">
       {/* Header */}

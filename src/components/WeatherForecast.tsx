@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 
+
 interface ChartPoint {
   date: string;
   temperature: number;
