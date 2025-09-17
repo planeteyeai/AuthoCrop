@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Satellite, Leaf, User, Lock } from 'lucide-react';
+import { Satellite, Leaf, Mail, Lock } from 'lucide-react';
 import { setAuthData } from '../utils/auth';
+import { login } from '../api';
 
 export type UserRole = "manager" | "admin" | "fieldofficer" | "farmer" | "owner";
 
@@ -11,7 +12,7 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -208,69 +209,37 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setError('');
 
     try {
-      // For now, we'll use a simple authentication approach
-      // You can replace this with your actual API endpoint
-      const response = await fetch('http://192.168.41.73:8000/api/auth/login/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          username: username.trim(),
-          password: password.trim()
-        }),
-      });
-
-      const responseText = await response.text();
+      console.log('🔐 Attempting login with email:', email.trim());
       
-      if (!response.ok) {
-        throw new Error(responseText || 'Login failed');
-      }
-
-      const result = JSON.parse(responseText);
+      // Using the API function to login with email as username
+      const response = await login(email.trim(), password.trim());
+      const result = response.data;
+      
+      console.log('✅ Login response received:', result);
       const token = result.access || result.token;
       
       if (!token) {
         throw new Error('No authentication token received');
       }
 
-      // Fetch user information
-      const userResponse = await fetch('http://192.168.41.73:8000/api/users/me/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!userResponse.ok) {
-        throw new Error('Failed to fetch user information');
-      }
-
-      const userData = await userResponse.json();
+      // User data is already included in the login response
+      const userData = result.user;
       console.log('User data received:', userData);
       
-      // Handle role determination (same logic as before)
+      // Handle role determination from the response format
       let userRole: UserRole;
-      
-      const roleMap: { [key: number]: UserRole } = {
-        1: 'farmer',
-        2: 'fieldofficer', 
-        3: 'manager',
-        4: 'owner'
-      };
       
       if (userData.role && typeof userData.role === 'object' && userData.role.name) {
         userRole = userData.role.name.toLowerCase() as UserRole;
       } else if (userData.role && typeof userData.role === 'object' && userData.role.id) {
+        const roleMap: { [key: number]: UserRole } = {
+          1: 'farmer',
+          2: 'fieldofficer', 
+          3: 'manager',
+          4: 'owner'
+        };
         userRole = roleMap[userData.role.id] || 'farmer';
-      } else if (userData.role && typeof userData.role === 'string') {
-        userRole = userData.role.toLowerCase() as UserRole;
-      } else if (userData.role_id && typeof userData.role_id === 'number') {
-        userRole = roleMap[userData.role_id] || 'farmer';
-      } else if (userData.role && typeof userData.role === 'number') {
-        userRole = roleMap[userData.role] || 'farmer';
       } else {
-        // Default to farmer if role cannot be determined
         userRole = 'farmer';
         console.warn('Could not determine user role, defaulting to farmer');
       }
@@ -284,8 +253,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       const userDataToStore = {
         first_name: userData.first_name || '',
         last_name: userData.last_name || '',
-        email: userData.email || username,
-        username: userData.username || username,
+        email: userData.email || email,
+        username: userData.username || email,
         id: userData.id || ''
       };
       
@@ -301,8 +270,35 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       onLoginSuccess(userRole, token);
 
     } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.message || 'Login failed. Please check your credentials.');
+      console.error('❌ Login error:', err);
+      
+      // Handle different types of errors
+      if (err.response) {
+        // Server responded with error status
+        const status = err.response.status;
+        const data = err.response.data;
+        
+        console.error('Server error response:', { status, data });
+        
+        if (status === 400) {
+          setError('Invalid email or password. Please check your credentials.');
+        } else if (status === 401) {
+          setError('Authentication failed. Please check your email and password.');
+        } else if (status === 403) {
+          setError('Access denied. Please contact your administrator.');
+        } else if (status >= 500) {
+          setError('Server error. Please try again later.');
+        } else {
+          setError(data?.detail || data?.message || `Login failed (${status})`);
+        }
+      } else if (err.request) {
+        // Network error
+        console.error('Network error:', err.request);
+        setError('Network error. Please check your internet connection.');
+      } else {
+        // Other error
+        setError(err.message || 'Login failed. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }
@@ -360,10 +356,11 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             </div>
           </motion.div>
           {/* Right Panel - Login Form */}
-          <div className="w-full md:w-1/2 p-6 md:p-12">
+          <div className="w-full md:w-1/2 p-6 md:p-12 ">
             <motion.div
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
+              style={{display: 'flex',flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}
             >
               <h3 className="text-3xl font-bold text-gray-800 mb-8 text-center">
                 Login
@@ -377,15 +374,15 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               )}
 
               {/* Login Form */}
-              <form onSubmit={handleLogin} className="space-y-6">
+              <form onSubmit={handleLogin} className="space-y-6 w-[50%]">
                 <div className="relative">
                   <div className="flex items-center border border-gray-300 rounded-lg px-3 py-3 bg-white focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
-                    <User className="w-5 h-5 mr-3 text-gray-500" />
+                    <Mail className="w-5 h-5 mr-3 text-gray-500" />
                     <input
-                      type="text"
-                      placeholder="Enter your username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      type="email"
+                      placeholder="Enter email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       className="w-full outline-none text-gray-700"
                       required
                       disabled={loading}
@@ -398,7 +395,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     <Lock className="w-5 h-5 mr-3 text-gray-500" />
                     <input
                       type="password"
-                      placeholder="Enter your password"
+                      placeholder="Enter password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full outline-none text-gray-700"
@@ -410,16 +407,16 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 
                 <button
                   type="submit"
-                  disabled={loading || !username.trim() || !password.trim()}
+                  disabled={loading || !email.trim() || !password.trim()}
                   className="w-full bg-emerald-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {loading ? (
                     <div className="flex items-center justify-center">
                       <Satellite className="w-5 h-5 animate-spin mr-2" />
-                      Logging in...
+                      Submitting...
                     </div>
                   ) : (
-                    'Login'
+                    'Submit'
                   )}
                 </button>
               </form>

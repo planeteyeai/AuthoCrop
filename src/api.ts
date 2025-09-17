@@ -51,18 +51,21 @@ api.interceptors.response.use(
   }
 );
 
-// Send OTP to email
-export const sendOtp = (email: string) => {
-  return api.post('/otp/', { email });
-};
+// ==================== AUTHENTICATION API ====================
+// Note: Using password-based authentication instead of OTP
 
-// Verify OTP with email
-export const verifyOtp = (email: string, otp: string) => {
-  return api.post('/verify-otp/', { email, otp });
-};
+// OTP-based authentication (commented out - using password-based auth instead)
+//export const sendOtp = (email: string) => {
+ // return api.post('/otp/', { email });
+//};
 
-export const login = (username: string, password: string) => {
-  return api.post('/login', { username, password });
+//export const verifyOtp = (email: string, otp: string) => {
+  //return api.post('/verify-otp/', { email, otp });
+//};
+
+//Login function - backend expects email field
+export const login = (email: string, password: string) => {
+  return api.post('/login/', { email, password });
 };
 
 export const addUser = (data: {
@@ -293,9 +296,10 @@ export const registerUser = (data: {
   return api.post('/users/', data);
 };
 
-export const getTokenWithOtp = (email: string, otp: string) => {
-  return api.post('/token/', { email, otp });
-};
+// OTP-based authentication (commented out - using password-based auth instead)
+// export const getTokenWithOtp = (email: string, otp: string) => {
+//   return api.post('/token/', { email, otp });
+// };
 
 export const getCurrentUser = () => {
   return api.get('/users/me/');
@@ -332,50 +336,50 @@ export const registerFarmer = (data: {
   });
 };
 
-// Send OTP to email for registration
-export const sendOTPForRegistration = async (email: string): Promise<void> => {
-  try {
-    console.log('Sending OTP to:', email);
-    await axios.post(`${API_BASE_URL}/otp/`, {
-      email: email
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    console.log('✅ OTP sent successfully to:', email);
-  } catch (error: any) {
-    console.error('Failed to send OTP:', error);
-    throw new Error(`Failed to send OTP: ${error.response?.data?.detail || error.message}`);
-  }
-};
+// OTP-based registration (commented out - using password-based auth instead)
+// export const sendOTPForRegistration = async (email: string): Promise<void> => {
+//   try {
+//     console.log('Sending OTP to:', email);
+//     await axios.post(`${API_BASE_URL}/otp/`, {
+//       email: email
+//     }, {
+//       headers: {
+//         'Content-Type': 'application/json',
+//       },
+//     });
+//     
+//     console.log('✅ OTP sent successfully to:', email);
+//   } catch (error: any) {
+//     console.error('Failed to send OTP:', error);
+//     throw new Error(`Failed to send OTP: ${error.response?.data?.detail || error.message}`);
+//   }
+// };
 
-// Verify OTP and get Bearer token
-export const verifyOTPAndGetToken = async (email: string, otp: string): Promise<string> => {
-  try {
-    console.log('Verifying OTP for:', email);
-    const verifyResponse = await axios.post(`${API_BASE_URL}/verify-otp/`, {
-      email: email,
-      otp: otp
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    if (verifyResponse.data && (verifyResponse.data.access || verifyResponse.data.token)) {
-      const token = verifyResponse.data.access || verifyResponse.data.token;
-      console.log('✅ OTP verification successful, token received');
-      return token;
-    } else {
-      throw new Error('Invalid OTP response format');
-    }
-  } catch (error: any) {
-    console.error('OTP verification failed:', error);
-    throw new Error(`OTP verification failed: ${error.response?.data?.detail || error.message}`);
-  }
-};
+// OTP verification (commented out - using password-based auth instead)
+// export const verifyOTPAndGetToken = async (email: string, otp: string): Promise<string> => {
+//   try {
+//     console.log('Verifying OTP for:', email);
+//     const verifyResponse = await axios.post(`${API_BASE_URL}/verify-otp/`, {
+//       email: email,
+//       otp: otp
+//     }, {
+//       headers: {
+//         'Content-Type': 'application/json',
+//       },
+//     });
+//     
+//     if (verifyResponse.data && (verifyResponse.data.access || verifyResponse.data.token)) {
+//       const token = verifyResponse.data.access || verifyResponse.data.token;
+//       console.log('✅ OTP verification successful, token received');
+//       return token;
+//     } else {
+//       throw new Error('Invalid OTP response format');
+//     }
+//   } catch (error: any) {
+//     console.error('OTP verification failed:', error);
+//     throw new Error(`OTP verification failed: ${error.response?.data?.detail || error.message}`);
+//   }
+// };
 
 // Set authentication token for API calls
 export const setAuthToken = (token: string) => {
