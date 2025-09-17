@@ -93,6 +93,7 @@ if (typeof document !== 'undefined' && !document.querySelector('#map-tooltip-sty
   document.head.appendChild(styleSheet);
 }
 
+
 // Enhanced classification ranges combining both approaches
 const CLASS_RANGES = {
   VV: [
@@ -100,7 +101,6 @@ const CLASS_RANGES = {
     { label: "Stress", min: -12, max: -11, color: "#32CD32" },    // Lime green
     { label: "Moderate", min: -11, max: -10, color: "#228B22" },  // Forest green
     { label: "Healthy", min: -10, max: 0, color: "#006400" },     // Dark green
-    { label: "Overgrowth", min: 0, max: 10, color: "#004000" },   // Very dark green
   ],
   RVI: [
     { label: "Dry", min: -1, max: -0.3, color: "#E6F3FF" },        // Very light blue
@@ -332,6 +332,7 @@ const Map: React.FC<MapProps> = ({
     setLayerChangeKey(prev => prev + 1);
   }, [activeLayer]);
 
+
   // Function to get current date in YYYY-MM-DD format
   const getCurrentDate = () => {
     const today = new Date();
@@ -363,17 +364,17 @@ const Map: React.FC<MapProps> = ({
   };
 
   useEffect(() => {
-    console.log('Map useEffect: profileLoading:', profileLoading, 'profile:', profile);
+    console.log('🗺️ Map useEffect: profileLoading:', profileLoading, 'profile:', profile);
     
     // Wait for profile to load before setting plot name
     if (profileLoading || !profile) {
-      console.log('Map useEffect: Waiting for profile to load...');
+      console.log('🗺️ Map useEffect: Waiting for profile to load...');
       return;
     }
 
     // Prevent multiple API calls
     if (hasInitializedRef.current) {
-      console.log('Map useEffect: Already initialized, skipping...');
+      console.log('🗺️ Map useEffect: Already initialized, skipping...');
       return;
     }
 
@@ -381,18 +382,32 @@ const Map: React.FC<MapProps> = ({
     const plotNames = profile.plots?.map(plot => plot.fastapi_plot_id) || [];
     const defaultPlot = plotNames.length > 0 ? plotNames[0] : null;
     
-    console.log('Setting default plot from profile:', defaultPlot);
-    setSelectedPlotName(defaultPlot);
-    localStorage.setItem('selectedPlot', defaultPlot);
+    console.log('🗺️ Map useEffect: Available plots:', plotNames);
+    console.log('🗺️ Map useEffect: Setting default plot from profile:', defaultPlot);
+    console.log('🗺️ Map useEffect: Profile plots data:', profile.plots);
+    console.log('🗺️ Map useEffect: Plot details:', profile.plots?.map(plot => ({
+      id: plot.id,
+      fastapi_plot_id: plot.fastapi_plot_id,
+      gat_number: plot.gat_number,
+      plot_number: plot.plot_number
+    })));
+    
+    setSelectedPlotName(defaultPlot || '');
+    localStorage.setItem('selectedPlot', defaultPlot || '');
 
     // Fetch data for the selected plot
     if (defaultPlot) {
-      console.log('Map useEffect: Fetching data for plot:', defaultPlot);
+      console.log('🗺️ Map useEffect: Fetching data for plot:', defaultPlot);
       fetchPlotData(defaultPlot);
       fetchFieldAnalysis(defaultPlot);
       fetchPestData(defaultPlot);
     } else {
-      console.log('Map useEffect: No plot name available, skipping data fetch');
+      console.log('🗺️ Map useEffect: No plot name available, skipping data fetch');
+      console.log('🗺️ Map useEffect: Profile structure:', {
+        hasPlots: !!profile.plots,
+        plotsLength: profile.plots?.length,
+        plotsData: profile.plots
+      });
     }
 
     // Mark as initialized to prevent future calls
@@ -439,9 +454,11 @@ const Map: React.FC<MapProps> = ({
 
     try {
       const currentDate = getCurrentDate();
-      const apiUrl = `http://192.168.41.73:7031/analyze?plot_name=${plotName}&end_date=${currentDate}&days_back=7`;
+      const apiUrl = `http://192.168.41.73:7030/analyze?plot_name=${plotName}&end_date=${currentDate}&days_back=7`;
       
-      console.log('Fetching plot data from:', apiUrl);
+      console.log('🗺️ Fetching plot data from:', apiUrl);
+      console.log('🗺️ Plot name:', plotName);
+      console.log('🗺️ Current date:', currentDate);
 
       // Add timeout to the fetch request
       const timeoutId = setTimeout(() => {
@@ -460,16 +477,24 @@ const Map: React.FC<MapProps> = ({
 
       clearTimeout(timeoutId);
 
-      console.log('Response status:', resp.status);
+      console.log('🗺️ Response status:', resp.status);
       
       if (!resp.ok) {
         const errorText = await resp.text();
-        console.error('API Error Response:', errorText);
+        console.error('🗺️ API Error Response:', errorText);
+        console.error('🗺️ Full response:', resp);
         throw new Error(`API Error: ${resp.status} ${resp.statusText} - ${errorText}`);
       }
 
       const data = await resp.json();
-      console.log('Plot data received:', data);
+      console.log('🗺️ Plot data received:', data);
+      console.log('🗺️ Plot data structure:', {
+        hasFeatures: !!data.features,
+        featuresLength: data.features?.length,
+        hasProperties: !!data.features?.[0]?.properties,
+        hasTileUrls: !!data.features?.[0]?.properties?.tile_urls,
+        tileUrls: data.features?.[0]?.properties?.tile_urls
+      });
       
       setPlotData(data);
       setError(null);
@@ -593,7 +618,7 @@ const Map: React.FC<MapProps> = ({
       console.log("Map.tsx: Fetching pest detection for plot:", plotName);
       const currentDate = getCurrentDate();
       const resp = await fetch(
-        `http://127.0.0.1:7030/pest-detection?plot_name=${plotName}&end_date=${currentDate}&pest_threshold=0.3&nir_threshold=0.15&ndwi_threshold=0.4&cloud_threshold=30`,
+        `http://192.168.41.73:7030/pest-detection?plot_name=${plotName}&end_date=${currentDate}&pest_threshold=0.3&nir_threshold=0.15&ndwi_threshold=0.4&cloud_threshold=30`,
         {
           method: "POST",
           headers: {
@@ -627,9 +652,13 @@ const Map: React.FC<MapProps> = ({
 
   // Enhanced active layer URL getter with comprehensive fallbacks
   const getActiveLayerUrl = () => {
+    console.log('🗺️ getActiveLayerUrl: activeLayer:', activeLayer);
+    console.log('🗺️ getActiveLayerUrl: plotData:', plotData);
+    console.log('🗺️ getActiveLayerUrl: pestData:', pestData);
+    
     if (activeLayer === "PEST") {
       const pestTileUrl = pestData?.features?.[0]?.properties?.tile_url;
-      console.log('Pest tile URL:', pestTileUrl);
+      console.log('🗺️ Pest tile URL:', pestTileUrl);
       return pestTileUrl;
     }
 
@@ -639,24 +668,26 @@ const Map: React.FC<MapProps> = ({
     // Structure 1: Direct tile_urls object (this should match your API response)
     if (plotData?.features?.[0]?.properties?.tile_urls) {
       urls = plotData.features[0].properties.tile_urls;
-      console.log('✅ Found tile_urls in features[0].properties:', urls);
-      console.log('Available layers:', Object.keys(urls));
+      console.log('🗺️ ✅ Found tile_urls in features[0].properties:', urls);
+      console.log('🗺️ Available layers:', Object.keys(urls));
     }
     // Structure 2: Nested in properties
     else if (plotData?.properties?.tile_urls) {
       urls = plotData.properties.tile_urls;
-      console.log('Found tile_urls in root properties:', urls);
+      console.log('🗺️ Found tile_urls in root properties:', urls);
     }
     // Structure 3: Direct in plotData
     else if (plotData?.tile_urls) {
       urls = plotData.tile_urls;
-      console.log('Found tile_urls in root:', urls);
+      console.log('🗺️ Found tile_urls in root:', urls);
     }
 
-    console.log('All tile URLs found:', urls);
+    console.log('🗺️ All tile URLs found:', urls);
 
     if (!urls) {
-      console.log('No tile URLs found in plot data. Plot data structure:', plotData);
+      console.log('🗺️ ❌ No tile URLs found in plot data. Plot data structure:', plotData);
+      console.log('🗺️ ❌ Plot data features:', plotData?.features);
+      console.log('🗺️ ❌ First feature properties:', plotData?.features?.[0]?.properties);
       return null;
     }
 
@@ -680,18 +711,33 @@ const Map: React.FC<MapProps> = ({
     }
 
     const url = urls[layerUrlKey];
-    console.log(`Active layer: ${activeLayer}, URL key: ${layerUrlKey}, URL: ${url}`);
+    console.log(`🗺️ Active layer: ${activeLayer}, URL key: ${layerUrlKey}, URL: ${url}`);
 
     if (!url) {
-      console.log(`❌ No URL found for layer ${activeLayer} with key ${layerUrlKey}`);
-      console.log('Available keys:', Object.keys(urls));
+      console.log(`🗺️ ❌ No URL found for layer ${activeLayer} with key ${layerUrlKey}`);
+      console.log('🗺️ Available keys:', Object.keys(urls));
       return null;
     }
 
+    console.log(`🗺️ ✅ Returning tile URL: ${url}`);
     return url;
   };
 
   const currentPlotFeature = plotData?.features?.[0];
+  
+  // Debug logging for current plot feature - Only log when data changes
+  React.useEffect(() => {
+    if (currentPlotFeature) {
+      console.log('🗺️ currentPlotFeature:', currentPlotFeature);
+      console.log('🗺️ currentPlotFeature geometry:', currentPlotFeature?.geometry);
+      console.log('🗺️ currentPlotFeature properties:', currentPlotFeature?.properties);
+    }
+  }, [currentPlotFeature]);
+  
+  // TEST CONSOLE LOG - Only show once on component mount
+  React.useEffect(() => {
+    console.log('🚨 TEST: Map component mounted at:', new Date().toLocaleTimeString());
+  }, []);
 
   // Enhanced health analysis with updated classification ranges
   const healthAnalysis = useMemo(() => {
@@ -724,10 +770,20 @@ const Map: React.FC<MapProps> = ({
 
   // Enhanced legend data generation with improved debugging
   const legendData = useMemo(() => {
+    console.log('🗺️ legendData: activeLayer:', activeLayer);
+    console.log('🗺️ legendData: currentPlotFeature:', currentPlotFeature);
+    console.log('🗺️ legendData: pestData:', pestData);
+    console.log('🗺️ legendData: currentPlotFeature?.properties:', currentPlotFeature?.properties);
+    console.log('🗺️ legendData: currentPlotFeature?.properties?.indices_analysis:', currentPlotFeature?.properties?.indices_analysis);
+    
     if (activeLayer === "PEST") {
-      if (!pestData?.pest_statistics) return [];
+      if (!pestData?.pest_statistics) {
+        console.log('🗺️ legendData: No pest statistics found');
+        return [];
+      }
       
       const pestStats = pestData.pest_statistics;
+      console.log('🗺️ legendData: Pest statistics:', pestStats);
       return [
         {
           label: "Healthy",
@@ -744,13 +800,24 @@ const Map: React.FC<MapProps> = ({
       ];
     }
 
-    if (!currentPlotFeature?.properties?.indices_analysis) return [];
+    if (!currentPlotFeature?.properties?.indices_analysis) {
+      console.log('🗺️ legendData: No indices_analysis found in currentPlotFeature');
+      console.log('🗺️ legendData: currentPlotFeature properties keys:', currentPlotFeature?.properties ? Object.keys(currentPlotFeature.properties) : 'No properties');
+      return [];
+    }
 
     const analysis = currentPlotFeature.properties.indices_analysis.find(
       (i: any) => i.index_name === activeLayer
     );
 
-    if (!analysis?.classifications) return [];
+    console.log('🗺️ legendData: Found analysis for', activeLayer, ':', analysis);
+    console.log('🗺️ legendData: All available analyses:', currentPlotFeature.properties.indices_analysis.map((a: any) => a.index_name));
+
+    if (!analysis?.classifications) {
+      console.log('🗺️ legendData: No classifications found in analysis');
+      console.log('🗺️ legendData: Analysis structure:', analysis);
+      return [];
+    }
 
     const totalPixels = analysis.total_pixels || 1;
 
@@ -787,6 +854,12 @@ const Map: React.FC<MapProps> = ({
       };
     });
   }, [currentPlotFeature, activeLayer, pestData]);
+
+  // Debug logging for legend data
+  useEffect(() => {
+    console.log('🗺️ legendData result:', legendData);
+    console.log('🗺️ legendData length:', legendData.length);
+  }, [legendData]);
 
   // Enhanced filtered pixels with comprehensive debugging
   const getFilteredPixels = useMemo(() => {
@@ -993,11 +1066,19 @@ const Map: React.FC<MapProps> = ({
 
   const renderPlotBorder = () => {
     const geom = currentPlotFeature?.geometry;
-    if (!geom || geom.type !== "Polygon") return null;
+    console.log('🗺️ renderPlotBorder: geom:', geom);
+    console.log('🗺️ renderPlotBorder: currentPlotFeature:', currentPlotFeature);
+    
+    if (!geom || geom.type !== "Polygon") {
+      console.log('🗺️ renderPlotBorder: No valid geometry found');
+      return null;
+    }
 
     const coords = geom.coordinates[0]
       .map((c: any) => [c[1], c[0]] as LatLngTuple)
       .filter((tuple: LatLngTuple) => !isNaN(tuple[0]) && !isNaN(tuple[1]));
+
+    console.log('🗺️ renderPlotBorder: coords:', coords);
 
     return (
       <Polygon
@@ -1161,6 +1242,18 @@ const Map: React.FC<MapProps> = ({
         {/* Enhanced Status Indicators */}
         {loading && <div className="status-indicator loading">Loading...</div>}
         {error && <div className="status-indicator error">{error}</div>}
+        {!loading && !error && !currentPlotFeature && selectedPlotName && (
+          <div className="status-indicator warning">
+            No plot data available for {selectedPlotName}. Please check the API connection.
+            <button 
+              onClick={() => fetchPlotData(selectedPlotName)} 
+              className="retry-btn"
+              style={{ marginLeft: '10px', padding: '4px 8px', fontSize: '12px' }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
         
       </div>
 
@@ -1207,7 +1300,9 @@ const Map: React.FC<MapProps> = ({
           {/* Enhanced active layer rendering with comprehensive logging */}
           {(() => {
             const activeUrl = getActiveLayerUrl();
-            console.log('Rendering active layer with URL:', activeUrl);
+            console.log('🗺️ Rendering active layer with URL:', activeUrl);
+            console.log('🗺️ Active layer:', activeLayer);
+            console.log('🗺️ Layer change key:', layerChangeKey);
             return activeUrl ? (
               <CustomTileLayer
                 url={activeUrl}
@@ -1216,7 +1311,10 @@ const Map: React.FC<MapProps> = ({
               />
             ) : (
               <div style={{ display: 'none' }}>
-                {console.log('No active layer URL available')}
+                {(() => {
+                  console.log('🗺️ ❌ No active layer URL available for layer:', activeLayer);
+                  return null;
+                })()}
               </div>
             );
           })()}
@@ -1248,7 +1346,11 @@ const Map: React.FC<MapProps> = ({
       </div>
 
       {/* Enhanced legend container with improved click handling */}
-      {legendData.length > 0 && (
+      {(() => {
+        console.log('🗺️ Legend rendering check - legendData.length:', legendData.length);
+        console.log('🗺️ Legend rendering check - legendData:', legendData);
+        return legendData.length > 0;
+      })() && (
         <div className="legend-container">
           <div className="legend-header">
             <div className="legend-title">
@@ -1292,6 +1394,24 @@ const Map: React.FC<MapProps> = ({
                 )}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+      
+      {/* Fallback message when no legend data is available */}
+      {!loading && !error && legendData.length === 0 && selectedPlotName && (
+        <div className="legend-container">
+          <div className="legend-header">
+            <div className="legend-title">
+              {LAYER_LABELS[activeLayer]} - No Data
+            </div>
+          </div>
+          <div className="legend-items">
+            <div className="legend-item">
+              <div className="legend-circle" style={{ backgroundColor: "#cccccc" }} />
+              <div className="legend-label">No data available</div>
+              <div className="legend-percentage">0%</div>
+            </div>
           </div>
         </div>
       )}

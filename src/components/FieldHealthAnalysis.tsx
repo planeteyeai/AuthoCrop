@@ -11,6 +11,7 @@ interface FieldHealthAnalysisProps {
   } | null;
 }
 
+
 // Map overallHealth value to status string
 function getStatusLabel(score: number): string {
   if (score >= 75 && score <= 100) return "Excellent";

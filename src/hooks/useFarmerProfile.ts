@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getFarmerProfile } from '../api';
+import { getFarmerProfile, getFarmerMyProfile } from '../api';
 
 interface FarmerProfile {
   success: boolean;
@@ -21,6 +21,13 @@ interface FarmerProfile {
       state: string;
       taluka: string;
       full_address: string;
+    };
+    account_info: {
+      date_joined: string;
+      last_login: string | null;
+      is_active: boolean;
+      created_at: string;
+      updated_at: string;
     };
     role: {
       id: number;
@@ -64,11 +71,44 @@ interface FarmerProfile {
         has_boundary: boolean;
       };
     };
+    timestamps: {
+      created_at: string;
+      updated_at: string;
+    };
+    ownership: {
+      farmer: {
+        id: number;
+        username: string;
+        full_name: string;
+        email: string;
+        phone_number: string;
+      };
+      created_by: {
+        id: number;
+        username: string;
+        full_name: string;
+        email: string;
+        phone_number: string;
+        role: string;
+      };
+    };
     farms: Array<{
       id: number;
       farm_uid: string;
+      farm_owner: {
+        id: number;
+        username: string;
+        full_name: string;
+        email: string;
+        phone_number: string;
+      };
+      address: string;
       area_size: string;
       area_size_numeric: number;
+      plantation_date: string;
+      spacing_a: number;
+      spacing_b: number;
+      plants_in_field: number;
       soil_type: {
         id: number;
         name: string;
@@ -81,9 +121,44 @@ interface FarmerProfile {
         planting_method: string;
         planting_method_display: string;
       };
+      farm_document: string | null;
+      created_at: string;
+      updated_at: string;
+      created_by: {
+        id: number;
+        username: string;
+        full_name: string;
+        email: string;
+        phone_number: string;
+      };
+      irrigations: Array<{
+        id: number;
+        irrigation_type: string;
+        irrigation_type_code: string;
+        location: {
+          type: string;
+          coordinates: [number, number];
+        };
+        status: boolean;
+        status_display: string;
+        motor_horsepower: number | null;
+        pipe_width_inches: number | null;
+        distance_motor_to_plot_m: number | null;
+        plants_per_acre: number;
+        flow_rate_lph: number;
+        emitters_count: number;
+      }>;
+      irrigations_count: number;
     }>;
+    farms_count: number;
   }>;
+  fastapi_integration: {
+    plot_ids_format: string;
+    compatible_services: string[];
+    note: string;
+  };
 }
+
 
 export const useFarmerProfile = () => {
   const [profile, setProfile] = useState<FarmerProfile | null>(null);
@@ -106,11 +181,28 @@ export const useFarmerProfile = () => {
     }
   };
 
+  const fetchMyProfile = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 useFarmerProfile: Fetching my-profile data...');
+      const response = await getFarmerMyProfile();
+      const data = response.data;
+      console.log('✅ useFarmerProfile: Received my-profile data:', data);
+      setProfile(data);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message);
+      console.error('❌ useFarmerProfile: Failed to fetch my-profile:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     // Only fetch profile if user is authenticated
     const token = localStorage.getItem('token');
     if (token) {
-      fetchProfile();
+      fetchMyProfile(); // Use the new my-profile endpoint by default
     } else {
       setLoading(false);
       setError('No authentication token found');
@@ -164,6 +256,7 @@ export const useFarmerProfile = () => {
     loading,
     error,
     refreshProfile: fetchProfile,
+    refreshMyProfile: fetchMyProfile,
     getFarmerName,
     getFarmerFullName,
     getPlotNames,

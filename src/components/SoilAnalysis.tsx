@@ -27,6 +27,18 @@ interface ApiSoilData {
   phosphorus?: number;
   potassium?: number;
   
+  // Additional NPK analysis data
+  recommended_nitrogen?: number;
+  recommended_phosphorus?: number;
+  recommended_potassium?: number;
+  fertilizer_nitrogen?: number;
+  fertilizer_phosphorus?: number;
+  fertilizer_potassium?: number;
+  final_nitrogen?: number;
+  final_phosphorus?: number;
+  final_potassium?: number;
+  area_acres?: number;
+  
   // Basic soil properties
   ph?: number;
   pH?: number;
@@ -138,90 +150,182 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
     }
 
     const fetchSoilData = async (retryCount = 0) => {
-      // Don't retry more than 2 times
-      if (retryCount > 2) {
-        setError('Failed to fetch soil data after multiple attempts');
+      // Don't retry more than 3 times
+      if (retryCount > 3) {
+        setError('Failed to fetch soil data after multiple attempts. Please check your connection and try again later.');
         setLoading(false);
         return;
       }
       setLoading(true);
       setError(null);
       try {
+        // Validate plot name
+        if (!currentPlotName || currentPlotName.trim() === '') {
+          throw new Error('Plot name is required for soil analysis');
+        }
+
         // Add timeout to prevent hanging requests
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout for soil analysis
 
         // Get current date for the API call
         const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
         const plantationDate = "2025-01-01"; // Default plantation date
         
-        const response = await fetch(
-          `http://192.168.41.73:8003/analyze-npk/${currentPlotName}?plantation_date=2025-01-01&date=${currentDate}&fe_days_back=30`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            mode: "cors",
-            signal: controller.signal,
-          }
-        );
+        const apiUrl = `http://192.168.41.73:8003/analyze-npk/${currentPlotName}?end_date=${currentDate}&days_back=7`;
+        console.log('🌱 SoilAnalysis: Making API call to:', apiUrl);
+        console.log('🌱 SoilAnalysis: Plot name:', currentPlotName);
+        console.log('🌱 SoilAnalysis: Current date:', currentDate);
+        console.log('🌱 SoilAnalysis: Using POST method for soil analysis');
+        console.log('🌱 SoilAnalysis: Attempt:', retryCount + 1, 'of 4');
+        
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          mode: "cors",
+          signal: controller.signal,
+        });
 
         clearTimeout(timeoutId);
 
+        console.log('🌱 SoilAnalysis: Response status:', response.status);
+        console.log('🌱 SoilAnalysis: Response ok:', response.ok);
+
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorText = await response.text();
+          console.error('🌱 SoilAnalysis: API Error Response:', errorText);
+          throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
-        console.log(
-          "SoilAnalysis: Fetched soil data for plot",
-          currentPlotName,
-          ":",
-          data
-        );
+        console.log('🌱 SoilAnalysis: Fetched soil data for plot', currentPlotName, ':', data);
 
-        // Process the new API response structure
+        // Process the new API response structure with NPK analysis
         let soilDataToSet: ApiSoilData | null = null;
 
-        if (data && data.soil_statistics) {
-          // Extract NPK uptake data
-          const npkUptake = data.estimated_npk_uptake_perAcre || {};
+        console.log('🌱 SoilAnalysis: Processing API response data:', data);
+
+        if (data && data.npk_analysis) {
+          const npkAnalysis = data.npk_analysis;
+          const estimatedUptake = npkAnalysis.estimated_npk_uptake_perAcre;
+          const recommendedDose = npkAnalysis.recommended_dose_perAcre;
+          const fertilizerRequire = npkAnalysis.fertilizer_require_perAcre;
+          const finalDisplayedDose = npkAnalysis.final_displayed_dose;
           
-          // Map the new API response to our existing structure
+          console.log('🌱 SoilAnalysis: NPK Analysis data:', npkAnalysis);
+          console.log('🌱 SoilAnalysis: Estimated uptake:', estimatedUptake);
+          console.log('🌱 SoilAnalysis: Recommended dose:', recommendedDose);
+          console.log('🌱 SoilAnalysis: Fertilizer require:', fertilizerRequire);
+          console.log('🌱 SoilAnalysis: Final displayed dose:', finalDisplayedDose);
+
           soilDataToSet = {
-            // NPK Uptake values (first three cards)
-            nitrogen: npkUptake.N || 0,
-            phosphorus: npkUptake.P || 0,
-            potassium: npkUptake.K || 0,
+            // NPK Uptake values (first three cards) - from estimated_npk_uptake_perAcre
+            nitrogen: estimatedUptake?.N || 0,
+            phosphorus: estimatedUptake?.P || 0,
+            potassium: estimatedUptake?.K || 0,
             
-            // Soil statistics
-            ph: data.soil_statistics.phh2o || 0,
-            bulk_density: data.soil_statistics.bulk_density || 0,
-            soil_organic_carbon: data.soil_statistics.soil_organic_carbon || 0,
-            total_nitrogen: data.soil_statistics.total_nitrogen || 0,
-            cation_exchange_capacity: data.soil_statistics.cation_exchange_capacity || 0,
-            organic_carbon_stock: data.soil_statistics.organic_carbon_stock || 0,
+            // Additional NPK data for future use
+            recommended_nitrogen: recommendedDose?.N || 0,
+            recommended_phosphorus: recommendedDose?.P || 0,
+            recommended_potassium: recommendedDose?.K || 0,
+            fertilizer_nitrogen: fertilizerRequire?.N || 0,
+            fertilizer_phosphorus: fertilizerRequire?.P || 0,
+            fertilizer_potassium: fertilizerRequire?.K || 0,
+            final_nitrogen: finalDisplayedDose?.N || 0,
+            final_phosphorus: finalDisplayedDose?.P || 0,
+            final_potassium: finalDisplayedDose?.K || 0,
+            area_acres: npkAnalysis.area_acres || 0,
             
-            // Additional fields from the API
-            fe_index_primary: data.soil_statistics.fe_index_primary || 0,
-            fe_index_difference: data.soil_statistics.fe_index_difference || 0,
-            fe_index_normalized: data.soil_statistics.fe_index_normalized || 0,
-            fe_ppm_estimated: data.soil_statistics.fe_ppm_estimated || 0,
-            vv_backscatter_db: data.soil_statistics.vv_backscatter_db || 0,
-            vh_backscatter_db: data.soil_statistics.vh_backscatter_db || 0,
-            fe_image_date: data.soil_statistics.fe_image_date || "",
-            fe_polarizations: data.soil_statistics.fe_polarizations || [],
+            // Basic soil properties (if available in other parts of response)
+            ph: data.ph || data.pH || 0,
+            cec: data.cec || data.cation_exchange_capacity || 0,
+            organic_carbon: data.organic_carbon || data.soil_organic_carbon || 0,
+            soil_density: data.soil_density || data.bulk_density || 0,
+            total_nitrogen: data.total_nitrogen || 0,
+            organic_carbon_stock: data.organic_carbon_stock || 0,
+            plot_name: currentPlotName,
+
+            // Iron-related fields (if available)
+            fe: data.fe || data.fe_ppm_estimated || 0,
+            fe_index_primary: data.fe_index_primary || 0,
+            fe_index_difference: data.fe_index_difference || 0,
+            fe_index_normalized: data.fe_index_normalized || 0,
+            fe_image_date: data.fe_image_date || "",
+            fe_polarizations: data.fe_polarizations || [],
             
-            // Keep plot name for reference
+            // Backscatter values (if available)
+            vv_backscatter_db: data.vv_backscatter_db || 0,
+            vh_backscatter_db: data.vh_backscatter_db || 0,
+          };
+          
+          console.log("🌱 SoilAnalysis: Processed NPK analysis data:", soilDataToSet);
+        }
+        
+        // Process soil_statistics data if available (can be combined with NPK data)
+        if (data && data.soil_statistics) {
+          // Process soil_statistics data for soil cards
+          const soilStats = data.soil_statistics;
+          console.log('🌱 SoilAnalysis: Soil Statistics data:', soilStats);
+          
+          // Merge soil_statistics data with existing data (don't overwrite NPK data)
+          const soilStatsData = {
+            // Soil cards data from soil_statistics
+            ph: soilStats.phh2o || 0,                                    // Soil pH card
+            cec: soilStats.cation_exchange_capacity || 0,               // CEC card
+            organic_carbon_stock: soilStats.organic_carbon_stock || 0,  // Organic Carbon card
+            bulk_density: soilStats.bulk_density || 0,                  // Bulk Density card
+            fe_ppm_estimated: soilStats.fe_ppm_estimated || 0,          // Fe card
+            soil_organic_carbon: soilStats.soil_organic_carbon || 0,    // Soil Organic Carbon card
+            
+            // Additional soil data
+            total_nitrogen: soilStats.total_nitrogen || 0,
+            fe_index_primary: soilStats.fe_index_primary || 0,
+            fe_index_difference: soilStats.fe_index_difference || 0,
+            fe_index_normalized: soilStats.fe_index_normalized || 0,
             plot_name: currentPlotName,
           };
           
-          console.log("SoilAnalysis: Processed new API response:", soilDataToSet);
+          // Merge with existing data or create new object
+          soilDataToSet = {
+            ...soilDataToSet,
+            ...soilStatsData
+          };
+          
+          console.log("🌱 SoilAnalysis: Processed soil statistics data:", soilStatsData);
+          console.log("🌱 SoilAnalysis: Final merged data:", soilDataToSet);
+        }
+        
+        // Final fallback: if no data was processed, try to extract data directly from response
+        if (!soilDataToSet) {
+          soilDataToSet = {
+            nitrogen: data.nitrogen || 0,
+            phosphorus: data.phosphorus || 0,
+            potassium: data.potassium || 0,
+            ph: data.ph || data.pH || 0,
+            cec: data.cec || data.cation_exchange_capacity || 0,
+            organic_carbon: data.organic_carbon || data.soil_organic_carbon || 0,
+            soil_density: data.soil_density || data.bulk_density || 0,
+            total_nitrogen: data.total_nitrogen || 0,
+            organic_carbon_stock: data.organic_carbon_stock || 0,
+            plot_name: currentPlotName,
+            fe: data.fe || data.fe_ppm_estimated || 0,
+            fe_index_primary: data.fe_index_primary || 0,
+            fe_index_difference: data.fe_index_difference || 0,
+            fe_index_normalized: data.fe_index_normalized || 0,
+            fe_image_date: data.fe_image_date || "",
+            fe_polarizations: data.fe_polarizations || [],
+            vv_backscatter_db: data.vv_backscatter_db || 0,
+            vh_backscatter_db: data.vh_backscatter_db || 0,
+          };
+          
+          console.log("🌱 SoilAnalysis: Processed fallback data:", soilDataToSet);
         }
 
         if (soilDataToSet) {
+          console.log('🌱 SoilAnalysis: Setting soil data to app state:', soilDataToSet);
           setAppState((prev: any) => ({ ...prev, soilData: soilDataToSet }));
           setCached(cacheKey, soilDataToSet);
         } else {
@@ -237,9 +341,21 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
         
         // Handle different types of errors
         if (err.name === 'AbortError') {
-          setError('Request timed out. Please try again.');
+          if (retryCount < 3) {
+            console.log(`🌱 SoilAnalysis: Timeout on attempt ${retryCount + 1}, retrying...`);
+            setTimeout(() => fetchSoilData(retryCount + 1), 2000); // Wait 2 seconds before retry
+            return;
+          } else {
+            setError('Request timed out after multiple attempts. The soil analysis service may be slow or unavailable.');
+          }
         } else if (err.message.includes('Failed to fetch')) {
-          setError('Network error: Unable to connect to soil analysis service');
+          if (retryCount < 3) {
+            console.log(`🌱 SoilAnalysis: Network error on attempt ${retryCount + 1}, retrying...`);
+            setTimeout(() => fetchSoilData(retryCount + 1), 2000); // Wait 2 seconds before retry
+            return;
+          } else {
+            setError('Network error: Unable to connect to soil analysis service. Please check your internet connection.');
+          }
         } else if (err.message.includes('HTTP error')) {
           setError(`Server error: ${err.message}`);
         } else {
@@ -483,6 +599,26 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
       ? phStatistics.phh2o_0_5cm_mean_mean
       : null; // Fallback to null
 
+  // Debug logging for soil data - Only log when data changes
+  React.useEffect(() => {
+    if (soilData) {
+      console.log('🌱 SoilAnalysis: Current soilData:', soilData);
+      console.log('🌱 SoilAnalysis: Current pH value:', currentPhValue);
+      console.log('🌱 SoilAnalysis: soilData.ph:', soilData?.ph);
+      console.log('🌱 SoilAnalysis: soilData.phh2o:', soilData?.phh2o);
+      console.log('🌱 SoilAnalysis: soilData.cation_exchange_capacity:', soilData?.cation_exchange_capacity);
+      console.log('🌱 SoilAnalysis: soilData.organic_carbon_stock:', soilData?.organic_carbon_stock);
+      console.log('🌱 SoilAnalysis: soilData.bulk_density:', soilData?.bulk_density);
+      console.log('🌱 SoilAnalysis: soilData.fe_ppm_estimated:', soilData?.fe_ppm_estimated);
+      console.log('🌱 SoilAnalysis: soilData.soil_organic_carbon:', soilData?.soil_organic_carbon);
+    }
+  }, [soilData, currentPhValue]);
+  
+  // TEST CONSOLE LOG - Only show once on component mount
+  React.useEffect(() => {
+    console.log('🚨 TEST: SoilAnalysis component mounted at:', new Date().toLocaleTimeString());
+  }, []);
+
   const metrics: NutrientData[] = [
     {
       name: " Nitrogen",
@@ -538,39 +674,34 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
     {
       name: "Soil pH",
       symbol: "pH",
-      value:
-        getSoilValue(soilData?.phh2o, soilData?.phh2o_0_5cm_mean) ??
-        currentPhValue,
+      value: getSoilValue(soilData?.ph, soilData?.phh2o) ?? currentPhValue,
       unit: "",
       optimalRange: "6.2 - 7.5",
       level: getPHLevel(
-        getSoilValue(soilData?.phh2o, soilData?.phh2o_0_5cm_mean) ??
+        getSoilValue(soilData?.ph, soilData?.phh2o) ??
           currentPhValue
       ),
       percentage: calculatePHPercentage(
-        getSoilValue(soilData?.phh2o, soilData?.phh2o_0_5cm_mean) ??
+        getSoilValue(soilData?.ph, soilData?.phh2o) ??
           currentPhValue
       ),
     },
     {
       name: "CEC",
       symbol: "CEC",
-      value: getSoilValue(
-        soilData?.cation_exchange_capacity,
-        soilData?.cec_0_5cm_mean
-      ),
+      value: getSoilValue(soilData?.cec, soilData?.cation_exchange_capacity),
       unit: "C mol/Kg",
       optimalRange: "15 - 40",
       level: getCECLevel(
         getSoilValue(
-          soilData?.cation_exchange_capacity,
-          soilData?.cec_0_5cm_mean
+          soilData?.cec,
+          soilData?.cation_exchange_capacity
         )
       ),
       percentage: calculatePercentage(
         getSoilValue(
-          soilData?.cation_exchange_capacity,
-          soilData?.cec_0_5cm_mean
+          soilData?.cec,
+          soilData?.cation_exchange_capacity
         ),
         15,
         40,
@@ -581,10 +712,7 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
     {
       name: "Organic Carbon",
       symbol: "OC",
-      value: getSoilValue(
-        soilData?.organic_carbon_stock,
-        soilData?.ocs_0_30cm_mean
-      ),
+      value: getSoilValue(soilData?.organic_carbon_stock, soilData?.ocs_0_30cm_mean),
       unit: " T/ha",
       optimalRange: "2 - 15",
       level: getOrganicCarbonStockLevel(
@@ -618,17 +746,14 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
     {
       name: "Fe",
       symbol: "Fe",
-      value: getSoilValue(
-        soilData?.fe_ppm_estimated || soilData?.fe || soilData?.iron || soilData?.Iron || soilData?.Fe || soilData?.iron_content || soilData?.iron_concentration || soilData?.iron_percentage,
-        soilData?.fe_ppm_estimated || soilData?.fe || soilData?.iron || soilData?.Iron || soilData?.Fe || soilData?.iron_content || soilData?.iron_concentration || soilData?.iron_percentage
-      ),
+      value: getSoilValue(soilData?.fe_ppm_estimated, soilData?.fe),
       unit: "ppm",
       optimalRange: "4.5 - 10",
       level: getFeLevel(
-        getSoilValue(soilData?.fe_ppm_estimated || soilData?.fe || soilData?.iron || soilData?.Iron || soilData?.Fe || soilData?.iron_content || soilData?.iron_concentration || soilData?.iron_percentage, soilData?.fe_ppm_estimated || soilData?.fe || soilData?.iron || soilData?.Iron || soilData?.Fe || soilData?.iron_content || soilData?.iron_concentration || soilData?.iron_percentage)
+        getSoilValue(soilData?.fe_ppm_estimated, soilData?.fe)
       ),
       percentage: calculatePercentage(
-        getSoilValue(soilData?.fe_ppm_estimated || soilData?.fe || soilData?.iron || soilData?.Iron || soilData?.Fe || soilData?.iron_content || soilData?.iron_concentration || soilData?.iron_percentage, soilData?.fe_ppm_estimated || soilData?.fe || soilData?.iron || soilData?.Iron || soilData?.Fe || soilData?.iron_content || soilData?.iron_concentration || soilData?.iron_percentage),
+        getSoilValue(soilData?.fe_ppm_estimated, soilData?.fe),
         4.5,
         10,
         2.0,
@@ -638,10 +763,7 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
     {
       name: "Soil Organic Carbon",
       symbol: "SOC",
-      value: getSoilValue(
-        soilData?.soil_organic_carbon,
-        soilData?.soc_0_5cm_mean
-      ),
+      value: getSoilValue(soilData?.soil_organic_carbon, soilData?.soc_0_5cm_mean),
       unit: "%",
       optimalRange: "1.5 - 3.5",
       level: getOCLevel(
@@ -691,6 +813,7 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
     }
   };
 
+  
   return (
     <div className="w-full max-w-xs sm:max-w-sm md:max-w-md p-2 sm:p-4">
       {/* Header */}
@@ -744,6 +867,9 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
         <div className="text-center py-8 text-gray-500">
           <Satellite className="w-8 h-8 mx-auto mb-2 text-gray-400 animate-spin" />
           <p>Loading soil analysis data for your plot...</p>
+          <p className="text-xs mt-2 text-gray-400">
+            This may take up to 30 seconds. Please wait...
+          </p>
         </div>
       )}
 

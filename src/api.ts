@@ -539,6 +539,11 @@ export const calculatePolygonArea = (coordinates: [number, number][]): number =>
 };
 
 
+// Get farmer profile using the dedicated my-profile endpoint
+export const getFarmerMyProfile = () => {
+  return api.get('/farms/my-profile/');
+};
+
 // Farmer profile API function - uses existing endpoints
 export const getFarmerProfile = async () => {
   try {
@@ -1012,6 +1017,7 @@ export const getKMLData = async () => {
     throw new Error(`Failed to fetch KML data: ${error.response?.data?.detail || error.message}`);
   }
 };
+
 
 // Get KML data with authentication (if needed)
 export const getKMLDataWithAuth = async (token?: string) => {
