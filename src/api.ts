@@ -146,6 +146,11 @@ export const getFarmsWithFarmerDetails = () => {
   return api.get('/farms/?include_farmer=true');
 };
 
+// Get recent farmers
+export const getRecentFarmers = () => {
+  return api.get('/farms/recent-farmers/');
+};
+
 export const getFarmById = (id: string) => {
   return api.get(`/farms/${id}/`);
 };
