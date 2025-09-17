@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Satellite, Leaf, Mail, Key } from 'lucide-react';
+import { Satellite, Leaf, User, Lock } from 'lucide-react';
 import { setAuthData } from '../utils/auth';
 
 export type UserRole = "manager" | "admin" | "fieldofficer" | "farmer" | "owner";
@@ -11,69 +11,220 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
-  const [identifier, setIdentifier] = useState('');
-  const [otp, setOtp] = useState('');
-  const [step, setStep] = useState<'input' | 'otp'>('input');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Send OTP to the provided email
-  const handleSendOtp = async (e: React.FormEvent) => {
+  // COMMENTED OUT: Send OTP to the provided email
+  // const handleSendOtp = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setLoading(true);
+  //   setError('');
+
+  //   try {
+  //     const response = await fetch('http://192.168.41.73:8000/api/otp/', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({ 
+  //         email: identifier.trim()
+  //       }),
+  //     });
+
+  //     const responseText = await response.text();
+      
+  //     if (!response.ok) {
+  //       throw new Error(responseText || 'Error sending OTP');
+  //     }
+
+  //     // Successfully sent OTP
+  //     setStep('otp');
+  //     setError('');
+      
+  //   } catch (err: any) {
+  //     console.error('OTP sending error:', err);
+  //     setError(err.message || 'Failed to send OTP. Please try again.');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // COMMENTED OUT: Verify OTP and authenticate user
+  // const handleVerifyOtp = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setLoading(true);
+  //   setError('');
+
+  //   try {
+  //     const response = await fetch('http://192.168.41.73:8000/api/verify-otp/', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({ 
+  //         email: identifier.trim(),
+  //         otp: otp.trim()
+  //       }),
+  //     });
+
+  //     const responseText = await response.text();
+      
+  //     if (!response.ok) {
+  //       throw new Error(responseText || 'OTP verification failed');
+  //     }
+
+  //     const result = JSON.parse(responseText);
+  //     const token = result.access || result.token;
+      
+  //     if (!token) {
+  //       throw new Error('No authentication token received');
+  //     }
+
+  //     // Fetch user information
+  //     const userResponse = await fetch('http://192.168.41.73:8000/api/users/me/', {
+  //       headers: {
+  //         'Authorization': `Bearer ${token}`,
+  //         'Content-Type': 'application/json',
+  //       },
+  //     });
+
+  //     if (!userResponse.ok) {
+  //       throw new Error('Failed to fetch user information');
+  //     }
+
+  //     const userData = await userResponse.json();
+  //     console.log('User data received:', userData); // Debug log
+  //     console.log('userData.role:', userData.role, 'type:', typeof userData.role);
+  //     console.log('userData.role_id:', userData.role_id, 'type:', typeof userData.role_id);
+      
+  //     // Handle both string roles and numeric role_id
+  //     let userRole: UserRole;
+      
+  //     // Create role mapping
+  //     const roleMap: { [key: number]: UserRole } = {
+  //       1: 'farmer',
+  //       2: 'fieldofficer', 
+  //       3: 'manager',
+  //       4: 'owner'
+  //     };
+      
+  //     if (userData.role && typeof userData.role === 'object' && userData.role.name) {
+  //       // If role is an object with name property, use the name
+  //       userRole = userData.role.name.toLowerCase() as UserRole;
+  //       console.log('Using role object name:', userRole);
+  //     } else if (userData.role && typeof userData.role === 'object' && userData.role.id) {
+  //       // If role is an object with id property, map the id
+  //       userRole = roleMap[userData.role.id] || 'farmer';
+  //       console.log('Using role object id mapping:', userData.role.id, '->', userRole);
+  //     } else if (userData.role && typeof userData.role === 'string') {
+  //       // If role is a string, use it directly
+  //       userRole = userData.role.toLowerCase() as UserRole;
+  //       console.log('Using string role:', userRole);
+  //     } else if (userData.role_id && typeof userData.role_id === 'number') {
+  //       // If role_id is a number, map it to role string
+  //       userRole = roleMap[userData.role_id] || 'farmer';
+  //       console.log('Using role_id mapping:', userData.role_id, '->', userRole);
+  //     } else if (userData.role && typeof userData.role === 'number') {
+  //       // If role is a number, map it to role string
+  //       userRole = roleMap[userData.role] || 'farmer';
+  //       console.log('Using role number mapping:', userData.role, '->', userRole);
+  //     } else {
+  //       // Log all available properties for debugging
+  //       console.log('All userData properties:', Object.keys(userData));
+  //       console.log('Full userData object:', userData);
+        
+  //       // Try to find any role-related property
+  //       const possibleRoleKeys = ['role', 'role_id', 'user_role', 'user_type', 'type'];
+  //       let foundRole = null;
+        
+  //       for (const key of possibleRoleKeys) {
+  //         if (userData[key] !== undefined) {
+  //           console.log(`Found ${key}:`, userData[key], 'type:', typeof userData[key]);
+  //           if (typeof userData[key] === 'number' && roleMap[userData[key]]) {
+  //             foundRole = roleMap[userData[key]];
+  //             break;
+  //           } else if (typeof userData[key] === 'string') {
+  //             const lowerRole = userData[key].toLowerCase();
+  //             if (['farmer', 'fieldofficer', 'manager', 'admin', 'owner'].includes(lowerRole)) {
+  //               foundRole = lowerRole;
+  //               break;
+  //             }
+  //           }
+  //         }
+  //       }
+        
+  //       if (foundRole) {
+  //         userRole = foundRole as UserRole;
+  //         console.log('Found role through property search:', foundRole);
+  //       } else {
+  //         console.error('Could not determine user role from userData:', userData);
+  //         throw new Error(`Invalid user role format. Available data: ${JSON.stringify(userData)}`);
+  //       }
+  //     }
+
+  //     // Validate role
+  //     if (!userRole || !['manager', 'admin', 'fieldofficer', 'farmer', 'owner'].includes(userRole)) {
+  //       throw new Error('Invalid user role');
+  //     }
+
+  //     // Store all authentication data using the utility function
+  //     const userDataToStore = {
+  //       first_name: userData.first_name || '',
+  //       last_name: userData.last_name || '',
+  //       email: userData.email || identifier,
+  //       username: userData.username || '',
+  //       id: userData.id || ''
+  //     };
+      
+  //     console.log('🔐 Storing authentication data:', {
+  //       token: token ? `${token.substring(0, 20)}...` : 'null',
+  //       role: userRole,
+  //       userData: userDataToStore
+  //     });
+      
+  //     setAuthData(token, userRole, userDataToStore);
+      
+  //     // Verify token was stored
+  //     const storedToken = localStorage.getItem('token');
+  //     console.log('✅ Token stored verification:', storedToken ? 'Token stored successfully' : 'Token storage failed');
+      
+  //     // Success - call the callback with role and token
+  //     onLoginSuccess(userRole, token);
+
+  //   } catch (err: any) {
+  //     console.error('OTP verification error:', err);
+  //     setError(err.message || 'OTP verification failed. Please try again.');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // NEW: Username and Password Login
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const response = await fetch('http://192.168.41.73:8000/api/otp/', {
+      // For now, we'll use a simple authentication approach
+      // You can replace this with your actual API endpoint
+      const response = await fetch('http://192.168.41.73:8000/api/auth/login/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          email: identifier.trim()
+          username: username.trim(),
+          password: password.trim()
         }),
       });
 
       const responseText = await response.text();
       
       if (!response.ok) {
-        throw new Error(responseText || 'Error sending OTP');
-      }
-
-      // Successfully sent OTP
-      setStep('otp');
-      setError('');
-      
-    } catch (err: any) {
-      console.error('OTP sending error:', err);
-      setError(err.message || 'Failed to send OTP. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Verify OTP and authenticate user
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch('http://192.168.41.73:8000/api/verify-otp/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email: identifier.trim(),
-          otp: otp.trim()
-        }),
-      });
-
-      const responseText = await response.text();
-      
-      if (!response.ok) {
-        throw new Error(responseText || 'OTP verification failed');
+        throw new Error(responseText || 'Login failed');
       }
 
       const result = JSON.parse(responseText);
@@ -96,14 +247,11 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       }
 
       const userData = await userResponse.json();
-      console.log('User data received:', userData); // Debug log
-      console.log('userData.role:', userData.role, 'type:', typeof userData.role);
-      console.log('userData.role_id:', userData.role_id, 'type:', typeof userData.role_id);
+      console.log('User data received:', userData);
       
-      // Handle both string roles and numeric role_id
+      // Handle role determination (same logic as before)
       let userRole: UserRole;
       
-      // Create role mapping
       const roleMap: { [key: number]: UserRole } = {
         1: 'farmer',
         2: 'fieldofficer', 
@@ -112,57 +260,19 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       };
       
       if (userData.role && typeof userData.role === 'object' && userData.role.name) {
-        // If role is an object with name property, use the name
         userRole = userData.role.name.toLowerCase() as UserRole;
-        console.log('Using role object name:', userRole);
       } else if (userData.role && typeof userData.role === 'object' && userData.role.id) {
-        // If role is an object with id property, map the id
         userRole = roleMap[userData.role.id] || 'farmer';
-        console.log('Using role object id mapping:', userData.role.id, '->', userRole);
       } else if (userData.role && typeof userData.role === 'string') {
-        // If role is a string, use it directly
         userRole = userData.role.toLowerCase() as UserRole;
-        console.log('Using string role:', userRole);
       } else if (userData.role_id && typeof userData.role_id === 'number') {
-        // If role_id is a number, map it to role string
         userRole = roleMap[userData.role_id] || 'farmer';
-        console.log('Using role_id mapping:', userData.role_id, '->', userRole);
       } else if (userData.role && typeof userData.role === 'number') {
-        // If role is a number, map it to role string
         userRole = roleMap[userData.role] || 'farmer';
-        console.log('Using role number mapping:', userData.role, '->', userRole);
       } else {
-        // Log all available properties for debugging
-        console.log('All userData properties:', Object.keys(userData));
-        console.log('Full userData object:', userData);
-        
-        // Try to find any role-related property
-        const possibleRoleKeys = ['role', 'role_id', 'user_role', 'user_type', 'type'];
-        let foundRole = null;
-        
-        for (const key of possibleRoleKeys) {
-          if (userData[key] !== undefined) {
-            console.log(`Found ${key}:`, userData[key], 'type:', typeof userData[key]);
-            if (typeof userData[key] === 'number' && roleMap[userData[key]]) {
-              foundRole = roleMap[userData[key]];
-              break;
-            } else if (typeof userData[key] === 'string') {
-              const lowerRole = userData[key].toLowerCase();
-              if (['farmer', 'fieldofficer', 'manager', 'admin', 'owner'].includes(lowerRole)) {
-                foundRole = lowerRole;
-                break;
-              }
-            }
-          }
-        }
-        
-        if (foundRole) {
-          userRole = foundRole as UserRole;
-          console.log('Found role through property search:', foundRole);
-        } else {
-          console.error('Could not determine user role from userData:', userData);
-          throw new Error(`Invalid user role format. Available data: ${JSON.stringify(userData)}`);
-        }
+        // Default to farmer if role cannot be determined
+        userRole = 'farmer';
+        console.warn('Could not determine user role, defaulting to farmer');
       }
 
       // Validate role
@@ -170,12 +280,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         throw new Error('Invalid user role');
       }
 
-      // Store all authentication data using the utility function
+      // Store authentication data
       const userDataToStore = {
         first_name: userData.first_name || '',
         last_name: userData.last_name || '',
-        email: userData.email || identifier,
-        username: userData.username || '',
+        email: userData.email || username,
+        username: userData.username || username,
         id: userData.id || ''
       };
       
@@ -187,26 +297,23 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       
       setAuthData(token, userRole, userDataToStore);
       
-      // Verify token was stored
-      const storedToken = localStorage.getItem('token');
-      console.log('✅ Token stored verification:', storedToken ? 'Token stored successfully' : 'Token storage failed');
-      
       // Success - call the callback with role and token
       onLoginSuccess(userRole, token);
 
     } catch (err: any) {
-      console.error('OTP verification error:', err);
-      setError(err.message || 'OTP verification failed. Please try again.');
+      console.error('Login error:', err);
+      setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBackToEmail = () => {
-    setStep('input');
-    setOtp('');
-    setError('');
-  };
+  // COMMENTED OUT: handleBackToEmail function (no longer needed)
+  // const handleBackToEmail = () => {
+  //   setStep('input');
+  //   setOtp('');
+  //   setError('');
+  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 relative overflow-hidden">
@@ -259,99 +366,62 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               animate={{ opacity: 1, x: 0 }}
             >
               <h3 className="text-3xl font-bold text-gray-800 mb-8 text-center">
-                {step === 'input' ? 'Login with Email' : 'Enter OTP'}
+                Login
               </h3>
 
               {/* Error Display */}
-              {/* {error && (
+              {error && (
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
                   {error}
                 </div>
-              )} */}
+              )}
 
               {/* Login Form */}
-              <form onSubmit={step === 'input' ? handleSendOtp : handleVerifyOtp} className="space-y-6">
-                {step === 'input' ? (
-                  <>
-                    <div className="relative">
-                      <div className="flex items-center border border-gray-300 rounded-lg px-3 py-3 bg-white focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
-                        <Mail className="w-5 h-5 mr-3 text-gray-500" />
-                        <input
-                          type="email"
-                          placeholder="Enter your email address"
-                          value={identifier}
-                          onChange={(e) => setIdentifier(e.target.value)}
-                          className="w-full outline-none text-gray-700"
-                          required
-                          disabled={loading}
-                        />
-                      </div>
-                    </div>
-                    
-                    <button
-                      type="submit"
-                      disabled={loading || !identifier.trim()}
-                      className="w-full bg-emerald-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {loading ? (
-                        <div className="flex items-center justify-center">
-                          <Satellite className="w-5 h-5 animate-spin mr-2" />
-                          Sending OTP...
-                        </div>
-                      ) : (
-                        'Send OTP'
-                      )}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-center mb-4">
-                      <p className="text-gray-600">
-                        OTP has been sent to <strong>{identifier}</strong>
-                      </p>
-                    </div>
-                    
-                    <div className="relative">
-                      <div className="flex items-center border border-gray-300 rounded-lg px-3 py-3 bg-white focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
-                        <Key className="w-5 h-5 mr-3 text-gray-500" />
-                        <input
-                          type="text"
-                          placeholder="Enter 6-digit OTP"
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="w-full outline-none text-gray-700 tracking-wider"
-                          maxLength={6}
-                          required
-                          disabled={loading}
-                        />
-                      </div>
-                    </div>
-                    
-                    <button
-                      type="submit"
-                      disabled={loading || otp.length !== 6}
-                      className="w-full bg-emerald-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {loading ? (
-                        <div className="flex items-center justify-center">
-                          <Satellite className="w-5 h-5 animate-spin mr-2" />
-                          Verifying...
-                        </div>
-                      ) : (
-                        'Verify OTP'
-                      )}
-                    </button>
-                    
-                    <button
-                      type="button"
-                      onClick={handleBackToEmail}
+              <form onSubmit={handleLogin} className="space-y-6">
+                <div className="relative">
+                  <div className="flex items-center border border-gray-300 rounded-lg px-3 py-3 bg-white focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
+                    <User className="w-5 h-5 mr-3 text-gray-500" />
+                    <input
+                      type="text"
+                      placeholder="Enter your username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full outline-none text-gray-700"
+                      required
                       disabled={loading}
-                      className="w-full bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-semibold hover:bg-gray-300 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Change Email
-                    </button>
-                  </>
-                )}
+                    />
+                  </div>
+                </div>
+                
+                <div className="relative">
+                  <div className="flex items-center border border-gray-300 rounded-lg px-3 py-3 bg-white focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
+                    <Lock className="w-5 h-5 mr-3 text-gray-500" />
+                    <input
+                      type="password"
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full outline-none text-gray-700"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+                
+                <button
+                  type="submit"
+                  disabled={loading || !username.trim() || !password.trim()}
+                  className="w-full bg-emerald-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center">
+                      <Satellite className="w-5 h-5 animate-spin mr-2" />
+                      Logging in...
+                    </div>
+                  ) : (
+                    'Login'
+                  )}
+                </button>
               </form>
             </motion.div>
           </div>
