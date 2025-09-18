@@ -489,7 +489,6 @@ const Map: React.FC<MapProps> = ({
       console.log('🗺️ Plot name:', plotName);
       console.log('🗺️ Current date:', currentDate);
       console.log('🗺️ API URL:', apiUrl);
-
       // Add timeout to the fetch request
       const timeoutId = setTimeout(() => {
         if (abortControllerRef.current) {
@@ -524,17 +523,15 @@ const Map: React.FC<MapProps> = ({
       
       setPlotData(data);
       setError(null);
+      setLoading(false);
     } catch (err: any) {
       // Don't set error if request was aborted
       if (err.name === 'AbortError') {
         console.log('Request was aborted');
         return;
       }
-
-      console.error('Fetch plot data error:', err);
       
-      // Clear plot data on error
-      setPlotData(null);
+      console.error('🗺️ Error fetching plot data:', err);
       
       if (err.message.includes('Failed to fetch')) {
         setError('Network error: Unable to connect to plot data service. Please check if the API server is running on http://192.168.41.73:7031');
@@ -556,6 +553,7 @@ const Map: React.FC<MapProps> = ({
       setLoading(false);
     }
   };
+
 
 
   const fetchFieldAnalysis = async (plotName: string) => {
@@ -760,6 +758,22 @@ const Map: React.FC<MapProps> = ({
   React.useEffect(() => {
     if (currentPlotFeature) {
       console.log('🗺️ Plot feature loaded:', currentPlotFeature.properties?.plot_name);
+      console.log('🗺️ currentPlotFeature:', currentPlotFeature);
+      console.log('🗺️ currentPlotFeature geometry:', currentPlotFeature?.geometry);
+      console.log('🗺️ currentPlotFeature properties:', currentPlotFeature?.properties);
+      console.log('🗺️ currentPlotFeature indices_analysis:', currentPlotFeature?.properties?.indices_analysis);
+      
+      // Log each index analysis in detail
+      if (currentPlotFeature?.properties?.indices_analysis) {
+        currentPlotFeature.properties.indices_analysis.forEach((analysis: any, index: number) => {
+          console.log(`🗺️ Index Analysis ${index}:`, {
+            index_name: analysis.index_name,
+            classifications: analysis.classifications,
+            total_pixels: analysis.total_pixels,
+            current_value: analysis.current_value
+          });
+        });
+      }
     }
   }, [currentPlotFeature]);
   
@@ -1395,6 +1409,9 @@ const Map: React.FC<MapProps> = ({
           </div>
         )}
       </div>
+
+
+
 
       {/* Enhanced legend container with improved click handling */}
       {(() => {
