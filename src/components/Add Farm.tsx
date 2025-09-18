@@ -85,61 +85,24 @@ interface LocationPin {
   address?: string;
 }
 
-const states = [
-  "Andhra Pradesh",
-  "Arunachal Pradesh",
-  "Assam",
-  "Bihar",
-  "Chhattisgarh",
-  "Goa",
-  "Gujarat",
-  "Haryana",
-  "Himachal Pradesh",
-  "Jharkhand",
-  "Karnataka",
-  "Kerala",
-  "Madhya Pradesh",
-  "Maharashtra",
-  "Manipur",
-  "Meghalaya",
-  "Mizoram",
-  "Nagaland",
-  "Odisha",
-  "Punjab",
-  "Rajasthan",
-  "Sikkim",
-  "Tamil Nadu",
-  "Telangana",
-  "Tripura",
-  "Uttar Pradesh",
-  "Uttarakhand",
-  "West Bengal",
-];
+// Location data will be loaded from JSON file
+let locationData: any = {};
+let states: string[] = [];
 
-const district = [
-  "Pune",
-  "Nagpur",
-  "Nashik",
-  "Mumbai",
-  "Aurangabad",
-  "Ahmedabad",
-  "Surat",
-  "Vadodara",
-  "Bangalore",
-  "Mysore",
-];
+// Helper functions to get districts and talukas
+const getDistrictsByState = (state: string): string[] => {
+  if (!state || !locationData[state]) {
+    return [];
+  }
+  return Object.keys(locationData[state]);
+};
 
-const talukas = [
-  "Haveli",
-  "Mulshi",
-  "Shirur",
-  "Baramati",
-  "Nagpur (Urban)",
-  "Nagpur (Rural)",
-  "Niphad",
-  "Sinnar",
-  "Igatpuri",
-];
+const getTalukasByDistrict = (state: string, district: string): string[] => {
+  if (!state || !district || !locationData[state]) {
+    return [];
+  }
+  return locationData[state][district] || [];
+};
 
 const plantationTypes = ["Adsali", "Suru", "Pre-seasonal", "Ratoon"];
 const plantationMethods = ["3 bud", "2 bud", "1 bud", "1 bud (Stip Method)"];
@@ -250,8 +213,29 @@ function AddFarm() {
     }>
   >([]);
 
+  // State for filtered districts and talukas
+  const [filteredDistricts, setFilteredDistricts] = useState<string[]>([]);
+  const [filteredTalukas, setFilteredTalukas] = useState<string[]>([]);
+
   const mapRef = useRef(null);
   const featureGroupRef = useRef<L.FeatureGroup>(null);
+
+  // Load location data from JSON file
+  useEffect(() => {
+    const loadLocationData = async () => {
+      try {
+        const response = await fetch('/location-data-part1.json');
+        const data = await response.json();
+        locationData = data;
+        states = Object.keys(data);
+        console.log("✅ Location data loaded:", states.length, "states");
+      } catch (error) {
+        console.error("❌ Failed to load location data:", error);
+      }
+    };
+
+    loadLocationData();
+  }, []);
 
   // Fetch crop types on component mount
   useEffect(() => {
@@ -270,6 +254,40 @@ function AddFarm() {
 
     fetchCropTypes();
   }, []);
+
+  // Update filtered districts and talukas when state or district changes
+  useEffect(() => {
+    if (formData.state) {
+      const districts = getDistrictsByState(formData.state);
+      setFilteredDistricts(districts);
+      
+      // Reset district and taluka when state changes
+      if (formData.district && !districts.includes(formData.district)) {
+        setFormData(prev => ({ ...prev, district: "", taluka: "" }));
+        setFilteredTalukas([]);
+      } else if (formData.district) {
+        const talukas = getTalukasByDistrict(formData.state, formData.district);
+        setFilteredTalukas(talukas);
+      }
+    } else {
+      setFilteredDistricts([]);
+      setFilteredTalukas([]);
+    }
+  }, [formData.state]);
+
+  useEffect(() => {
+    if (formData.state && formData.district) {
+      const talukas = getTalukasByDistrict(formData.state, formData.district);
+      setFilteredTalukas(talukas);
+      
+      // Reset taluka if it's not in the new list
+      if (formData.taluka && !talukas.includes(formData.taluka)) {
+        setFormData(prev => ({ ...prev, taluka: "" }));
+      }
+    } else {
+      setFilteredTalukas([]);
+    }
+  }, [formData.district]);
 
   // Calculate total area from all plots
   const getTotalArea = () => {
@@ -682,9 +700,9 @@ The farmer can now login with Emailcredentials to access the dashboard and monit
         case "state":
           return states;
         case "district":
-          return district;
+          return filteredDistricts;
         case "taluka":
-          return talukas;
+          return filteredTalukas;
         case "plantation_Type":
           // Use plantation_type from crop types API
           return cropTypes.length > 0
