@@ -18,25 +18,97 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
+import { extractNumericValue, testParsing, fetchWeatherForecast } from "../services/weatherForecastService";
+import { getFarmerMyProfile } from "../api";
 
-interface ChartPoint {
-  date: string;
-  temperature: number;
-  humidity: number;
-  rainfall: number;
-  wind: number;
-  fullDate: string;
+
+interface WeatherForecastProps {
+  lat?: number;
+  lon?: number;
 }
 
-const WeatherForecast: React.FC = () => {
-  const { appState, setAppState, getCached, setCached } = useAppContext();
+const WeatherForecast: React.FC<WeatherForecastProps> = ({ 
+  lat: propLat, 
+  lon: propLon 
+}) => {
+  const { appState, setAppState, setCached } = useAppContext();
   const chartData = appState.weatherChartData || [];
   const selectedDay = appState.weatherSelectedDay || null;
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
+  const [farmerCoordinates, setFarmerCoordinates] = useState<{lat: number, lon: number} | null>(null);
+  const [loadingCoordinates, setLoadingCoordinates] = useState(true);
+  const [hasFetchedWeather, setHasFetchedWeather] = useState(false);
+
+
+  // Fetch farmer coordinates from profile - only once
+  useEffect(() => {
+    const fetchFarmerCoordinates = async () => {
+      try {
+        setLoadingCoordinates(true);
+        console.log("WeatherForecast: Fetching farmer profile for coordinates");
+        
+        const response = await getFarmerMyProfile();
+        const profileData = response.data;
+        
+        console.log("WeatherForecast: Farmer profile data:", profileData);
+        
+        // Get coordinates from the first plot
+        if (profileData?.plots && profileData.plots.length > 0) {
+          const firstPlot = profileData.plots[0];
+          if (firstPlot?.coordinates?.location) {
+            const coords = {
+              lat: firstPlot.coordinates.location.latitude,
+              lon: firstPlot.coordinates.location.longitude
+            };
+            console.log("WeatherForecast: Found farmer coordinates:", coords);
+            setFarmerCoordinates(coords);
+          } else {
+            console.log("WeatherForecast: No coordinates found in first plot");
+            setFarmerCoordinates(null);
+          }
+        } else {
+          console.log("WeatherForecast: No plots found in farmer profile");
+          setFarmerCoordinates(null);
+        }
+      } catch (error) {
+        console.error("WeatherForecast: Error fetching farmer coordinates:", error);
+        setFarmerCoordinates(null);
+      } finally {
+        setLoadingCoordinates(false);
+      }
+    };
+
+    // Only fetch if we don't have coordinates yet
+    if (!farmerCoordinates && loadingCoordinates) {
+      fetchFarmerCoordinates();
+    }
+  }, []); // Empty dependency array - only run once on mount
+
+  // Determine which coordinates to use
+  const lat = propLat || farmerCoordinates?.lat || 20.014040817830804;
+  const lon = propLon || farmerCoordinates?.lon || 73.66620106848734;
 
   useEffect(() => {
-    const cacheKey = "weatherChartData";
+    // Only fetch weather data when coordinates are available and not loading
+    if (loadingCoordinates) {
+      console.log("WeatherForecast: Waiting for coordinates to load...");
+      return;
+    }
+
+    // Only fetch once
+    if (hasFetchedWeather) {
+      console.log("WeatherForecast: Weather data already fetched, skipping...");
+      return;
+    }
+
+    const cacheKey = `weatherChartData_${lat}_${lon}`; // Include coordinates in cache key
+    
+    // Test parsing function
+    testParsing();
+    
     // Clear cache to force fresh data fetch
+    localStorage.removeItem(cacheKey);
+    
     // const cached = getCached(cacheKey);
     // if (cached) {
     //   setAppState((prev: any) => ({
@@ -46,82 +118,94 @@ const WeatherForecast: React.FC = () => {
     //   }));
     //   return;
     // }
-          fetch("https://dev-weather.cropeye.ai/forecast?lat=19.355587&lon=75.219727")
-      .then((res) => {
-        console.log("WeatherForecast: Response status:", res.status);
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        return res.json();
-      })
+        
+        console.log(`WeatherForecast: Fetching weather for coordinates: lat=${lat}, lon=${lon}`);
+        console.log(`WeatherForecast: Using ${farmerCoordinates ? 'farmer' : 'default'} coordinates`);
+        
+        // Mark as fetching to prevent multiple calls
+        setHasFetchedWeather(true);
+        
+        fetchWeatherForecast(lat, lon)
       .then((data) => {
         console.log("WeatherForecast: Received data:", data);
+        console.log("WeatherForecast: Raw API response structure:", {
+          isArray: Array.isArray(data),
+          hasData: !!data?.data,
+          dataKeys: data ? Object.keys(data) : [],
+          firstItem: Array.isArray(data) ? data[0] : data?.data?.[0]
+        });
         // Support both legacy array and new { source, data: [...] } shape
         const rawList = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
 
-        // Normalize keys and strip units
+        // Normalize keys and strip units using service function
         const parseNum = (v: any) => {
           if (v === null || v === undefined) return 0;
           if (typeof v === "number") return v;
-          if (typeof v === "string") return parseFloat(v.replace(/[^\d.+-]/g, "")) || 0;
+          if (typeof v === "string") {
+            return extractNumericValue(v);
+          }
           return 0;
         };
 
-        // Build a map by ISO date for dedup and ordering
-        const byDate = new Map<string, any>();
+        // Process API data directly - no need for date mapping
+
+        // Generate next 7 days starting from tomorrow (exclude today)
+        const days: any[] = [];
+        console.log("WeatherForecast: Generating next 7 days starting from tomorrow");
+        
+        // Create a map of API data by date for easy lookup
+        const apiDataByDate = new Map<string, any>();
         rawList.forEach((d: any) => {
-          // Handle date parsing - API returns "2025-09-04" format
           const dateStr = d.date || d.Date;
           const iso = dateStr ? dateStr.split('T')[0] : new Date().toISOString().split("T")[0];
-          
-          console.log(`WeatherForecast: Processing date ${iso}:`, {
-            temperature_max: d.temperature_max,
-            humidity_max: d.humidity_max,
-            precipitation: d.precipitation,
-            wind_speed_max: d.wind_speed_max
-          });
-          
-          byDate.set(iso, {
-            dateISO: iso,
-            temperature: parseNum(d.temperature_max),
-            humidity: parseNum(d.humidity_max),
-            rainfall: parseNum(d.precipitation),
-            wind: parseNum(d.wind_speed_max),
-          });
+          apiDataByDate.set(iso, d);
         });
-
-        // Generate tomorrow + next 6 days in order (7 days total, starting from tomorrow)
-        const days: any[] = [];
-        const today = new Date();
-        console.log("WeatherForecast: Today is:", today.toISOString().split("T")[0]);
         
+        // Generate next 7 days starting from tomorrow
+        const today = new Date();
         for (let i = 1; i <= 7; i++) { // Start from i=1 (tomorrow) instead of i=0 (today)
-          const dt = new Date(today);
-          dt.setDate(today.getDate() + i);
-          const iso = dt.toISOString().split("T")[0];
-          const entry = byDate.get(iso) || {
-            dateISO: iso,
-            temperature: 0,
-            humidity: 0,
-            rainfall: 0,
-            wind: 0,
-          };
+          const futureDate = new Date(today);
+          futureDate.setDate(today.getDate() + i);
+          const iso = futureDate.toISOString().split("T")[0];
           
-          console.log(`WeatherForecast: Day ${i} (${iso}):`, entry);
+          // Get API data for this date, or use default values if not available
+          const apiData = apiDataByDate.get(iso) || {};
+          
+          console.log(`WeatherForecast: Processing day ${i} (${iso}):`, {
+            temperature_max: apiData.temperature_max,
+            humidity_max: apiData.humidity_max,
+            precipitation: apiData.precipitation,
+            wind_speed_max: apiData.wind_speed_max
+          });
+          
+          console.log(`WeatherForecast: Parsed values for day ${i}:`, {
+            temperature: parseNum(apiData.temperature_max),
+            humidity: parseNum(apiData.humidity_max),
+            rainfall: parseNum(apiData.precipitation),
+            wind: parseNum(apiData.wind_speed_max)
+          });
           
           days.push({
-            date: dt.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
-            temperature: entry.temperature,
-            humidity: entry.humidity,
-            rainfall: entry.rainfall,
-            wind: entry.wind,
-            fullDate: entry.dateISO,
+            date: futureDate.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+            temperature: parseNum(apiData.temperature_max),
+            humidity: parseNum(apiData.humidity_max),
+            rainfall: parseNum(apiData.precipitation),
+            wind: parseNum(apiData.wind_speed_max),
+            fullDate: iso,
           });
         }
 
         console.log("WeatherForecast: Processed 7 days:", days);
         console.log("WeatherForecast: First day data:", days[0]);
         console.log("WeatherForecast: API raw data:", rawList);
+        if (days.length > 0) {
+          console.log("WeatherForecast: Parsed values for first day:", {
+            temperature: days[0].temperature,
+            humidity: days[0].humidity,
+            rainfall: days[0].rainfall,
+            wind: days[0].wind
+          });
+        }
         setAppState((prev: any) => ({
           ...prev,
           weatherChartData: days,
@@ -129,32 +213,53 @@ const WeatherForecast: React.FC = () => {
         }));
         setCached(cacheKey, days);
       })
-      .catch((error) => {
-        console.error("WeatherForecast: Fetch error:", error);
-        // Fallback: synthesize 7 days from tomorrow with zeros
-        const days: any[] = [];
-        const today = new Date();
-        for (let i = 1; i <= 7; i++) { // Start from i=1 (tomorrow) instead of i=0 (today)
-          const dt = new Date(today);
-          dt.setDate(today.getDate() + i);
-          days.push({
-            date: dt.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
-            temperature: 0,
-            humidity: 0,
-            rainfall: 0,
-            wind: 0,
-            fullDate: dt.toISOString().split("T")[0],
-          });
-        }
-        setAppState((prev: any) => ({
-          ...prev,
-          weatherChartData: days,
-          weatherSelectedDay: days[0],
-        }));
-      });
-  }, [setAppState, getCached, setCached]);
+        .catch((error) => {
+          console.error("WeatherForecast: Fetch error:", error);
+          // Fallback: generate next 7 days with zero values
+          const days: any[] = [];
+          const today = new Date();
+          
+          for (let i = 1; i <= 7; i++) { // Start from i=1 (tomorrow)
+            const futureDate = new Date(today);
+            futureDate.setDate(today.getDate() + i);
+            const iso = futureDate.toISOString().split("T")[0];
+            
+            days.push({
+              date: futureDate.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+              temperature: 0,
+              humidity: 0,
+              rainfall: 0,
+              wind: 0,
+              fullDate: iso,
+            });
+          }
+          
+          setAppState((prev: any) => ({
+            ...prev,
+            weatherChartData: days,
+            weatherSelectedDay: days[0],
+          }));
+        });
+  }, [loadingCoordinates, hasFetchedWeather]); // Only depend on loading state and fetch flag
 
   const currentWeather = selectedDay || chartData[0];
+  
+  // Debug: Log current weather data being displayed (can be removed in production)
+  // console.log("WeatherForecast: Current weather data being displayed:", currentWeather);
+
+  // Show loading state while fetching coordinates
+  if (loadingCoordinates) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="flex items-center space-x-2">
+            <RefreshCw className="h-5 w-5 animate-spin text-blue-600" />
+            <span className="text-gray-600">Loading farmer location...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -322,7 +427,7 @@ const WeatherForecast: React.FC = () => {
         {/* Interactive Chart */}
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-800">7-Day Forecast (Tomorrow + Next 6 Days)</h3>
+            <h3 className="text-xl font-bold text-gray-800">7-Day Forecast</h3>
             <div className="text-sm text-gray-500">
               Click on any day to view details
             </div>

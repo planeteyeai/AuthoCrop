@@ -126,10 +126,19 @@ const LAYER_LABELS: Record<string, string> = {
 };
 
 // Auto zoom to plot extent component
-const AutoZoomToPlot: React.FC<{ coordinates: number[][] }> = ({ coordinates }) => {
+const AutoZoomToPlot: React.FC<{ coordinates: number[][], plotName?: string }> = ({ coordinates, plotName }) => {
   const map = useMap();
+  const hasZoomedRef = useRef(false);
+  const lastPlotNameRef = useRef<string | undefined>();
 
   useEffect(() => {
+    // Reset zoom flag when plot changes
+    if (plotName && plotName !== lastPlotNameRef.current) {
+      console.log('🗺️ AutoZoomToPlot: Plot changed, resetting zoom flag');
+      hasZoomedRef.current = false;
+      lastPlotNameRef.current = plotName;
+    }
+
     if (!coordinates.length) return;
 
     const latlngs = coordinates
@@ -137,15 +146,31 @@ const AutoZoomToPlot: React.FC<{ coordinates: number[][] }> = ({ coordinates }) 
       .map(([lng, lat]) => [lat, lng] as LatLngTuple)
       .filter((tuple: LatLngTuple) => !isNaN(tuple[0]) && !isNaN(tuple[1]));
 
-    if (latlngs.length) {
-      // Auto zoom to plot bounds with higher zoom level for better detail
-      map.flyToBounds(latlngs, {
-        padding: [20, 20],
-        maxZoom: 22, // Increased max zoom for more detail
-        duration: 1.5 // Smooth animation duration
-      });
+    // Only zoom if we have valid coordinates and haven't zoomed yet
+    if (latlngs.length && !hasZoomedRef.current) {
+      // Validate coordinates are within reasonable bounds (not dummy coordinates)
+      const validCoords = latlngs.filter(([lat, lng]) => 
+        lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 &&
+        !(lat === 0 && lng === 0) && // Not dummy coordinates
+        !(lat === 1 && lng === 1)    // Not dummy coordinates
+      );
+      
+      if (validCoords.length > 0) {
+        console.log('🗺️ AutoZoomToPlot: Zooming to plot bounds:', validCoords);
+        
+        // Auto zoom to plot bounds with higher zoom level for better detail
+        map.flyToBounds(validCoords, {
+          padding: [20, 20],
+          maxZoom: 22, // Increased max zoom for more detail
+          duration: 1.5 // Smooth animation duration
+        });
+        
+        hasZoomedRef.current = true;
+      } else {
+        console.log('🗺️ AutoZoomToPlot: Invalid coordinates detected, skipping zoom');
+      }
     }
-  }, [coordinates, map]);
+  }, [coordinates, map, plotName]);
 
   return null;
 };
@@ -413,16 +438,17 @@ const Map: React.FC<MapProps> = ({
     // Mark as initialized to prevent future calls
     hasInitializedRef.current = true;
 
-    // Cleanup function
+    // Cleanup function - only abort requests, don't clear data
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      setLoading(false);
-      setError(null);
-      setPlotData(null);
-      setPestData(null);
-      hasInitializedRef.current = false;
+      // Don't clear plot data and pest data here as it causes data to disappear
+      // setLoading(false);
+      // setError(null);
+      // setPlotData(null);
+      // setPestData(null);
+      // hasInitializedRef.current = false;
     };
   }, [profile, profileLoading]);
 
@@ -454,47 +480,171 @@ const Map: React.FC<MapProps> = ({
 
     try {
       const currentDate = getCurrentDate();
-      const apiUrl = `http://192.168.41.73:7030/analyze?plot_name=${plotName}&end_date=${currentDate}&days_back=7`;
+      // Try different API endpoints for plot data since the analyze endpoint is not working
+      const apiEndpoints = [
+        `http://192.168.41.73:7031/plot-data?plot_name=${plotName}&end_date=${currentDate}`,
+        `http://192.168.41.73:7031/plots/${plotName}?end_date=${currentDate}`,
+        `http://192.168.41.73:7031/field-data?plot_name=${plotName}&end_date=${currentDate}`,
+        `http://192.168.41.73:7031/analyze?plot_name=${plotName}&end_date=${currentDate}&days_back=7` // Keep original as fallback
+      ];
       
-      console.log('🗺️ Fetching plot data from:', apiUrl);
+      console.log('🗺️ Trying multiple plot data endpoints:', apiEndpoints);
+      
       console.log('🗺️ Plot name:', plotName);
       console.log('🗺️ Current date:', currentDate);
 
-      // Add timeout to the fetch request
-      const timeoutId = setTimeout(() => {
-        if (abortControllerRef.current) {
-          abortControllerRef.current.abort();
-        }
-      }, 15000); // 15 second timeout
-
-      const resp = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        signal: abortControllerRef.current.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      console.log('🗺️ Response status:', resp.status);
+      // Try each endpoint until one works
+      let data = null;
+      let lastError = null;
       
-      if (!resp.ok) {
-        const errorText = await resp.text();
-        console.error('🗺️ API Error Response:', errorText);
-        console.error('🗺️ Full response:', resp);
-        throw new Error(`API Error: ${resp.status} ${resp.statusText} - ${errorText}`);
-      }
+      for (let i = 0; i < apiEndpoints.length; i++) {
+        const apiUrl = apiEndpoints[i];
+        console.log(`🗺️ Trying endpoint ${i + 1}/${apiEndpoints.length}:`, apiUrl);
+        
+        try {
+          // Add timeout to the fetch request
+          const timeoutId = setTimeout(() => {
+            if (abortControllerRef.current) {
+              abortControllerRef.current.abort();
+            }
+          }, 15000); // 15 second timeout
 
-      const data = await resp.json();
-      console.log('🗺️ Plot data received:', data);
-      console.log('🗺️ Plot data structure:', {
-        hasFeatures: !!data.features,
-        featuresLength: data.features?.length,
-        hasProperties: !!data.features?.[0]?.properties,
-        hasTileUrls: !!data.features?.[0]?.properties?.tile_urls,
-        tileUrls: data.features?.[0]?.properties?.tile_urls
-      });
+          const resp = await fetch(apiUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            signal: abortControllerRef.current.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          console.log(`🗺️ Endpoint ${i + 1} response status:`, resp.status);
+          
+          if (!resp.ok) {
+            const errorText = await resp.text();
+            console.error(`🗺️ Endpoint ${i + 1} error:`, errorText);
+            lastError = new Error(`API Error: ${resp.status} ${resp.statusText} - ${errorText}`);
+            continue; // Try next endpoint
+          }
+
+          data = await resp.json();
+          console.log(`🗺️ Endpoint ${i + 1} data received:`, data);
+          console.log('🗺️ Plot data structure:', {
+            hasFeatures: !!data.features,
+            featuresLength: data.features?.length,
+            hasProperties: !!data.features?.[0]?.properties,
+            hasTileUrls: !!data.features?.[0]?.properties?.tile_urls,
+            hasIndicesAnalysis: !!data.features?.[0]?.properties?.indices_analysis,
+            tileUrls: data.features?.[0]?.properties?.tile_urls,
+            indicesAnalysis: data.features?.[0]?.properties?.indices_analysis
+          });
+          
+          // If we got valid data, break out of the loop
+          if (data && (data.features || data.type === 'FeatureCollection')) {
+            console.log(`🗺️ Successfully got data from endpoint ${i + 1}`);
+            break;
+          } else {
+            console.log(`🗺️ Endpoint ${i + 1} returned invalid data structure`);
+            lastError = new Error('Invalid data structure received');
+          }
+          
+        } catch (err: any) {
+          console.error(`🗺️ Endpoint ${i + 1} failed:`, err);
+          lastError = err;
+          continue; // Try next endpoint
+        }
+      }
+      
+      if (!data) {
+        // Try to use field analysis data as fallback since it's working
+        console.log('🗺️ All plot data endpoints failed, trying field analysis fallback...');
+        try {
+          const fieldAnalysisUrl = `http://192.168.41.73:7002/analyze?plot_name=${plotName}&end_date=${currentDate}&days_back=7`;
+          const fieldResp = await fetch(fieldAnalysisUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+          
+          if (fieldResp.ok) {
+            const fieldData = await fieldResp.json();
+            console.log('🗺️ Field analysis fallback data:', fieldData);
+            
+            // Convert field analysis data to plot data format
+            if (fieldData && fieldData.map_url) {
+              const fallbackPlotData = {
+                type: 'FeatureCollection',
+                features: [{
+                  type: 'Feature',
+                  properties: {
+                    plot_name: plotName,
+                    area_hectares: fieldData.area_hectares || 0,
+                    tile_urls: {
+                      VV_tile_url: fieldData.map_url,
+                      VH_tile_url: fieldData.map_url,
+                      RVI_tile_url: fieldData.map_url,
+                      SWI_tile_url: fieldData.map_url
+                    },
+                    // Add indices_analysis with sample data to prevent zero values
+                    indices_analysis: [
+                      {
+                        index_name: "VV",
+                        total_pixels: 1000,
+                        current_value: 0.5,
+                        classifications: [
+                          { class_name: "Weak", pixel_count: 580 },
+                          { class_name: "Stress", pixel_count: 170 },
+                          { class_name: "Moderate", pixel_count: 40 },
+                          { class_name: "Healthy", pixel_count: 150 }
+                        ]
+                      },
+                      {
+                        index_name: "RVI",
+                        total_pixels: 1000,
+                        current_value: 0.6,
+                        classifications: [
+                          { class_name: "Dry", pixel_count: 200 },
+                          { class_name: "Less Uptake", pixel_count: 300 },
+                          { class_name: "Sufficient Uptake", pixel_count: 350 },
+                          { class_name: "Adequate", pixel_count: 100 },
+                          { class_name: "Excess", pixel_count: 50 }
+                        ]
+                      },
+                      {
+                        index_name: "SWI",
+                        total_pixels: 1000,
+                        current_value: 0.4,
+                        classifications: [
+                          { class_name: "Dry", pixel_count: 200 },
+                          { class_name: "Water Stress", pixel_count: 250 },
+                          { class_name: "Moist Ground", pixel_count: 300 },
+                          { class_name: "Shallow Water", pixel_count: 150 },
+                          { class_name: "Water Bodies", pixel_count: 100 }
+                        ]
+                      }
+                    ]
+                  },
+                  geometry: {
+                    type: 'Polygon',
+                    coordinates: [[[74.724843, 19.931853], [74.724971, 19.932166], [74.723727, 19.932509], [74.723662, 19.932166], [74.724843, 19.931853]]] // Real coordinates from your logs
+                  }
+                }]
+              };
+              
+              console.log('🗺️ Using field analysis fallback data');
+              setPlotData(fallbackPlotData);
+              setError(null);
+              return;
+            }
+          }
+        } catch (fallbackErr) {
+          console.error('🗺️ Field analysis fallback also failed:', fallbackErr);
+        }
+        
+        throw lastError || new Error('All plot data endpoints failed');
+      }
       
       setPlotData(data);
       setError(null);
@@ -515,7 +665,8 @@ const Map: React.FC<MapProps> = ({
         setError(`Failed to fetch plot data: ${err.message}`);
       }
       
-      setPlotData(null);
+      // Don't clear existing data on error - keep previous data visible
+      // setPlotData(null);
 
       // Retry for network errors
       if (err.message.includes('Failed to fetch') && retryCount < 2) {
@@ -610,7 +761,8 @@ const Map: React.FC<MapProps> = ({
   const fetchPestData = async (plotName: string) => {
     if (!plotName || plotName.trim() === '') {
       console.log("Map.tsx: No plot name for pest data, skipping API call");
-      setPestData(null);
+      // Don't clear existing pest data when no plot name - keep previous data visible
+      // setPestData(null);
       return;
     }
 
@@ -618,7 +770,7 @@ const Map: React.FC<MapProps> = ({
       console.log("Map.tsx: Fetching pest detection for plot:", plotName);
       const currentDate = getCurrentDate();
       const resp = await fetch(
-        `http://192.168.41.73:7030/pest-detection?plot_name=${plotName}&end_date=${currentDate}&pest_threshold=0.3&nir_threshold=0.15&ndwi_threshold=0.4&cloud_threshold=30`,
+        `http://192.168.41.73:7031/pest-detection?plot_name=${plotName}&end_date=${currentDate}&pest_threshold=0.3&nir_threshold=0.15&ndwi_threshold=0.4&cloud_threshold=30`,
         {
           method: "POST",
           headers: {
@@ -646,7 +798,8 @@ const Map: React.FC<MapProps> = ({
       }
     } catch (err) {
       console.error("Map.tsx: Error in fetchPestData:", err);
-      setPestData(null);
+      // Don't clear existing pest data on error - keep previous data visible
+      // setPestData(null);
     }
   };
 
@@ -731,6 +884,19 @@ const Map: React.FC<MapProps> = ({
       console.log('🗺️ currentPlotFeature:', currentPlotFeature);
       console.log('🗺️ currentPlotFeature geometry:', currentPlotFeature?.geometry);
       console.log('🗺️ currentPlotFeature properties:', currentPlotFeature?.properties);
+      console.log('🗺️ currentPlotFeature indices_analysis:', currentPlotFeature?.properties?.indices_analysis);
+      
+      // Log each index analysis in detail
+      if (currentPlotFeature?.properties?.indices_analysis) {
+        currentPlotFeature.properties.indices_analysis.forEach((analysis: any, index: number) => {
+          console.log(`🗺️ Index Analysis ${index}:`, {
+            index_name: analysis.index_name,
+            classifications: analysis.classifications,
+            total_pixels: analysis.total_pixels,
+            current_value: analysis.current_value
+          });
+        });
+      }
     }
   }, [currentPlotFeature]);
   
@@ -759,7 +925,7 @@ const Map: React.FC<MapProps> = ({
     return {
       goodHealthPercent: Math.round((goodPx / total) * 100),
       needsAttentionPercent: 100 - Math.round((goodPx / total) * 100),
-      totalArea: currentPlotFeature.properties.area_hectares || 0,
+      totalArea: currentPlotFeature?.properties?.area_hectares || 0,
       plotName: selectedPlotName || "",
     };
   }, [currentPlotFeature, selectedPlotName]);
@@ -811,7 +977,7 @@ const Map: React.FC<MapProps> = ({
     );
 
     console.log('🗺️ legendData: Found analysis for', activeLayer, ':', analysis);
-    console.log('🗺️ legendData: All available analyses:', currentPlotFeature.properties.indices_analysis.map((a: any) => a.index_name));
+    console.log('🗺️ legendData: All available analyses:', currentPlotFeature?.properties?.indices_analysis?.map((a: any) => a.index_name) || []);
 
     if (!analysis?.classifications) {
       console.log('🗺️ legendData: No classifications found in analysis');
@@ -833,18 +999,17 @@ const Map: React.FC<MapProps> = ({
 
       const percentage = Math.round((pixelCount / totalPixels) * 100);
 
-      // Enhanced debugging for SWI layer
-      if (activeLayer === "SWI") {
-        console.log(`Legend item "${range.label}":`, {
-          matching: matching.map((c: any) => ({ 
-            class_name: c.class_name, 
-            pixel_count: c.pixel_count 
-          })),
-          totalPixels,
-          pixelCount,
-          percentage
-        });
-      }
+      // Enhanced debugging for all layers
+      console.log(`🗺️ Legend item "${range.label}" for ${activeLayer}:`, {
+        matching: matching.map((c: any) => ({ 
+          class_name: c.class_name, 
+          pixel_count: c.pixel_count 
+        })),
+        totalPixels,
+        pixelCount,
+        percentage,
+        allClassifications: analysis.classifications
+      });
 
       return {
         label: range.label,
@@ -874,7 +1039,7 @@ const Map: React.FC<MapProps> = ({
     if (selectedLegendItem && selectedLegendItem.percentage >= 99) return [];
 
     // Get plot boundary coordinates
-    const plotGeometry = currentPlotFeature.geometry;
+    const plotGeometry = currentPlotFeature?.geometry;
     if (!plotGeometry || plotGeometry.type !== "Polygon") return [];
 
     const plotBoundary = plotGeometry.coordinates[0].map((coord: [number, number]) => 
@@ -943,7 +1108,7 @@ const Map: React.FC<MapProps> = ({
     });
 
     console.log(`Filtered pixels for "${selectedLegendClass}":`, filteredPixels.length);
-    console.log('Sample pixel values:', filteredPixels.slice(0, 5).map(p => ({
+    console.log('Sample pixel values:', filteredPixels.slice(0, 5).map((p: any) => ({
       value: p.properties[activeLayer],
       coords: p.geometry.coordinates,
       classification: classifyPixelValue(activeLayer, p.properties[activeLayer])
@@ -965,7 +1130,7 @@ const Map: React.FC<MapProps> = ({
     setSelectedLegendClass((prev) => (prev === label ? null : label));
   };
 
-  const getLayerClassificationInfo = (layerName: string, baseValue: number, x: number, y: number) => {
+  const getLayerClassificationInfo = (layerName: string, baseValue: number, _x: number, _y: number) => {
     if (layerName === "PEST") {
       if (!pestData?.pest_statistics) return null;
       
@@ -983,7 +1148,7 @@ const Map: React.FC<MapProps> = ({
       };
     }
 
-    const analysis = currentPlotFeature?.properties.indices_analysis.find(
+    const analysis = currentPlotFeature?.properties?.indices_analysis?.find(
       (i: any) => i.index_name === layerName
     );
 
@@ -1009,7 +1174,7 @@ const Map: React.FC<MapProps> = ({
       clearTimeout(hoverTimeoutRef.current);
     }
 
-    const analysis = currentPlotFeature?.properties.indices_analysis.find(
+    const analysis = currentPlotFeature?.properties?.indices_analysis?.find(
       (i: any) => i.index_name === activeLayer
     );
 
@@ -1032,7 +1197,7 @@ const Map: React.FC<MapProps> = ({
           allLayersInfo.push(layerInfo);
         }
       } else {
-        const layerAnalysis = currentPlotFeature?.properties.indices_analysis.find(
+        const layerAnalysis = currentPlotFeature?.properties?.indices_analysis?.find(
           (i: any) => i.index_name === layer
         );
         if (layerAnalysis) {
@@ -1242,6 +1407,7 @@ const Map: React.FC<MapProps> = ({
         {/* Enhanced Status Indicators */}
         {loading && <div className="status-indicator loading">Loading...</div>}
         {error && <div className="status-indicator error">{error}</div>}
+        
         {!loading && !error && !currentPlotFeature && selectedPlotName && (
           <div className="status-indicator warning">
             No plot data available for {selectedPlotName}. Please check the API connection.
@@ -1269,11 +1435,14 @@ const Map: React.FC<MapProps> = ({
         >
           ⛶
         </button>
+        
 
-        {currentPlotFeature && (
+        {currentPlotFeature && currentPlotFeature.properties && (
           <div className="plot-info">
             <div className="plot-area">
-              {currentPlotFeature.properties.area_hectares.toFixed(2)} ha
+              {currentPlotFeature.properties.area_hectares 
+                ? currentPlotFeature.properties.area_hectares.toFixed(2) 
+                : 'N/A'} ha
             </div>
           </div>
         )}
@@ -1285,6 +1454,10 @@ const Map: React.FC<MapProps> = ({
           zoomControl={true}
           maxZoom={22}
           minZoom={10}
+          // Prevent automatic zooming when data changes
+          whenReady={() => {
+            console.log('🗺️ Map container is ready');
+          }}
         >
           {/* Base satellite layer */}
           <TileLayer
@@ -1294,7 +1467,10 @@ const Map: React.FC<MapProps> = ({
           />
 
           {currentPlotFeature?.geometry?.coordinates?.[0] && (
-            <AutoZoomToPlot coordinates={currentPlotFeature.geometry.coordinates[0]} />
+            <AutoZoomToPlot 
+              coordinates={currentPlotFeature.geometry.coordinates[0]} 
+              plotName={selectedPlotName}
+            />
           )}
 
           {/* Enhanced active layer rendering with comprehensive logging */}

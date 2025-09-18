@@ -83,12 +83,12 @@ export const getWeatherIcon = (temperature: number, humidity: number, precip: nu
 
 // Format temperature for display
 export const formatTemperature = (temp: number): string => {
-  return `${Math.round(temp)}°C`;
+  return `${temp.toFixed(1)}°C`;
 };
 
 // Format wind speed for display
 export const formatWindSpeed = (windKph: number): string => {
-  return `${Math.round(windKph)} km/h`;
+  return `${windKph.toFixed(1)} km/h`;
 };
 
 // Format humidity for display

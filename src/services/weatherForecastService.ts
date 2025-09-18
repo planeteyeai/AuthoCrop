@@ -64,7 +64,7 @@ export const fetchWeatherForecast = async (lat: number, lon: number): Promise<We
 export const formatTemperature = (temp: string): string => {
   // Remove "DegreeCel" suffix and extract number
   const tempValue = temp.replace(' DegreeCel', '');
-  return `${Math.round(parseFloat(tempValue))}°C`;
+  return `${parseFloat(tempValue).toFixed(1)}°C`;
 };
 
 // Format wind speed for display
@@ -124,6 +124,21 @@ export const getWeatherCondition = (precipitation: string, tempMax: string): str
   }
 };
 
+// Extract numeric value from API response (removes units)
+export const extractNumericValue = (value: string): number => {
+  if (!value) return 0;
+  
+  let cleanValue = value;
+  // Remove common units and suffixes
+  cleanValue = cleanValue.replace(/ DegreeCel/gi, '');
+  cleanValue = cleanValue.replace(/ mm/gi, '');
+  cleanValue = cleanValue.replace(/ km\/h/gi, '');
+  cleanValue = cleanValue.replace(/ %/gi, '');
+  cleanValue = cleanValue.replace(/[^\d.+-]/g, "");
+  
+  return parseFloat(cleanValue) || 0;
+};
+
 // Format date for display
 export const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
@@ -138,4 +153,20 @@ export const formatDate = (dateString: string): string => {
 export const getDayOfWeek = (dateString: string): string => {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-IN', { weekday: 'long' });
+};
+
+// Test function to verify parsing works correctly
+export const testParsing = () => {
+  const testData = {
+    temperature_max: "26.4 DegreeCel",
+    humidity_max: "99 %",
+    precipitation: "3.1 mm",
+    wind_speed_max: "9.8 km/h"
+  };
+  
+  console.log('🧪 Testing parsing functions:');
+  console.log('Temperature:', extractNumericValue(testData.temperature_max), 'Expected: 26.4');
+  console.log('Humidity:', extractNumericValue(testData.humidity_max), 'Expected: 99');
+  console.log('Precipitation:', extractNumericValue(testData.precipitation), 'Expected: 3.1');
+  console.log('Wind Speed:', extractNumericValue(testData.wind_speed_max), 'Expected: 9.8');
 };
