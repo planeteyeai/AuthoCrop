@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 
-
 interface ChartPoint {
   date: string;
   temperature: number;
@@ -49,12 +48,14 @@ const WeatherForecast: React.FC = () => {
     // }
           fetch("https://dev-weather.cropeye.ai/forecast?lat=19.355587&lon=75.219727")
       .then((res) => {
+        console.log("WeatherForecast: Response status:", res.status);
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
         return res.json();
       })
       .then((data) => {
+        console.log("WeatherForecast: Received data:", data);
         // Support both legacy array and new { source, data: [...] } shape
         const rawList = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
 
@@ -73,6 +74,13 @@ const WeatherForecast: React.FC = () => {
           const dateStr = d.date || d.Date;
           const iso = dateStr ? dateStr.split('T')[0] : new Date().toISOString().split("T")[0];
           
+          console.log(`WeatherForecast: Processing date ${iso}:`, {
+            temperature_max: d.temperature_max,
+            humidity_max: d.humidity_max,
+            precipitation: d.precipitation,
+            wind_speed_max: d.wind_speed_max
+          });
+          
           byDate.set(iso, {
             dateISO: iso,
             temperature: parseNum(d.temperature_max),
@@ -85,6 +93,7 @@ const WeatherForecast: React.FC = () => {
         // Generate tomorrow + next 6 days in order (7 days total, starting from tomorrow)
         const days: any[] = [];
         const today = new Date();
+        console.log("WeatherForecast: Today is:", today.toISOString().split("T")[0]);
         
         for (let i = 1; i <= 7; i++) { // Start from i=1 (tomorrow) instead of i=0 (today)
           const dt = new Date(today);
@@ -98,6 +107,8 @@ const WeatherForecast: React.FC = () => {
             wind: 0,
           };
           
+          console.log(`WeatherForecast: Day ${i} (${iso}):`, entry);
+          
           days.push({
             date: dt.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
             temperature: entry.temperature,
@@ -108,6 +119,9 @@ const WeatherForecast: React.FC = () => {
           });
         }
 
+        console.log("WeatherForecast: Processed 7 days:", days);
+        console.log("WeatherForecast: First day data:", days[0]);
+        console.log("WeatherForecast: API raw data:", rawList);
         setAppState((prev: any) => ({
           ...prev,
           weatherChartData: days,
@@ -138,7 +152,7 @@ const WeatherForecast: React.FC = () => {
           weatherSelectedDay: days[0],
         }));
       });
-  }, []); // Remove dependencies that cause re-runs
+  }, [setAppState, getCached, setCached]);
 
   const currentWeather = selectedDay || chartData[0];
 
@@ -151,19 +165,19 @@ const WeatherForecast: React.FC = () => {
           <div className="space-y-1">
             <p className="text-sm">
               <span className="inline-block w-3 h-3 bg-amber-500 rounded-full mr-2"></span>
-              Temperature: {Number(data.temperature).toFixed(2)}°C
+              Temperature: {(Number(data.temperature) || 0).toFixed(2)}°C
             </p>
             <p className="text-sm">
               <span className="inline-block w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-              Rainfall: {Number(data.rainfall).toFixed(1)} mm
+              Rainfall: {(Number(data.rainfall) || 0).toFixed(1)} mm
             </p>
             <p className="text-sm">
               <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-              Wind: {Number(data.wind).toFixed(2)} km/h
+              Wind: {(Number(data.wind) || 0).toFixed(2)} km/h
             </p>
             <p className="text-sm">
               <span className="inline-block w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
-              Humidity: {Number(data.humidity).toFixed(2)}%
+              Humidity: {(Number(data.humidity) || 0).toFixed(2)}%
             </p>
           </div>
         </div>
@@ -218,7 +232,7 @@ const WeatherForecast: React.FC = () => {
                     selectedMetric === "temperature" ? "text-white" : ""
                   }`}
                 >
-                  {Number(currentWeather.temperature).toFixed(2)}°C
+                  {(Number(currentWeather.temperature) || 0).toFixed(2)}°C
                 </div>
                 <div className="text-sm opacity-75">Temperature</div>
               </div>
@@ -245,7 +259,7 @@ const WeatherForecast: React.FC = () => {
                     selectedMetric === "rainfall" ? "text-white" : ""
                   }`}
                 >
-                  {Number(currentWeather.rainfall).toFixed(1)} mm
+                  {(Number(currentWeather.rainfall) || 0).toFixed(1)} mm
                 </div>
                 <div className="text-sm opacity-75">Rainfall</div>
               </div>
@@ -270,7 +284,7 @@ const WeatherForecast: React.FC = () => {
                     selectedMetric === "wind" ? "text-white" : ""
                   }`}
                 >
-                  {Number(currentWeather.wind).toFixed(2)} km/h
+                  {(Number(currentWeather.wind) || 0).toFixed(2)} km/h
                 </div>
                 <div className="text-sm opacity-75">Wind Speed</div>
               </div>
@@ -297,7 +311,7 @@ const WeatherForecast: React.FC = () => {
                     selectedMetric === "humidity" ? "text-white" : ""
                   }`}
                 >
-                  {Number(currentWeather.humidity).toFixed(2)}%
+                  {(Number(currentWeather.humidity) || 0).toFixed(2)}%
                 </div>
                 <div className="text-sm opacity-75">Humidity</div>
               </div>
