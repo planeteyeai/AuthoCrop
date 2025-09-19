@@ -694,6 +694,8 @@ const Map: React.FC<MapProps> = ({
       return;
     }
 
+
+    
     try {
       console.log("Map.tsx: Fetching field analysis for plot:", plotName);
       const currentDate = getCurrentDate();
