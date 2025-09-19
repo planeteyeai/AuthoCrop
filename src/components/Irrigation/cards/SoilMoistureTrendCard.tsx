@@ -57,7 +57,7 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
     if (profile && !profileLoading) {
       const plotNames = profile.plots?.map(plot => plot.fastapi_plot_id) || [];
       const defaultPlot = plotNames.length > 0 ? plotNames[0] : null;
-      setPlotName(defaultPlot);
+      setPlotName(defaultPlot || "");
       console.log('SoilMoistureTrendCard: Setting plot name to:', defaultPlot);
     }
   }, [profile, profileLoading]);
@@ -127,7 +127,7 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
   const fetchCurrentDateMoisture = async () => {
     try {
       const currentDate = getCurrentDate();
-      const url = `http://192.168.41.73:7030/analyze?plot_name=${encodeURIComponent(
+      const url = `http://192.168.41.73:7031/analyze?plot_name=${encodeURIComponent(
         plotName
       )}&end_date=${currentDate}&days_back=7`;
 
@@ -170,7 +170,7 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
   // Fetch moisture data for historical dates using same method as SoilMoistureCard
   const fetchMoistureData = async (dateStr: string) => {
     try {
-      const url = `http://192.168.41.73:7030/analyze?plot_name=${encodeURIComponent(
+      const url = `http://192.168.41.73:7031/analyze?plot_name=${encodeURIComponent(
         plotName
       )}&end_date=${dateStr}&days_back=7`;
 
@@ -313,7 +313,7 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
     topPadding + (chartHeight - topPadding - bottomPadding) * (1 - value / maxValue);
 
   const linePath = data
-    .map((point, i) => `${i === 0 ? "M" : "L"} ${getX(i)} ${getY(point.value)}`)
+    .map((point: MoistureData, i: number) => `${i === 0 ? "M" : "L"} ${getX(i)} ${getY(point.value)}`)
     .join(" ");
 
   const areaPath = [
@@ -354,7 +354,7 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
     <div className="soil-moisture-trend-card">
       <div className="trend-card-header">
         <AreaChart size={20} color="#8B4513" />
-        <h3>Soil Moisture Trend (Last 6 Days + Today)</h3>
+        <h3>Soil Moisture Trend (weekly)</h3>
         <div className="optimal-range">
           Optimal: {optimalMin}-{optimalMax}%
         </div>
@@ -455,7 +455,7 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
             />
 
             {/* Data points */}
-            {data.map((point, i) => (
+            {data.map((point: MoistureData, i: number) => (
               <circle
                 key={`point-${i}`}
                 cx={getX(i)}
@@ -468,7 +468,7 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
             ))}
 
             {/* Special highlight for current date */}
-            {data.map((point, i) =>
+            {data.map((point: MoistureData, i: number) =>
               point.isCurrentDate ? (
                 <circle
                   key={`current-highlight-${i}`}
@@ -485,7 +485,7 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
             )}
 
             {/* Day labels */}
-            {data.map((point, i) => (
+            {data.map((point: MoistureData, i: number) => (
               <text
                 key={`label-${i}`}
                 x={getX(i)}
@@ -501,7 +501,7 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
             ))}
 
             {/* Date labels */}
-            {data.map((point, i) => (
+            {data.map((point: MoistureData, i: number) => (
               <text
                 key={`date-${i}`}
                 x={getX(i)}
@@ -517,7 +517,7 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
             ))}
 
             {/* Value labels with better visibility */}
-            {data.map((point, i) => (
+            {data.map((point: MoistureData, i: number) => (
               <g key={`value-group-${i}`}>
                 {/* Background for value text */}
                 <rect

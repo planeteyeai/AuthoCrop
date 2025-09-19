@@ -33,9 +33,10 @@ interface MoistureAPIResponse {
 
 const SoilMoistureCard: React.FC<SoilMoistureCardProps> = ({
   optimalRange,
-  moistGroundPercent,
-  targetDate = "2025-06-07",
+  targetDate,
 }) => {
+  // Use current date if no target date provided
+  const currentDate = targetDate || new Date().toISOString().split('T')[0];
   const { appState, setAppState, getCached, setCached } = useAppContext();
   const { profile, loading: profileLoading } = useFarmerProfile();
   const moisturePercent = appState.moisturePercent ?? 0;
@@ -62,7 +63,7 @@ const SoilMoistureCard: React.FC<SoilMoistureCardProps> = ({
     if (profile && !profileLoading) {
       const plotNames = profile.plots?.map(plot => plot.fastapi_plot_id) || [];
       const defaultPlot = plotNames.length > 0 ? plotNames[0] : null;
-      setPlotName(defaultPlot);
+      setPlotName(defaultPlot || "");
       console.log('SoilMoistureCard: Setting plot name to:', defaultPlot);
     }
   }, [profile, profileLoading]);
@@ -86,7 +87,7 @@ const SoilMoistureCard: React.FC<SoilMoistureCardProps> = ({
       return;
     }
     
-    const cacheKey = `soilMoisture_${plotName}_${targetDate}`;
+    const cacheKey = `soilMoisture_${plotName}_${currentDate}`;
     const cached = getCached(cacheKey);
     if (cached) {
       setAppState((prev: any) => ({
@@ -98,21 +99,21 @@ const SoilMoistureCard: React.FC<SoilMoistureCardProps> = ({
       return;
     }
     fetchMoistureData();
-  }, [plotName, targetDate, currentSoilMoisture]);
+  }, [plotName, currentDate, currentSoilMoisture]);
 
   const fetchMoistureData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const url = `http://192.168.41.73:7030/analyze?plot_name=${encodeURIComponent(
+      const url = `http://192.168.41.73:7031/analyze?plot_name=${encodeURIComponent(
         plotName
-      )}&end_date=${targetDate}&days_back=7`;
+      )}&end_date=${currentDate}&days_back=7`;
 
       console.log("=== MAKING API CALL ===");
       console.log("URL:", url);
       console.log("Plot Name:", plotName);
-      console.log("Target Date:", targetDate);
+      console.log("Current Date:", currentDate);
 
       const response = await fetch(url, {
         method: "POST",
@@ -265,7 +266,7 @@ const SoilMoistureCard: React.FC<SoilMoistureCardProps> = ({
         moisturePercent: finalPercentage,
         moistureStatus: status,
       }));
-      const cacheKey = `soilMoisture_${plotName}_${targetDate}`;
+      const cacheKey = `soilMoisture_${plotName}_${currentDate}`;
       setCached(cacheKey, { moisturePercent: finalPercentage, status });
 
       console.log("=== FINAL CALCULATIONS ===");
@@ -305,7 +306,7 @@ const SoilMoistureCard: React.FC<SoilMoistureCardProps> = ({
       <div className="card-header">
         <Droplets className="card-icon" size={24} />
         <h3 className="font-semibold">Soil Moisture</h3>
-        <span className="text-sm text-gray-500">({targetDate})</span>
+        <span className="text-sm text-gray-500">({currentDate})</span>
       </div>
       <div className="card-content soil-moisture">
         <div className="moisture-container">
@@ -340,7 +341,8 @@ const SoilMoistureCard: React.FC<SoilMoistureCardProps> = ({
             className="moisture-percentage-display"
             style={{ fontSize: "24px", fontWeight: "bold", color: "#333" }}
           >
-            {loading ? "..." : `${displayMoisture.toFixed(2)}%`}
+           {/* {loading ? "..." : `${displayMoisture.toFixed(2)}%`} */}
+          
           </div>
           <small className="text-gray-600">Soil Moisture Level</small>
         </div>

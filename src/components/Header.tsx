@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Menu, X, Cloud, Thermometer, Wind, Eye, Gauge, Droplet, CloudRain, Sun } from 'lucide-react';
+import { Menu, X, Cloud, Thermometer, Wind, Droplet } from 'lucide-react';
 import cropeyecLogo from './icons/CROPEYE Updated.png';
 import './Header.css';
 import { fetchCurrentWeather, formatTemperature, formatWindSpeed, formatHumidity, formatPrecipitation, getWeatherIcon, getWeatherCondition, type WeatherData as WeatherServiceData } from '../services/weatherService';
 import { useFarmerProfile } from '../hooks/useFarmerProfile';
+import { useAppContext } from '../context/AppContext';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -15,6 +16,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { profile, loading: profileLoading } = useFarmerProfile();
+  const { getCached, setCached } = useAppContext();
 
   useEffect(() => {
     const fetchWeather = async () => {
@@ -47,6 +49,17 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) 
         console.log('🌤️ Fetching weather for farmer location:', { latitude, longitude });
         console.log('🌤️ Farmer location:', firstPlot.address?.full_address || 'Unknown location');
         
+        // Check cache first (same as Irrigation component)
+        const cacheKey = `weather_${latitude}_${longitude}`;
+        const cached = getCached(cacheKey);
+        if (cached) {
+          console.log('🌤️ Using cached weather data');
+          setWeather(cached.data);
+          setError(null);
+          setLoading(false);
+          return;
+        }
+        
         // Fetch weather data using the new service
         const weatherData = await fetchCurrentWeather(latitude, longitude);
         console.log('🌤️ Weather data received:', weatherData);
@@ -54,6 +67,10 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) 
         setWeather(weatherData);
         setError(null);
         setLoading(false);
+        
+        // Cache the data (same as Irrigation component)
+        const payload = { data: weatherData, timestamp: Date.now() };
+        setCached(cacheKey, payload);
         
       } catch (err) {
         console.error('🌤️ Weather fetch error:', err);

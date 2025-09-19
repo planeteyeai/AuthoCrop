@@ -32,7 +32,7 @@ const RainfallCard: React.FC<RainfallCardProps> = ({ value, lastUpdated }) => {
         </div>
         
         <div className="metric-value">
-          <span className="value">{value.toFixed(2)}</span>
+          <span className="value">{value.toFixed(1)}</span>
           <span className="unit">mm</span>
         </div>
         

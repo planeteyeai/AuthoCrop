@@ -3,8 +3,9 @@ import { MapContainer, TileLayer, Polygon, useMap, Rectangle } from "react-leafl
 import { LatLngTuple, LeafletMouseEvent } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./Map.css";
-import L from "leaflet";
+// import L from "leaflet"; // Unused import
 import { useFarmerProfile } from "../hooks/useFarmerProfile";
+// Removed mock data service - using only real API
 
 // Add custom styles for the enhanced tooltip
 const tooltipStyles = `
@@ -248,6 +249,8 @@ const CustomTileLayer: React.FC<{
       maxZoom={22}
       minZoom={10}
       tileSize={256}
+      attribution="Custom Layer"
+      errorTileUrl="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
       // Enhanced error handling
       eventHandlers={{
         tileerror: (e: any) => {
@@ -281,14 +284,14 @@ const classifyPixelValue = (layer: string, pixelValue: number): string => {
   return "-";
 };
 
-// Function to get color for a classification
-const getClassificationColor = (layer: string, className: string): string => {
-  const ranges = CLASS_RANGES[layer as keyof typeof CLASS_RANGES];
-  if (!ranges) return "#000000";
-  
-  const range = ranges.find(r => r.label === className);
-  return range?.color || "#000000";
-};
+// Function to get color for a classification (unused)
+// const getClassificationColor = (layer: string, className: string): string => {
+//   const ranges = CLASS_RANGES[layer as keyof typeof CLASS_RANGES];
+//   if (!ranges) return "#000000";
+//   
+//   const range = ranges.find(r => r.label === className);
+//   return range?.color || "#000000";
+// };
 
 // Function to check if a point is inside polygon
 const isPointInPolygon = (point: [number, number], polygon: [number, number][]): boolean => {
@@ -309,7 +312,7 @@ const isPointInPolygon = (point: [number, number], polygon: [number, number][]):
 const Map: React.FC<MapProps> = ({
   onHealthDataChange,
   onFieldAnalysisChange,
-  onMoistGroundChange,
+  // onMoistGroundChange, // Unused parameter
   onPestDataChange,
 }) => {
   const { profile, loading: profileLoading } = useFarmerProfile();
@@ -452,6 +455,7 @@ const Map: React.FC<MapProps> = ({
     };
   }, [profile, profileLoading]);
 
+
   // Enhanced plot data fetching with robust error handling
   const fetchPlotData = async (plotName: string, retryCount = 0) => {
     if (!plotName || plotName.trim() === '') {
@@ -480,170 +484,42 @@ const Map: React.FC<MapProps> = ({
 
     try {
       const currentDate = getCurrentDate();
-      // Try different API endpoints for plot data since the analyze endpoint is not working
-      const apiEndpoints = [
-        `http://192.168.41.73:7031/plot-data?plot_name=${plotName}&end_date=${currentDate}`,
-        `http://192.168.41.73:7031/plots/${plotName}?end_date=${currentDate}`,
-        `http://192.168.41.73:7031/field-data?plot_name=${plotName}&end_date=${currentDate}`,
-        `http://192.168.41.73:7031/analyze?plot_name=${plotName}&end_date=${currentDate}&days_back=7` // Keep original as fallback
-      ];
-      
-      console.log('🗺️ Trying multiple plot data endpoints:', apiEndpoints);
+      const apiUrl = `http://192.168.41.73:7031/analyze?plot_name=${plotName}&end_date=${currentDate}&days_back=7`;
       
       console.log('🗺️ Plot name:', plotName);
       console.log('🗺️ Current date:', currentDate);
+      console.log('🗺️ API URL:', apiUrl);
 
-      // Try each endpoint until one works
-      let data = null;
-      let lastError = null;
-      
-      for (let i = 0; i < apiEndpoints.length; i++) {
-        const apiUrl = apiEndpoints[i];
-        console.log(`🗺️ Trying endpoint ${i + 1}/${apiEndpoints.length}:`, apiUrl);
-        
-        try {
-          // Add timeout to the fetch request
-          const timeoutId = setTimeout(() => {
-            if (abortControllerRef.current) {
-              abortControllerRef.current.abort();
-            }
-          }, 15000); // 15 second timeout
-
-          const resp = await fetch(apiUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            signal: abortControllerRef.current.signal,
-          });
-
-          clearTimeout(timeoutId);
-
-          console.log(`🗺️ Endpoint ${i + 1} response status:`, resp.status);
-          
-          if (!resp.ok) {
-            const errorText = await resp.text();
-            console.error(`🗺️ Endpoint ${i + 1} error:`, errorText);
-            lastError = new Error(`API Error: ${resp.status} ${resp.statusText} - ${errorText}`);
-            continue; // Try next endpoint
-          }
-
-          data = await resp.json();
-          console.log(`🗺️ Endpoint ${i + 1} data received:`, data);
-          console.log('🗺️ Plot data structure:', {
-            hasFeatures: !!data.features,
-            featuresLength: data.features?.length,
-            hasProperties: !!data.features?.[0]?.properties,
-            hasTileUrls: !!data.features?.[0]?.properties?.tile_urls,
-            hasIndicesAnalysis: !!data.features?.[0]?.properties?.indices_analysis,
-            tileUrls: data.features?.[0]?.properties?.tile_urls,
-            indicesAnalysis: data.features?.[0]?.properties?.indices_analysis
-          });
-          
-          // If we got valid data, break out of the loop
-          if (data && (data.features || data.type === 'FeatureCollection')) {
-            console.log(`🗺️ Successfully got data from endpoint ${i + 1}`);
-            break;
-          } else {
-            console.log(`🗺️ Endpoint ${i + 1} returned invalid data structure`);
-            lastError = new Error('Invalid data structure received');
-          }
-          
-        } catch (err: any) {
-          console.error(`🗺️ Endpoint ${i + 1} failed:`, err);
-          lastError = err;
-          continue; // Try next endpoint
+      // Add timeout to the fetch request
+      const timeoutId = setTimeout(() => {
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
         }
+      }, 15000); // 15 second timeout
+
+      const resp = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        signal: abortControllerRef.current.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      console.log('🗺️ Response status:', resp.status);
+      
+      if (!resp.ok) {
+        const errorText = await resp.text();
+        console.error('🗺️ API error:', errorText);
+        throw new Error(`API Error: ${resp.status} ${resp.statusText} - ${errorText}`);
       }
+
+      const data = await resp.json();
+      console.log('🗺️ Data received:', data);
       
-      if (!data) {
-        // Try to use field analysis data as fallback since it's working
-        console.log('🗺️ All plot data endpoints failed, trying field analysis fallback...');
-        try {
-          const fieldAnalysisUrl = `http://192.168.41.73:7002/analyze?plot_name=${plotName}&end_date=${currentDate}&days_back=7`;
-          const fieldResp = await fetch(fieldAnalysisUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-          
-          if (fieldResp.ok) {
-            const fieldData = await fieldResp.json();
-            console.log('🗺️ Field analysis fallback data:', fieldData);
-            
-            // Convert field analysis data to plot data format
-            if (fieldData && fieldData.map_url) {
-              const fallbackPlotData = {
-                type: 'FeatureCollection',
-                features: [{
-                  type: 'Feature',
-                  properties: {
-                    plot_name: plotName,
-                    area_hectares: fieldData.area_hectares || 0,
-                    tile_urls: {
-                      VV_tile_url: fieldData.map_url,
-                      VH_tile_url: fieldData.map_url,
-                      RVI_tile_url: fieldData.map_url,
-                      SWI_tile_url: fieldData.map_url
-                    },
-                    // Add indices_analysis with sample data to prevent zero values
-                    indices_analysis: [
-                      {
-                        index_name: "VV",
-                        total_pixels: 1000,
-                        current_value: 0.5,
-                        classifications: [
-                          { class_name: "Weak", pixel_count: 580 },
-                          { class_name: "Stress", pixel_count: 170 },
-                          { class_name: "Moderate", pixel_count: 40 },
-                          { class_name: "Healthy", pixel_count: 150 }
-                        ]
-                      },
-                      {
-                        index_name: "RVI",
-                        total_pixels: 1000,
-                        current_value: 0.6,
-                        classifications: [
-                          { class_name: "Dry", pixel_count: 200 },
-                          { class_name: "Less Uptake", pixel_count: 300 },
-                          { class_name: "Sufficient Uptake", pixel_count: 350 },
-                          { class_name: "Adequate", pixel_count: 100 },
-                          { class_name: "Excess", pixel_count: 50 }
-                        ]
-                      },
-                      {
-                        index_name: "SWI",
-                        total_pixels: 1000,
-                        current_value: 0.4,
-                        classifications: [
-                          { class_name: "Dry", pixel_count: 200 },
-                          { class_name: "Water Stress", pixel_count: 250 },
-                          { class_name: "Moist Ground", pixel_count: 300 },
-                          { class_name: "Shallow Water", pixel_count: 150 },
-                          { class_name: "Water Bodies", pixel_count: 100 }
-                        ]
-                      }
-                    ]
-                  },
-                  geometry: {
-                    type: 'Polygon',
-                    coordinates: [[[74.724843, 19.931853], [74.724971, 19.932166], [74.723727, 19.932509], [74.723662, 19.932166], [74.724843, 19.931853]]] // Real coordinates from your logs
-                  }
-                }]
-              };
-              
-              console.log('🗺️ Using field analysis fallback data');
-              setPlotData(fallbackPlotData);
-              setError(null);
-              return;
-            }
-          }
-        } catch (fallbackErr) {
-          console.error('🗺️ Field analysis fallback also failed:', fallbackErr);
-        }
-        
-        throw lastError || new Error('All plot data endpoints failed');
+      if (!data || !data.features || data.features.length === 0) {
+        throw new Error('No plot data available from API');
       }
       
       setPlotData(data);
@@ -657,16 +533,16 @@ const Map: React.FC<MapProps> = ({
 
       console.error('Fetch plot data error:', err);
       
+      // Clear plot data on error
+      setPlotData(null);
+      
       if (err.message.includes('Failed to fetch')) {
-        setError('Network error: Unable to connect to plot data service');
+        setError('Network error: Unable to connect to plot data service. Please check if the API server is running on http://192.168.41.73:7031');
       } else if (err.message.includes('API Error:')) {
-        setError(err.message);
+        setError(`API Error: ${err.message}`);
       } else {
         setError(`Failed to fetch plot data: ${err.message}`);
       }
-      
-      // Don't clear existing data on error - keep previous data visible
-      // setPlotData(null);
 
       // Retry for network errors
       if (err.message.includes('Failed to fetch') && retryCount < 2) {
@@ -848,7 +724,7 @@ const Map: React.FC<MapProps> = ({
 
     // Map active layer to the correct tile URL key
     let layerUrlKey: string;
-    switch (activeLayer) {
+    switch (activeLayer as "VV" | "RVI" | "SWI" | "PEST") {
       case "VV":
         layerUrlKey = "VV_tile_url";
         break;
@@ -883,22 +759,7 @@ const Map: React.FC<MapProps> = ({
   // Debug logging for current plot feature - Only log when data changes
   React.useEffect(() => {
     if (currentPlotFeature) {
-      console.log('🗺️ currentPlotFeature:', currentPlotFeature);
-      console.log('🗺️ currentPlotFeature geometry:', currentPlotFeature?.geometry);
-      console.log('🗺️ currentPlotFeature properties:', currentPlotFeature?.properties);
-      console.log('🗺️ currentPlotFeature indices_analysis:', currentPlotFeature?.properties?.indices_analysis);
-      
-      // Log each index analysis in detail
-      if (currentPlotFeature?.properties?.indices_analysis) {
-        currentPlotFeature.properties.indices_analysis.forEach((analysis: any, index: number) => {
-          console.log(`🗺️ Index Analysis ${index}:`, {
-            index_name: analysis.index_name,
-            classifications: analysis.classifications,
-            total_pixels: analysis.total_pixels,
-            current_value: analysis.current_value
-          });
-        });
-      }
+      console.log('🗺️ Plot feature loaded:', currentPlotFeature.properties?.plot_name);
     }
   }, [currentPlotFeature]);
   
@@ -1233,19 +1094,30 @@ const Map: React.FC<MapProps> = ({
 
   const renderPlotBorder = () => {
     const geom = currentPlotFeature?.geometry;
-    console.log('🗺️ renderPlotBorder: geom:', geom);
-    console.log('🗺️ renderPlotBorder: currentPlotFeature:', currentPlotFeature);
     
     if (!geom || geom.type !== "Polygon") {
-      console.log('🗺️ renderPlotBorder: No valid geometry found');
       return null;
     }
 
-    const coords = geom.coordinates[0]
-      .map((c: any) => [c[1], c[0]] as LatLngTuple)
-      .filter((tuple: LatLngTuple) => !isNaN(tuple[0]) && !isNaN(tuple[1]));
+    if (!geom.coordinates || !geom.coordinates[0] || geom.coordinates[0].length < 3) {
+      return null;
+    }
 
-    console.log('🗺️ renderPlotBorder: coords:', coords);
+    // Transform coordinates from [lng, lat] to [lat, lng] for Leaflet
+    const coords = geom.coordinates[0]
+      .map((c: any) => {
+        if (!Array.isArray(c) || c.length < 2) {
+          return null;
+        }
+        return [c[1], c[0]] as LatLngTuple; // [lat, lng]
+      })
+      .filter((tuple: LatLngTuple | null): tuple is LatLngTuple => 
+        tuple !== null && !isNaN(tuple[0]) && !isNaN(tuple[1])
+      );
+
+    if (coords.length < 3) {
+      return null;
+    }
 
     return (
       <Polygon
@@ -1448,6 +1320,7 @@ const Map: React.FC<MapProps> = ({
             </div>
           </div>
         )}
+
 
         <MapContainer
           center={mapCenter}

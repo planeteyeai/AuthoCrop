@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Cloud,
-  Droplets,
-  Thermometer,
-  Waves,
-  AreaChart,
-  Gauge,
-  Satellite,
-} from "lucide-react";
+import { Satellite } from "lucide-react";
 
 import RainfallCard from "./cards/RainfallCard";
 import SoilMoistureCard from "./cards/SoilMoistureCard";
@@ -19,20 +11,8 @@ import SoilMoistureTrendCard from "./cards/SoilMoistureTrendCard";
 
 import "./Irrigation.css";
 import { useAppContext } from "../../context/AppContext";
-import { getCache, setCache } from "../utils/cache";
-
-interface WeatherData {
-  location: string;
-  region: string;
-  country: string;
-  localtime: string;
-  latitude: number;
-  longitude: number;
-  temperature_c: number;
-  humidity: number;
-  wind_kph: number;
-  precip_mm: number;
-}
+import { useFarmerProfile } from "../../hooks/useFarmerProfile";
+import { fetchCurrentWeather } from "../../services/weatherService";
 
 interface IrrigationProps {
   selectedPlotName?: string | null;
@@ -44,13 +24,40 @@ const Irrigation: React.FC<IrrigationProps> = ({
   moistGroundPercent,
 }) => {
   const { appState, setAppState, getCached, setCached } = useAppContext();
+  const { profile, loading: profileLoading } = useFarmerProfile();
   const weatherData = appState.weatherData || null;
   const [loading, setLoading] = useState<boolean>(!weatherData);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   useEffect(() => {
-    const cacheKey = "weather_nasik";
+    // Wait for farmer profile to load
+    if (profileLoading || !profile) {
+      console.log('🌤️ Irrigation: Waiting for farmer profile to load...');
+      return;
+    }
+
+    // Get farmer's location from their first plot
+    if (!profile.plots || profile.plots.length === 0) {
+      console.warn('🌤️ Irrigation: No plots found in farmer profile');
+      setError("No location data available for weather");
+      setLoading(false);
+      return;
+    }
+
+    const firstPlot = profile.plots[0];
+    const coordinates = firstPlot.coordinates?.location?.coordinates;
+    
+    if (!coordinates || coordinates.length !== 2) {
+      console.warn('🌤️ Irrigation: Invalid coordinates in farmer profile:', coordinates);
+      setError("Invalid location data for weather");
+      setLoading(false);
+      return;
+    }
+
+    const [longitude, latitude] = coordinates;
+    const cacheKey = `weather_${latitude}_${longitude}`;
+    
     const cached = getCached(cacheKey);
     if (cached) {
       setAppState((prev: any) => ({ ...prev, weatherData: cached.data }));
@@ -58,27 +65,29 @@ const Irrigation: React.FC<IrrigationProps> = ({
       setLoading(false);
       return;
     }
+    
     setLoading(true);
-    fetchWeatherData();
+    fetchWeatherData(latitude, longitude);
     // eslint-disable-next-line
-  }, []);
+  }, [profile, profileLoading]);
 
-  const fetchWeatherData = async () => {
+  const fetchWeatherData = async (lat: number, lon: number) => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `https://dev-currentw.cropeye.ai/current-weather?lat=19.99727&lon=73.79096`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch weather data");
-      }
-      const data = await response.json();
+      console.log('🌤️ Irrigation: Fetching weather for coordinates:', { lat, lon });
+      
+      // Use the same weather service as Header component
+      const data = await fetchCurrentWeather(lat, lon);
+      console.log('🌤️ Irrigation: Weather data received:', data);
+      
       setAppState((prev: any) => ({ ...prev, weatherData: data }));
       setLastUpdated(new Date());
       setError(null);
-      // Save to context cache and localStorage
+      
+      // Save to context cache and localStorage with location-specific key
+      const cacheKey = `weather_${lat}_${lon}`;
       const payload = { data, timestamp: Date.now() };
-      setCached("weather_nasik", payload);
+      setCached(cacheKey, payload);
     } catch (err) {
       setError("Error fetching weather data. Please try again later.");
       console.error("Error fetching weather data:", err);
@@ -93,31 +102,14 @@ const Irrigation: React.FC<IrrigationProps> = ({
     year: "numeric",
   });
 
-  const mockData = {
-    soilMoisture: 65,
-    waterUptake: {
-      current: 1.2,
-      average: 1.5,
-      efficiency: 80,
-    },
-    evapotranspiration: {
-      value: 3.8,
-      average: 2.6,
-    },
-    waterLevel: {
-      percentage: 85,
-      current: 850,
-      max: 1000,
-    },
-  };
 
-  if (loading && !weatherData) {
+  if (profileLoading || (loading && !weatherData)) {
     return (
       <div className="irrigation-loading">
         <div className="loading-spinner">
           <Satellite className="w-8 h-8 animate-spin text-blue-500" />
         </div>
-        <p>Loading irrigation data...</p>
+        <p>{profileLoading ? 'Loading farmer profile...' : 'Loading irrigation data...'}</p>
       </div>
     );
   }
@@ -165,7 +157,15 @@ const Irrigation: React.FC<IrrigationProps> = ({
       </div>
 
       <div className="refresh-section">
-        <button onClick={fetchWeatherData} className="refresh-button">
+        <button 
+          onClick={() => {
+            if (profile?.plots?.[0]?.coordinates?.location?.coordinates) {
+              const [longitude, latitude] = profile.plots[0].coordinates.location.coordinates;
+              fetchWeatherData(latitude, longitude);
+            }
+          }} 
+          className="refresh-button"
+        >
           Refresh Data
         </button>
         <span className="last-updated">
