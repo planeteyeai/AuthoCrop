@@ -801,6 +801,8 @@ function AddFarm() {
       return;
     }
 
+
+    
     setIsSubmitting(true);
     setSubmitStatus("idle");
     setSubmitMessage("");
