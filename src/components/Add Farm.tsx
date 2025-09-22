@@ -217,6 +217,69 @@ function AddFarm() {
   const [filteredDistricts, setFilteredDistricts] = useState<string[]>([]);
   const [filteredTalukas, setFilteredTalukas] = useState<string[]>([]);
 
+  // Phone number validation state
+  const [phoneError, setPhoneError] = useState('');
+  const [showPhoneTooltip, setShowPhoneTooltip] = useState(false);
+
+  // Email validation state
+  const [emailError, setEmailError] = useState('');
+  const [showEmailTooltip, setShowEmailTooltip] = useState(false);
+
+  // Phone number validation pattern
+  const phonePattern = /^[0-9]{10}$/;
+
+  // Email validation pattern
+  const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+  // Test phone number validation examples (for demonstration)
+  const testPhoneValidation = () => {
+    const phoneNumbers = [
+      "1234567890",     // ✅ valid
+      "0123456789",     // ✅ valid
+      "123-456-7890",   // ❌ invalid (dash not allowed)
+      "123 456 7890",   // ❌ invalid (space not allowed)
+      "123.456.7890",   // ❌ invalid (dot not allowed)
+      "+11234567890",   // ❌ invalid (country code not allowed)
+      "12345678"        // ❌ invalid (not 10 digits)
+    ];
+
+    console.log("Phone Number Validation Test:");
+    phoneNumbers.forEach(number => {
+      if (phonePattern.test(number)) {
+        console.log(`✅ Valid: ${number}`);
+      } else {
+        console.log(`❌ Invalid: ${number}`);
+      }
+    });
+  };
+
+  // Test email validation examples (for demonstration)
+  const testEmailValidation = () => {
+    const emails = [
+      "user@example.com",        // ✅ valid
+      "user.name@domain.co.in",  // ✅ valid
+      "user-name@domain.com",    // ✅ valid
+      "user@domain",             // ❌ invalid (no TLD)
+      "user@domain.",            // ❌ invalid (dot at end)
+      "user@.com",               // ❌ invalid (no domain before dot)
+      "user@@domain.com",        // ❌ invalid (double @)
+      "user domain@com"          // ❌ invalid (space not allowed)
+    ];
+
+    console.log("Email Validation Test:");
+    emails.forEach(email => {
+      if (emailPattern.test(email)) {
+        console.log(`✅ Valid: ${email}`);
+      } else {
+        console.log(`❌ Invalid: ${email}`);
+      }
+    });
+  };
+
+  // Uncomment the lines below to test validation in console
+  // testPhoneValidation();
+  // testEmailValidation();
+
   const mapRef = useRef(null);
   const featureGroupRef = useRef<L.FeatureGroup>(null);
 
@@ -316,6 +379,115 @@ function AddFarm() {
       ...prev,
       [name]: value === "",
     }));
+  };
+
+  // Phone number validation function
+  const validatePhoneNumber = (phone: string): boolean => {
+    // Remove any non-digit characters
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    // Check if it matches the pattern exactly
+    if (!phonePattern.test(cleanPhone)) {
+      if (cleanPhone.length === 0) {
+        setPhoneError('');
+      } else if (cleanPhone.length < 10) {
+        setPhoneError('Enter 10 digit number');
+      } else if (cleanPhone.length > 10) {
+        setPhoneError('Phone number must be exactly 10 digits');
+      } else {
+        setPhoneError('Only numbers are allowed');
+      }
+      return false;
+    }
+    
+    setPhoneError('');
+    return true;
+  };
+
+  // Handle phone number input with validation
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    // Only allow digits
+    const cleanValue = value.replace(/\D/g, '');
+    
+    // Limit to 10 digits
+    const limitedValue = cleanValue.slice(0, 10);
+    
+    // Update form data
+    setFormData((prev) => ({
+      ...prev,
+      phone_number: limitedValue,
+    }));
+
+    setShowIcons((prev) => ({
+      ...prev,
+      phone_number: limitedValue === "",
+    }));
+    
+    // Validate in real-time
+    if (limitedValue.length > 0) {
+      validatePhoneNumber(limitedValue);
+      setShowPhoneTooltip(true);
+    } else {
+      setPhoneError('');
+      setShowPhoneTooltip(false);
+    }
+  };
+
+  // Email validation function
+  const validateEmail = (email: string): boolean => {
+    if (email.length === 0) {
+      setEmailError('');
+      return true; // Empty email is allowed (not required field)
+    }
+    
+    if (!emailPattern.test(email)) {
+      if (!email.includes('@')) {
+        setEmailError('Email must contain @ symbol');
+      } else if (email.indexOf('@') !== email.lastIndexOf('@')) {
+        setEmailError('Email can only contain one @ symbol');
+      } else if (email.includes(' ')) {
+        setEmailError('Email cannot contain spaces');
+      } else if (!email.includes('.')) {
+        setEmailError('Email must contain a domain extension');
+      } else if (email.endsWith('.')) {
+        setEmailError('Email cannot end with a dot');
+      } else if (email.startsWith('@') || email.endsWith('@')) {
+        setEmailError('Email cannot start or end with @ symbol');
+      } else {
+        setEmailError('Please enter a valid email address');
+      }
+      return false;
+    }
+    
+    setEmailError('');
+    return true;
+  };
+
+  // Handle email input with validation
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    // Update form data
+    setFormData((prev) => ({
+      ...prev,
+      email: value,
+    }));
+
+    setShowIcons((prev) => ({
+      ...prev,
+      email: value === "",
+    }));
+    
+    // Validate in real-time
+    if (value.length > 0) {
+      validateEmail(value);
+      setShowEmailTooltip(true);
+    } else {
+      setEmailError('');
+      setShowEmailTooltip(false);
+    }
   };
 
   const handleSearch = async () => {
@@ -580,6 +752,22 @@ function AddFarm() {
       return;
     }
 
+    // Validate phone number
+    if (!validatePhoneNumber(formData.phone_number)) {
+      setSubmitStatus("error");
+      setSubmitMessage("Please enter a valid 10-digit phone number.");
+      setShowPhoneTooltip(true);
+      return;
+    }
+
+    // Validate email (if provided)
+    if (formData.email && !validateEmail(formData.email)) {
+      setSubmitStatus("error");
+      setSubmitMessage("Please enter a valid email address.");
+      setShowEmailTooltip(true);
+      return;
+    }
+
     // Validate required fields
     const requiredFields = [
       "first_name",
@@ -754,19 +942,225 @@ The farmer can now login with Emailcredentials to access the dashboard and monit
                   ? "date"
                   : key === "password" || key === "confirm_password"
                   ? "password"
+                  : key === "phone_number"
+                  ? "tel"
                   : "text"
               }
               name={key}
               placeholder={`Enter ${key.replace("_", " ")}`}
               value={value}
-              onChange={handleInputChange}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+              onChange={
+                key === "phone_number" ? handlePhoneChange : 
+                key === "email" ? handleEmailChange : 
+                handleInputChange
+              }
+              onFocus={
+                key === "phone_number" ? () => setShowPhoneTooltip(true) : 
+                key === "email" ? () => setShowEmailTooltip(true) : 
+                undefined
+              }
+              onBlur={
+                key === "phone_number" ? () => setTimeout(() => setShowPhoneTooltip(false), 300) : 
+                key === "email" ? () => setTimeout(() => setShowEmailTooltip(false), 300) : 
+                undefined
+              }
+              maxLength={key === "phone_number" ? 10 : undefined}
+              className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm transition-colors ${
+                (key === "phone_number" && phoneError) || (key === "email" && emailError)
+                  ? 'border-red-500 bg-red-50' 
+                  : (key === "phone_number" && value.length === 10 && !phoneError) || 
+                    (key === "email" && value.length > 0 && !emailError && emailPattern.test(value))
+                  ? 'border-green-500 bg-green-50' 
+                  : 'border-gray-300'
+              }`}
             />
           )}
           {showIcons[key] && (
             <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
               {getFieldIcon(key)}
             </span>
+          )}
+
+          {/* Phone number validation indicators */}
+          {key === "phone_number" && (
+            <>
+              {/* Success indicator */}
+              {value.length === 10 && !phoneError && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 text-lg">
+                  ✓
+                </div>
+              )}
+              
+              {/* Error indicator */}
+              {phoneError && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500 text-lg">
+                  ✗
+                </div>
+              )}
+
+              {/* Phone Validation Tooltip */}
+              {showPhoneTooltip && (
+                <div className="absolute top-full left-0 mt-2 bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-lg shadow-lg z-20 min-w-[280px]">
+                  <div className="flex items-start">
+                    <div className={`w-3 h-3 rounded-full mr-3 mt-1 ${
+                      phoneError ? 'bg-red-500' : 
+                      value.length === 10 ? 'bg-green-500' : 
+                      'bg-yellow-500'
+                    }`}></div>
+                    <div className="flex-1">
+                      <div className="font-medium text-sm mb-2">
+                        {phoneError ? phoneError : 
+                         value.length === 10 ? 'Valid phone number!' : 
+                         'Phone Number Validation'}
+                      </div>
+                      <div className="text-xs text-gray-600 space-y-1">
+                        <div className="flex items-center">
+                          <span className={`w-2 h-2 rounded-full mr-2 ${
+                            value.length === 10 ? 'bg-green-500' : 'bg-gray-300'
+                          }`}></span>
+                          Must be exactly 10 digits ({value.length}/10)
+                        </div>
+                        <div className="flex items-center">
+                          <span className={`w-2 h-2 rounded-full mr-2 ${
+                            /^\d+$/.test(value) ? 'bg-green-500' : 'bg-gray-300'
+                          }`}></span>
+                          Only numbers allowed (no spaces, letters, or symbols)
+                        </div>
+                        <div className="flex items-center">
+                          <span className={`w-2 h-2 rounded-full mr-2 ${
+                            value.length > 0 ? 'bg-green-500' : 'bg-gray-300'
+                          }`}></span>
+                          Current input: "{value || 'Empty'}"
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Inline validation message */}
+              {value.length > 0 && (
+                <div className={`mt-2 text-sm ${
+                  phoneError ? 'text-red-600' : 
+                  value.length === 10 ? 'text-green-600' : 
+                  'text-yellow-600'
+                }`}>
+                  {phoneError ? (
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                      {phoneError}
+                    </span>
+                  ) : value.length === 10 ? (
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                      Phone number is valid!
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+                      Enter {10 - value.length} more digits
+                    </span>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Email validation indicators */}
+          {key === "email" && (
+            <>
+              {/* Success indicator */}
+              {value.length > 0 && !emailError && emailPattern.test(value) && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 text-lg">
+                  ✓
+                </div>
+              )}
+              
+              {/* Error indicator */}
+              {emailError && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500 text-lg">
+                  ✗
+                </div>
+              )}
+
+              {/* Email Validation Tooltip */}
+              {showEmailTooltip && (
+                <div className="absolute top-full left-0 mt-2 bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-lg shadow-lg z-20 min-w-[300px]">
+                  <div className="flex items-start">
+                    <div className={`w-3 h-3 rounded-full mr-3 mt-1 ${
+                      emailError ? 'bg-red-500' : 
+                      value.length > 0 && !emailError && emailPattern.test(value) ? 'bg-green-500' : 
+                      'bg-yellow-500'
+                    }`}></div>
+                    <div className="flex-1">
+                      <div className="font-medium text-sm mb-2">
+                        {emailError ? emailError : 
+                         value.length > 0 && !emailError && emailPattern.test(value) ? 'Valid email address!' : 
+                         'Email Validation'}
+                      </div>
+                      <div className="text-xs text-gray-600 space-y-1">
+                        <div className="flex items-center">
+                          <span className={`w-2 h-2 rounded-full mr-2 ${
+                            value.includes('@') ? 'bg-green-500' : 'bg-gray-300'
+                          }`}></span>
+                          Must contain @ symbol
+                        </div>
+                        <div className="flex items-center">
+                          <span className={`w-2 h-2 rounded-full mr-2 ${
+                            value.includes('.') ? 'bg-green-500' : 'bg-gray-300'
+                          }`}></span>
+                          Must contain domain extension (.com, .org, etc.)
+                        </div>
+                        <div className="flex items-center">
+                          <span className={`w-2 h-2 rounded-full mr-2 ${
+                            !value.includes(' ') ? 'bg-green-500' : 'bg-gray-300'
+                          }`}></span>
+                          No spaces allowed
+                        </div>
+                        <div className="flex items-center">
+                          <span className={`w-2 h-2 rounded-full mr-2 ${
+                            value.indexOf('@') === value.lastIndexOf('@') ? 'bg-green-500' : 'bg-gray-300'
+                          }`}></span>
+                          Only one @ symbol allowed
+                        </div>
+                        <div className="flex items-center">
+                          <span className={`w-2 h-2 rounded-full mr-2 ${
+                            value.length > 0 ? 'bg-green-500' : 'bg-gray-300'
+                          }`}></span>
+                          Current input: "{value || 'Empty'}"
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Inline validation message */}
+              {value.length > 0 && (
+                <div className={`mt-2 text-sm ${
+                  emailError ? 'text-red-600' : 
+                  !emailError && emailPattern.test(value) ? 'text-green-600' : 
+                  'text-yellow-600'
+                }`}>
+                  {emailError ? (
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                      {emailError}
+                    </span>
+                  ) : !emailError && emailPattern.test(value) ? (
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                      Email address is valid!
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+                      Enter a valid email address
+                    </span>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
