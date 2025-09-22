@@ -660,40 +660,39 @@ export const FarmList: React.FC<FarmlistProps> = ({ users: propUsers, setUsers: 
   const paginatedData = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="bg-white rounded shadow-md p-4 max-w-7xl mx-auto mt-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-700">Farmlist</h2>
+    <div className="p-2 sm:p-6 bg-gray-50 min-h-screen">
+      <div className="bg-white rounded shadow-md p-2 sm:p-4 max-w-7xl mx-auto mt-2 sm:mt-6">
+        {/* Header Section - Responsive */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-700">Farmlist</h2>
 
-          <div className="flex items-center space-x-4">
-            {/* <button onClick={handleDownload} className="text-green-600 hover:text-green-800 flex items-center">
-              <Download className="w-5 h-5 mr-1" />
-            </button> */}
-
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
             {selectedFarmers.size > 0 && (
               <button 
                 onClick={handleBulkDownload} 
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center transition-colors text-sm sm:text-base"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Download Selected ({selectedFarmers.size})
-            </button>
+                <span className="hidden sm:inline">Download Selected ({selectedFarmers.size})</span>
+                <span className="sm:hidden">Download ({selectedFarmers.size})</span>
+              </button>
             )}
 
             <div className="relative">
               <Search className="absolute left-3 top-2.5 text-gray-400 h-4 w-4" />
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search farmers..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
               />
             </div>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-100 text-gray-600">
               <tr>
@@ -778,23 +777,134 @@ export const FarmList: React.FC<FarmlistProps> = ({ users: propUsers, setUsers: 
           </table>
         </div>
 
-        <div className="mt-4 flex justify-between items-center text-sm text-gray-600">
-          <p>
+        {/* Mobile Card View */}
+        <div className="lg:hidden">
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                Loading farms data...
+              </div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-600">
+              Error: {error}
+            </div>
+          ) : paginatedData.length === 0 ? (
+            <div className="text-center py-4">No farms found</div>
+          ) : (
+            <div className="space-y-4">
+              {/* Select All for Mobile */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedFarmers.size === paginatedData.length && paginatedData.length > 0}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 mr-2"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Select All</span>
+                </label>
+                {selectedFarmers.size > 0 && (
+                  <span className="text-sm text-blue-600 font-medium">
+                    {selectedFarmers.size} selected
+                  </span>
+                )}
+              </div>
+
+              {/* Farmer Cards */}
+              {paginatedData.map((user) => (
+                <div key={user.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedFarmers.has(user.id)}
+                        onChange={() => handleSelectFarmer(user.id)}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 mr-3"
+                      />
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-base">{user.farmer_name}</h3>
+                        <p className="text-sm text-gray-600">{user.phone_number}</p>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => handleViewDetails(user)} 
+                        className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
+                        title="View Details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDownloadFarmer(user)} 
+                        className="p-2 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-lg transition-colors"
+                        title="Download Details"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-gray-500">Area:</span>
+                      <p className="font-medium">{user.area} acres</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Plantation:</span>
+                      <p className="font-medium">{user.plantation_type}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Variety:</span>
+                      <p className="font-medium">{user.variety_type}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Actions:</span>
+                      <div className="flex space-x-2 mt-1">
+                        <button 
+                          onClick={() => handleEdit(user.id)} 
+                          className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                          title="Edit"
+                        >
+                          <Edit className="w-3 h-3" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(user.id)} 
+                          className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Responsive Pagination */}
+        <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-gray-600">
+          <p className="text-center sm:text-left">
             Showing {paginatedData.length} of {filtered.length} entries
           </p>
-          <div className="space-x-2">
+          <div className="flex items-center space-x-2">
             <button
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
-              className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+              className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               Previous
             </button>
-            <span>Page {currentPage} of {totalPages}</span>
+            <span className="px-2 py-1 bg-gray-100 rounded text-sm">
+              Page {currentPage} of {totalPages}
+            </span>
             <button
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
-              className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+              className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               Next
             </button>
@@ -802,68 +912,70 @@ export const FarmList: React.FC<FarmlistProps> = ({ users: propUsers, setUsers: 
         </div>
       </div>
 
-      {/* Farm Details Modal */}
+      {/* Farm Details Modal - Responsive */}
       {isModalOpen && selectedFarmer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="bg-blue-600 text-white p-4 rounded-t-lg flex justify-between items-center">
-              <h2 className="text-xl font-semibold">{selectedFarmer.farmer_name}'s Farm Details</h2>
+            <div className="bg-blue-600 text-white p-3 sm:p-4 rounded-t-lg flex justify-between items-center">
+              <h2 className="text-lg sm:text-xl font-semibold truncate pr-2">
+                {selectedFarmer.farmer_name}'s Farm Details
+              </h2>
               <button 
                 onClick={closeModal}
-                className="text-white hover:text-gray-200 transition-colors"
+                className="text-white hover:text-gray-200 transition-colors flex-shrink-0"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
               {/* Farmer Information */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center mb-4">
-                  <User className="w-5 h-5 text-blue-600 mr-2" />
-                  <h3 className="text-lg font-semibold text-gray-800">Farmer Information</h3>
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center mb-3 sm:mb-4">
+                  <User className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mr-2" />
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-800">Farmer Information</h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-2">
-                    <p><span className="font-medium">Name:</span> {selectedFarmer.farmer_name}</p>
-                    <p><span className="font-medium">Phone:</span> {selectedFarmer.phone_number}</p>
-                    <p><span className="font-medium">Taluka:</span> {selectedFarmer.taluka || 'N/A'}</p>
-                    <p><span className="font-medium">State:</span> {selectedFarmer.state || 'N/A'}</p>
+                    <p className="text-sm sm:text-base"><span className="font-medium">Name:</span> {selectedFarmer.farmer_name}</p>
+                    <p className="text-sm sm:text-base"><span className="font-medium">Phone:</span> {selectedFarmer.phone_number}</p>
+                    <p className="text-sm sm:text-base"><span className="font-medium">Taluka:</span> {selectedFarmer.taluka || 'N/A'}</p>
+                    <p className="text-sm sm:text-base"><span className="font-medium">State:</span> {selectedFarmer.state || 'N/A'}</p>
                   </div>
                   <div className="space-y-2">
-                    <p><span className="font-medium">Email:</span> {selectedFarmer.email || 'N/A'}</p>
-                    <p><span className="font-medium">Address:</span> {selectedFarmer.address || 'N/A'}</p>
-                    <p><span className="font-medium">District:</span> {selectedFarmer.district || 'N/A'}</p>
-                    <p><span className="font-medium">Created:</span> {selectedFarmer.created_at ? new Date(selectedFarmer.created_at).toLocaleDateString('en-GB') : 'N/A'}</p>
+                    <p className="text-sm sm:text-base"><span className="font-medium">Email:</span> {selectedFarmer.email || 'N/A'}</p>
+                    <p className="text-sm sm:text-base"><span className="font-medium">Address:</span> {selectedFarmer.address || 'N/A'}</p>
+                    <p className="text-sm sm:text-base"><span className="font-medium">District:</span> {selectedFarmer.district || 'N/A'}</p>
+                    <p className="text-sm sm:text-base"><span className="font-medium">Created:</span> {selectedFarmer.created_at ? new Date(selectedFarmer.created_at).toLocaleDateString('en-GB') : 'N/A'}</p>
                   </div>
                 </div>
               </div>
 
               {/* Total Farm Area */}
-              <div className="bg-green-50 rounded-lg p-4">
+              <div className="bg-green-50 rounded-lg p-3 sm:p-4">
                 <div className="flex items-center mb-2">
-                  <Ruler className="w-5 h-5 text-green-600 mr-2" />
-                  <h3 className="text-lg font-semibold text-gray-800">Total Farm Area</h3>
+                  <Ruler className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 mr-2" />
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-800">Total Farm Area</h3>
                 </div>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-lg sm:text-2xl font-bold text-green-600">
                   {selectedFarmer.area} acres ({(selectedFarmer.area * 0.404686).toFixed(2)} hectares)
                 </p>
               </div>
 
               {/* Plot Details */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center mb-4">
-                  <Map className="w-5 h-5 text-blue-600 mr-2" />
-                  <h3 className="text-lg font-semibold text-gray-800">
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center mb-3 sm:mb-4">
+                  <Map className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mr-2" />
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-800">
                     Plot Details ({selectedFarmer.plots?.length || 0} plots)
                   </h3>
                 </div>
                 
                 {selectedFarmer.plots && selectedFarmer.plots.length > 0 ? (
                   selectedFarmer.plots.map((plot: any, index: number) => (
-                    <div key={index} className="bg-white rounded-lg p-4 mb-4 border">
-                      <h4 className="text-lg font-semibold text-green-600 mb-3">
+                    <div key={index} className="bg-white rounded-lg p-3 sm:p-4 mb-3 sm:mb-4 border">
+                      <h4 className="text-base sm:text-lg font-semibold text-green-600 mb-3">
                         Plot {index + 1} - {plot.area_size} acres
                       </h4>
                       
@@ -873,36 +985,36 @@ export const FarmList: React.FC<FarmlistProps> = ({ users: propUsers, setUsers: 
                           const irrigation = farm.irrigations && farm.irrigations.length > 0 ? farm.irrigations[0] : null;
                           
                           return (
-                            <div key={farmIndex} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div key={farmIndex} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                               <div className="space-y-2">
-                                <p><span className="font-medium">Village:</span> {plot.village || 'N/A'}</p>
-                                <p><span className="font-medium">Variety:</span> {farm.crop_type || 'N/A'}</p>
-                                <p><span className="font-medium">Plantation Date:</span> {farm.planting_date || 'N/A'}</p>
-                                <p><span className="font-medium">Spacing A:</span> {farm.spacing_a || 'N/A'}</p>
-                                <p><span className="font-medium">Emitters:</span> {irrigation?.emitters_count || 'N/A'}</p>
+                                <p className="text-sm sm:text-base"><span className="font-medium">Village:</span> {plot.village || 'N/A'}</p>
+                                <p className="text-sm sm:text-base"><span className="font-medium">Variety:</span> {farm.crop_type || 'N/A'}</p>
+                                <p className="text-sm sm:text-base"><span className="font-medium">Plantation Date:</span> {farm.plantation_date || 'N/A'}</p>
+                                <p className="text-sm sm:text-base"><span className="font-medium">Spacing A:</span> {farm.spacing_a || 'N/A'}</p>
+                                <p className="text-sm sm:text-base"><span className="font-medium">Emitters:</span> {irrigation?.emitters_count || 'N/A'}</p>
                               </div>
                               <div className="space-y-2">
-                                <p><span className="font-medium">PIN Code:</span> {plot.pin_code || 'N/A'}</p>
-                                <p><span className="font-medium">Plantation Type:</span> {farm.plantation_type || 'N/A'}</p>
-                                <p><span className="font-medium">Irrigation:</span> {irrigation?.irrigation_type || 'N/A'}</p>
-                                <p><span className="font-medium">Spacing B:</span> {farm.spacing_b || 'N/A'}</p>
+                                <p className="text-sm sm:text-base"><span className="font-medium">PIN Code:</span> {plot.pin_code || 'N/A'}</p>
+                                <p className="text-sm sm:text-base"><span className="font-medium">Plantation Type:</span> {farm.plantation_type || 'N/A'}</p>
+                                <p className="text-sm sm:text-base"><span className="font-medium">Irrigation:</span> {irrigation?.irrigation_type || 'N/A'}</p>
+                                <p className="text-sm sm:text-base"><span className="font-medium">Spacing B:</span> {farm.spacing_b || 'N/A'}</p>
                               </div>
-                              <div className="space-y-2">
-                                <p><span className="font-medium">Gat No:</span> {plot.gat_number || 'N/A'}</p>
-                                <p><span className="font-medium">Plantation Method:</span> {farm.planting_method || 'N/A'}</p>
-                                <p><span className="font-medium">Plants/Acre:</span> {irrigation?.plants_per_acre || 'N/A'}</p>
-                                <p><span className="font-medium">Flow Rate:</span> {irrigation?.flow_rate_lph || 'N/A'} LPH</p>
+                              <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+                                <p className="text-sm sm:text-base"><span className="font-medium">Gat No:</span> {plot.gat_number || 'N/A'}</p>
+                                <p className="text-sm sm:text-base"><span className="font-medium">Plantation Method:</span> {farm.planting_method || 'N/A'}</p>
+                                <p className="text-sm sm:text-base"><span className="font-medium">Plants/Acre:</span> {irrigation?.plants_per_acre || 'N/A'}</p>
+                                <p className="text-sm sm:text-base"><span className="font-medium">Flow Rate:</span> {irrigation?.flow_rate_lph || 'N/A'} LPH</p>
                               </div>
                             </div>
                           );
                         })
                       ) : (
-                        <p className="text-gray-500">No farm details available for this plot.</p>
+                        <p className="text-gray-500 text-sm sm:text-base">No farm details available for this plot.</p>
                       )}
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500">No plot details available.</p>
+                  <p className="text-gray-500 text-sm sm:text-base">No plot details available.</p>
                 )}
               </div>
             </div>
