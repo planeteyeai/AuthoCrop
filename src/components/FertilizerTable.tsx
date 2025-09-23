@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Satellite } from 'lucide-react';
-import { getFarmerProfile } from '../api';
+import api, { getFarmsWithFarmerDetails } from '../api';
 import budData from './bud.json';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -33,20 +33,87 @@ const FertilizerTable: React.FC = () => {
 
   // Helper function to calculate days since plantation
   const calculateDaysSincePlantation = (plantationDate: string): number => {
-    const plantation = new Date(plantationDate);
+    console.log('📅 Starting date calculation with plantation date:', plantationDate);
+    
+    // Try different date parsing methods
+    let plantation: Date;
+    
+    // Method 1: Direct parsing
+    plantation = new Date(plantationDate);
+    console.log('📅 Method 1 - Direct parsing:', plantation);
+    
+    // Method 2: Handle different date formats
+    if (isNaN(plantation.getTime())) {
+      console.log('⚠️ Method 1 failed, trying alternative parsing');
+      // Try parsing as YYYY-MM-DD format
+      const parts = plantationDate.split('-');
+      if (parts.length === 3) {
+        plantation = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        console.log('📅 Method 2 - Manual parsing:', plantation);
+      } else {
+        // Try parsing as DD/MM/YYYY format
+        const parts2 = plantationDate.split('/');
+        if (parts2.length === 3) {
+          plantation = new Date(parseInt(parts2[2]), parseInt(parts2[1]) - 1, parseInt(parts2[0]));
+          console.log('📅 Method 3 - DD/MM/YYYY parsing:', plantation);
+        }
+      }
+    }
+    
     const today = new Date();
     const diffTime = today.getTime() - plantation.getTime();
-    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    console.log('📅 Date calculation results:');
+    console.log('  - Plantation date string:', plantationDate);
+    console.log('  - Plantation Date object:', plantation);
+    console.log('  - Plantation timestamp:', plantation.getTime());
+    console.log('  - Today:', today);
+    console.log('  - Today timestamp:', today.getTime());
+    console.log('  - Difference in ms:', diffTime);
+    console.log('  - Days since plantation:', days);
+    console.log('  - Is plantation valid?', !isNaN(plantation.getTime()));
+    
+    return days;
   };
 
   // Helper function to get current stage based on days
   const getCurrentStage = (days: number, stages: any[]): any => {
+    console.log('🔍 Getting current stage for days:', days);
+    console.log('🔍 Available stages:', stages.map(s => ({ stage: s.stage, days: s.days })));
+    
+    // Test with known values for debugging
+    console.log('🧪 Testing stage ranges:');
     for (const stage of stages) {
-      const [minDays, maxDays] = stage.days.split('–').map((d: string) => parseInt(d.trim()));
+      const daysRange = stage.days.replace(/[–-]/g, '-');
+      const [minDays, maxDays] = daysRange.split('-').map((d: string) => parseInt(d.trim()));
+      console.log(`🧪 Stage "${stage.stage}": ${minDays}-${maxDays}`);
+      
+      // Test specific values
+      [50, 100, 150, 200, 250, 300].forEach(testDay => {
+        const matches = testDay >= minDays && testDay <= maxDays;
+        if (matches) {
+          console.log(`🧪 Day ${testDay} matches "${stage.stage}"`);
+        }
+      });
+    }
+    
+    for (const stage of stages) {
+      // Handle both en-dash (–) and regular hyphen (-) in the days range
+      const daysRange = stage.days.replace(/[–-]/g, '-'); // Normalize to regular hyphen
+      const [minDays, maxDays] = daysRange.split('-').map((d: string) => parseInt(d.trim()));
+      
+      console.log(`🔍 Checking stage "${stage.stage}" with range ${minDays}-${maxDays} for days ${days}`);
+      console.log(`🔍 Range check: ${days} >= ${minDays} && ${days} <= ${maxDays} = ${days >= minDays && days <= maxDays}`);
+      
       if (days >= minDays && days <= maxDays) {
+        console.log(`✅ Found matching stage: ${stage.stage}`);
         return stage;
       }
     }
+    
+    console.log('⚠️ No matching stage found, returning last stage');
+    console.log('⚠️ This means the days value is outside all stage ranges');
     // Return the last stage if no match found
     return stages[stages.length - 1];
   };
@@ -98,7 +165,10 @@ const FertilizerTable: React.FC = () => {
 
   // Helper function to generate data with a specific schedule
   const generateSevenDaysDataWithSchedule = (plantationDate: string, fertilizerSchedule: any): FertilizerEntry[] => {
+    console.log('🌱 Generating 7 days data with plantation date:', plantationDate);
+    
     const daysSincePlantation = calculateDaysSincePlantation(plantationDate);
+    console.log('📅 Days since plantation:', daysSincePlantation);
 
     const sevenDaysData: FertilizerEntry[] = [];
     const currentDate = new Date();
@@ -107,8 +177,12 @@ const FertilizerTable: React.FC = () => {
       const targetDate = new Date(currentDate);
       targetDate.setDate(currentDate.getDate() + i);
       
+      // Calculate days from plantation for this specific day
       const targetDays = daysSincePlantation + i;
+      console.log(`📅 Day ${i}: Target days from plantation = ${targetDays}`);
+      
       const currentStage = getCurrentStage(targetDays, fertilizerSchedule.stages);
+      console.log(`🌱 Day ${i}: Stage determined = ${currentStage.stage}`);
       
       sevenDaysData.push({
         date: targetDate.toLocaleDateString('en-GB'),
@@ -120,6 +194,7 @@ const FertilizerTable: React.FC = () => {
       });
     }
 
+    console.log('✅ Generated 7 days data:', sevenDaysData);
     return sevenDaysData;
   };
 
@@ -129,36 +204,154 @@ const FertilizerTable: React.FC = () => {
         setIsLoading(true);
         setError(null);
 
-        console.log('🔍 Fetching farmer profile data using getFarmerProfile()...');
+        console.log('🔍 Fetching current farmer data using /users/me/ endpoint...');
         
-        // Use the correct API function that has the data
-        const profileData = await getFarmerProfile();
-        console.log('📊 Farmer profile response:', profileData);
+        // Get the current user data directly - this already contains the farmer's data
+        const currentUserResponse = await api.get('/users/me/');
+        const currentUser = currentUserResponse.data;
+        console.log('👤 Current user data:', currentUser);
+        console.log('👤 Current user ID:', currentUser.id);
+        console.log('👤 Current user role:', currentUser.role);
+        console.log('👤 Current user role_id:', currentUser.role_id);
         
-        if (!profileData || !profileData.plots || profileData.plots.length === 0) {
-          throw new Error('No plots found in farmer profile');
+        // Check if the user has farm data directly in their profile
+        let farms = [];
+        if (currentUser.farms && Array.isArray(currentUser.farms) && currentUser.farms.length > 0) {
+          console.log('✅ Found farms directly in user profile:', currentUser.farms.length);
+          farms = currentUser.farms;
+          
+          console.log('🌾 Current user farms:', farms);
+        
+        } else {
+          console.log('⚠️ No farms found in user profile, trying getFarmerProfile API...');
+          
+          // Fallback to getFarmerProfile API for current user
+          try {
+            const profileResponse = await getFarmerProfile();
+            console.log('📊 Farmer profile response:', profileResponse);
+            
+            if (profileResponse && profileResponse.plots && profileResponse.plots.length > 0) {
+              // Use the first plot's farm data
+              const firstPlot = profileResponse.plots[0];
+              const firstFarm = firstPlot.farms[0];
+              
+              console.log('🌾 Using farm data from profile:', firstFarm);
+              
+              // Extract data from profile
+              const plantationDate = firstFarm.plantation_date || 
+                                   firstFarm.planting_date || 
+                                   firstFarm.created_at?.split('T')[0] || 
+                                   new Date().toISOString().split('T')[0];
+              
+              const plantingMethod = firstFarm.crop_type?.planting_method || 
+                                   firstFarm.planting_method || 
+                                   firstFarm.plantation_method || 
+                                   '3-bud';
+              
+              const plantationType = firstFarm.crop_type?.plantation_type || 
+                                   firstFarm.plantation_type || 
+                                   firstFarm.planting_type || 
+                                   'N/A';
+              
+              console.log('✅ Extracted from profile:');
+              console.log('  - Plantation date:', plantationDate);
+              console.log('  - Planting method:', plantingMethod);
+              console.log('  - Plantation type:', plantationType);
+              
+              // Set farm data for display
+              setFarmData({
+                id: firstFarm.id || 0,
+                farm_uid: firstFarm.farm_uid || firstFarm.id || 'PROFILE-FARM',
+                plantation_type: plantationType,
+                planting_method: plantingMethod,
+                created_at: plantationDate,
+                crop_type_name: firstFarm.crop_type?.crop_type || 
+                               firstFarm.crop_type_name || 
+                               'Sugarcane',
+                area_size: firstFarm.area_size || '1.0'
+              });
+              
+              // Generate fertilizer data
+              const fertilizerData = generateSevenDaysData(plantationDate, plantingMethod);
+              setData(fertilizerData);
+              setIsLoading(false);
+              return;
+            } else {
+              throw new Error('No farm data found in profile');
+            }
+          } catch (profileError) {
+            console.error('❌ getFarmerProfile also failed:', profileError);
+            throw new Error('No farm data found for current user');
+          }
         }
         
-        // Get the first plot and its farm data
-        const firstPlot = profileData.plots[0];
-        console.log('🔍 First plot:', JSON.stringify(firstPlot, null, 2));
-        
-        if (!firstPlot.farms || firstPlot.farms.length === 0) {
-          throw new Error('No farms found in the first plot');
+        if (farms.length === 0) {
+          throw new Error('No farms found for current user');
         }
         
-        const firstFarm = firstPlot.farms[0];
+        // Use the first farm from the farms array
+        const firstFarm = farms[0];
         console.log('🔍 First farm:', JSON.stringify(firstFarm, null, 2));
+        console.log('🔍 First farm type:', typeof firstFarm);
+        console.log('🔍 First farm keys:', firstFarm ? Object.keys(firstFarm) : 'No keys');
         
-        // Extract data from the farm - based on the actual API response structure
-        const plantationDate = firstFarm.created_at || firstFarm.plantation_date || firstFarm.planting_date || firstFarm.date_created || firstFarm.registration_date;
-        const plantingMethod = firstFarm.planting_method || firstFarm.plantation_method || firstFarm.method || firstFarm.planting_technique;
-        const plantationType = firstFarm.plantation_type || firstFarm.planting_type || firstFarm.crop_plantation_type;
+        // Check if farm has farmer details
+        if (firstFarm.farmer) {
+          console.log('📊 Farmer details in farm:', firstFarm.farmer);
+          console.log('📊 Farmer details keys:', Object.keys(firstFarm.farmer));
+        }
+        
+        // Check if farm has plot details
+        if (firstFarm.plot) {
+          console.log('📊 Plot details in farm:', firstFarm.plot);
+          console.log('📊 Plot details keys:', Object.keys(firstFarm.plot));
+        }
+        
+        // Check if farm has irrigation details
+        if (firstFarm.irrigation) {
+          console.log('📊 Irrigation details in farm:', firstFarm.irrigation);
+          console.log('📊 Irrigation details keys:', Object.keys(firstFarm.irrigation));
+        }
+        
+        // Extract data from the farm - based on the getFarmsWithFarmerDetails API structure
+        console.log('🔍 Extracting farm data...');
+        console.log('🔍 Available farm fields:', firstFarm ? Object.keys(firstFarm) : 'No farm data');
+        
+        // Extract plantation date from various possible fields
+        const plantationDate = firstFarm.plantation_date || 
+                             firstFarm.planting_date || 
+                             firstFarm.created_at?.split('T')[0] || 
+                             firstFarm.date_created?.split('T')[0] ||
+                             new Date().toISOString().split('T')[0];
+        
+        // Extract planting method from the new API structure (nested in crop_type)
+        const plantingMethod = firstFarm.crop_type?.planting_method || 
+                             firstFarm.planting_method || 
+                             firstFarm.plantation_method || 
+                             firstFarm.method || 
+                             firstFarm.planting_technique ||
+                             '3-bud';
+        
+        // Extract plantation type from the new API structure (nested in crop_type)
+        const plantationType = firstFarm.crop_type?.plantation_type || 
+                             firstFarm.plantation_type || 
+                             firstFarm.planting_type || 
+                             firstFarm.crop_plantation_type ||
+                             'N/A';
         
         console.log('✅ Extracted data:');
         console.log('  - Plantation date:', plantationDate);
         console.log('  - Planting method:', plantingMethod);
         console.log('  - Plantation type:', plantationType);
+        console.log('  - Raw created_at:', firstFarm.created_at);
+        console.log('  - Raw plantation_date:', firstFarm.plantation_date);
+        console.log('  - Raw planting_date:', firstFarm.planting_date);
+        console.log('  - Raw crop_type object:', firstFarm.crop_type);
+        console.log('  - Raw crop_type.planting_method:', firstFarm.crop_type?.planting_method);
+        console.log('  - Raw crop_type.plantation_type:', firstFarm.crop_type?.plantation_type);
+        console.log('  - Raw crop_type.crop_type:', firstFarm.crop_type?.crop_type);
+        console.log('  - Raw farm_owner:', firstFarm.farm_owner);
+        console.log('  - Raw farm_owner.username:', firstFarm.farm_owner?.username);
         
         if (!plantationDate || !plantingMethod) {
           throw new Error('Plantation date or planting method not found in farm data');
@@ -166,20 +359,47 @@ const FertilizerTable: React.FC = () => {
         
         const finalPlantationDate = plantationDate;
         const finalPlantingMethod = plantingMethod;
-        const finalPlantationType = plantationType || 'N/A';
+        const finalPlantationType = plantationType;
 
-        // Set farm data for display
+        // Set farm data for display - using complete farmer registration data
         setFarmData({
           id: firstFarm.id || 0,
-          farm_uid: firstFarm.farm_uid,
+          farm_uid: firstFarm.farm_uid || firstFarm.id || 'REAL-FARM',
           plantation_type: finalPlantationType,
           planting_method: finalPlantingMethod,
           created_at: finalPlantationDate,
-          crop_type_name: firstFarm.crop_type || 'Sugarcane',
-          area_size: firstFarm.area_size || 'N/A'
+          crop_type_name: firstFarm.crop_type?.crop_type || 
+                         firstFarm.crop_type_name || 
+                         (typeof firstFarm.crop_type === 'string' ? firstFarm.crop_type : firstFarm.crop_type?.name) || 
+                         'Sugarcane',
+          area_size: firstFarm.area_size || '1.0'
+        });
+        
+        console.log('✅ Farm data set for display:', {
+          id: firstFarm.id || 0,
+          farm_uid: firstFarm.farm_uid || firstFarm.id || 'REAL-FARM',
+          plantation_type: finalPlantationType,
+          planting_method: finalPlantingMethod,
+          created_at: finalPlantationDate,
+          crop_type_name: firstFarm.crop_type_name || 
+                         (typeof firstFarm.crop_type === 'string' ? firstFarm.crop_type : firstFarm.crop_type?.name) || 
+                         'Sugarcane',
+          area_size: firstFarm.area_size || '1.0'
         });
 
         // Generate 7 days fertilizer data
+        console.log('🚀 About to generate fertilizer data with:');
+        console.log('  - Plantation Date:', finalPlantationDate);
+        console.log('  - Planting Method:', finalPlantingMethod);
+        console.log('  - Plantation Date Type:', typeof finalPlantationDate);
+        console.log('  - Plantation Date Length:', finalPlantationDate?.length);
+        
+        // Test the plantation date parsing
+        const testDate = new Date(finalPlantationDate);
+        console.log('  - Test Date Object:', testDate);
+        console.log('  - Test Date Valid:', !isNaN(testDate.getTime()));
+        console.log('  - Test Date String:', testDate.toString());
+        
         const fertilizerData = generateSevenDaysData(
           finalPlantationDate,
           finalPlantingMethod
@@ -220,11 +440,11 @@ const FertilizerTable: React.FC = () => {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          Download PDF
+          
         </button>
       </div>
 
-      {farmData && (
+      {/* {farmData && (
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">
           <h3 className="text-lg font-semibold text-gray-700 mb-2">Farm Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -254,7 +474,7 @@ const FertilizerTable: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
@@ -268,52 +488,96 @@ const FertilizerTable: React.FC = () => {
         </div>
       ) : (
         <div ref={tableRef} className="overflow-x-auto">
+          <div className="mb-4 flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">Next 7 Days Fertilizer Schedule</h3>
+            <p className=" font-large text-black-500">Weekly status</p>
+          </div>
           <table className="min-w-full bg-white border border-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-green-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                <th className="px-6 py-3 text-left text-xs font-large text-black-500 uppercase tracking-wider border-b">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                <th className="px-6 py-3 text-left text-xs font-large text-black-500 uppercase tracking-wider border-b">
                   Stage
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
                   Days
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                </th> */}
+                <th className="px-6 py-3 text-left text-xs font-large text-black-500 uppercase tracking-wider border-b">
                   N (kg/ha)
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                <th className="px-6 py-3 text-left text-xs font-large text-black-500 uppercase tracking-wider border-b">
                   P (kg/ha)
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                <th className="px-6 py-3 text-left text-xs font-large text-black-500 uppercase tracking-wider border-b">
                   K (kg/ha)
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {data.map((row, index) => (
-                <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                    {row.date}
+              {/* First row - show actual data */}
+              {data.length > 0 && (
+                <tr className="bg-white">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b ">
+                    {data[0].date}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                    {row.stage}
+                    {/* {data[0].stage} */}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                    {row.days}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b ">
+                    {/* {data[0].N_kg_ha} */}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                    {row.N_kg_ha}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b ">
+                    {/* {data[0].P_kg_ha} */}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                    {row.P_kg_ha}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                    {row.K_kg_ha}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b ">
+                    {/* {data[0].K_kg_ha} */}
                   </td>
                 </tr>
-              ))}
+              )}
+              
+              {/* Middle rows - show dots if there are more than 2 days */}
+              {data.length > 2 && (
+                <tr className="bg-gray-50">
+                  <td className="px-6 py-4  whitespace-nowrap text-sm text-black-500 border-b ">
+                    <span className="text-large">To</span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-black-500 border-b">
+                    <span className="text-large">{data[0].stage}</span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-black-500 border-b">
+                    <span className="text-large">{data[0].N_kg_ha}</span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-black-500 border-b ">
+                    <span className="text-large">{data[0].P_kg_ha}</span>
+                  </td>
+                  <td className="px-6 py-4 mr-4  whitespace-nowrap text-sm text-black-500 border-b ">
+                    <span className="text-large">{data[0].K_kg_ha}</span>
+                  </td>
+                </tr>
+              )}
+              
+              {/* Last row - show actual data if there are more than 1 day */}
+              {data.length > 1 && (
+                <tr className="bg-white">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                    {data[data.length - 1].date}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                    {/* {data[data.length - 1].stage} */}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                    {/* {data[data.length - 1].N_kg_ha} */}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                    {/* {data[data.length - 1].P_kg_ha} */}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                    {/* {data[data.length - 1].K_kg_ha} */}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
