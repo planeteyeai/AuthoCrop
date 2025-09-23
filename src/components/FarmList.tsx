@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Edit, Search, Trash2, Loader2, Eye, X, User, Ruler, Map } from 'lucide-react';
+import { Download, Edit, Search, Trash2, Loader2, Eye, X, User, Ruler, Map, Droplets } from 'lucide-react';
 import { getRecentFarmers } from '../api';
 
 const ITEMS_PER_PAGE = 5;
@@ -985,29 +985,67 @@ export const FarmList: React.FC<FarmlistProps> = ({ users: propUsers, setUsers: 
                           const irrigation = farm.irrigations && farm.irrigations.length > 0 ? farm.irrigations[0] : null;
                           
                           return (
-                            <div key={farmIndex} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                              <div className="space-y-2">
-                                <p className="text-sm sm:text-base"><span className="font-medium">Village:</span> {plot.village || 'N/A'}</p>
-                                <p className="text-sm sm:text-base"><span className="font-medium">Variety:</span> {farm.crop_type || 'N/A'}</p>
-                                <p className="text-sm sm:text-base"><span className="font-medium">Plantation Date:</span> {farm.plantation_date || 'N/A'}</p>
-                                <p className="text-sm sm:text-base"><span className="font-medium">Spacing A:</span> {farm.spacing_a || 'N/A'}</p>
-                                <p className="text-sm sm:text-base"><span className="font-medium">Emitters:</span> {irrigation?.emitters_count || 'N/A'}</p>
+                            <div key={farmIndex}>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                                <div className="space-y-2">
+                                  <p className="text-sm sm:text-base"><span className="font-medium">Village:</span> {plot.village || 'N/A'}</p>
+                                  <p className="text-sm sm:text-base"><span className="font-medium">Variety:</span> {farm.crop_type || 'N/A'}</p>
+                                  <p className="text-sm sm:text-base"><span className="font-medium">Plantation Date:</span> {farm.plantation_date || 'N/A'}</p>
+                                  <p className="text-sm sm:text-base"><span className="font-medium">Spacing A:</span> {farm.spacing_a || 'N/A'}</p>
+                                </div>
+                                <div className="space-y-2">
+                                  <p className="text-sm sm:text-base"><span className="font-medium">PIN Code:</span> {plot.pin_code || 'N/A'}</p>
+                                  <p className="text-sm sm:text-base"><span className="font-medium">Plantation Type:</span> {farm.plantation_type || 'N/A'}</p>
+                                  <p className="text-sm sm:text-base"><span className="font-medium">Irrigation:</span> {irrigation?.irrigation_type || 'N/A'}</p>
+                                  <p className="text-sm sm:text-base"><span className="font-medium">Spacing B:</span> {farm.spacing_b || 'N/A'}</p>
+                                </div>
+                                <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+                                  <p className="text-sm sm:text-base"><span className="font-medium">Gat No:</span> {plot.gat_number || 'N/A'}</p>
+                                  <p className="text-sm sm:text-base"><span className="font-medium">Plantation Method:</span> {farm.planting_method || 'N/A'}</p>
+                                </div>
                               </div>
-                              <div className="space-y-2">
-                                <p className="text-sm sm:text-base"><span className="font-medium">PIN Code:</span> {plot.pin_code || 'N/A'}</p>
-                                <p className="text-sm sm:text-base"><span className="font-medium">Plantation Type:</span> {farm.plantation_type || 'N/A'}</p>
-                                <p className="text-sm sm:text-base"><span className="font-medium">Irrigation:</span> {irrigation?.irrigation_type || 'N/A'}</p>
-                                <p className="text-sm sm:text-base"><span className="font-medium">Spacing B:</span> {farm.spacing_b || 'N/A'}</p>
-                              </div>
-                              <div className="space-y-2 sm:col-span-2 lg:col-span-1">
-                                <p className="text-sm sm:text-base"><span className="font-medium">Gat No:</span> {plot.gat_number || 'N/A'}</p>
-                                <p className="text-sm sm:text-base"><span className="font-medium">Plantation Method:</span> {farm.planting_method || 'N/A'}</p>
-                                <p className="text-sm sm:text-base"><span className="font-medium">Plants/Acre:</span> {irrigation?.plants_per_acre || 'N/A'}</p>
-                                <p className="text-sm sm:text-base"><span className="font-medium">Flow Rate:</span> {irrigation?.flow_rate_lph || 'N/A'} LPH</p>
-                              </div>
+
+                              {/* Irrigation Details based on type */}
+                              {irrigation?.irrigation_type && (
+                                <div className="border-t pt-3 sm:pt-4 mt-3 sm:mt-4">
+                                  <div className="flex items-center mb-3 sm:mb-4">
+                                    <Droplets className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mr-2" />
+                                    <h4 className="text-base sm:text-lg font-semibold text-gray-900">
+                                      {irrigation.irrigation_type === "Drip Irrigation" || irrigation.irrigation_type === "drip"
+                                        ? "Drip Irrigation Details"
+                                        : "Flood Irrigation Details"}
+                                    </h4>
+                                  </div>
+                                  {irrigation.irrigation_type === "Drip Irrigation" || irrigation.irrigation_type === "drip" ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                                      <div className="space-y-2">
+                                        <p className="text-sm sm:text-base"><span className="font-medium">Plants/Acre:</span> {irrigation?.plants_per_acre || 'N/A'}</p>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <p className="text-sm sm:text-base"><span className="font-medium">Flow Rate:</span> {irrigation?.flow_rate_lph || 'N/A'} LPH</p>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <p className="text-sm sm:text-base"><span className="font-medium">Emitters:</span> {irrigation?.emitters_count || 'N/A'}</p>
+                                      </div>
+                                    </div>
+                                  ) : irrigation.irrigation_type === "Flood Irrigation" || irrigation.irrigation_type === "flood" ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                                      <div className="space-y-2">
+                                        <p className="text-sm sm:text-base"><span className="font-medium">Motor Horsepower:</span> {irrigation?.motor_horsepower || 'N/A'}</p>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <p className="text-sm sm:text-base"><span className="font-medium">Pipe Width:</span> {irrigation?.pipe_width_inches || 'N/A'} inches</p>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <p className="text-sm sm:text-base"><span className="font-medium">Distance from Motor:</span> {irrigation?.distance_motor_to_plot_m || 'N/A'} m</p>
+                                      </div>
+                                    </div>
+                                  ) : null}
+                                </div>
+                              )}
                             </div>
                           );
-                        })
+                          })
                       ) : (
                         <p className="text-gray-500 text-sm sm:text-base">No farm details available for this plot.</p>
                       )}

@@ -615,7 +615,7 @@ const Contactuser: React.FC<ContactuserProps> = () => {
                                   <MessageCircle size={18} />
                                 </button>
                               </div>
-                            </div>
+                  </div>
                 ))}
                         </div>
                       )}

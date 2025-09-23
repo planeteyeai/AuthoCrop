@@ -204,9 +204,9 @@ const FertilizerTable: React.FC = () => {
         setIsLoading(true);
         setError(null);
 
-        console.log('🔍 Fetching current farmer data using /users/me/ endpoint...');
+        console.log('🔍 Fetching complete farmer data using getFarmsWithFarmerDetails()...');
         
-        // Get the current user data directly - this already contains the farmer's data
+        // First, get the current user data to filter farms
         const currentUserResponse = await api.get('/users/me/');
         const currentUser = currentUserResponse.data;
         console.log('👤 Current user data:', currentUser);
@@ -214,16 +214,92 @@ const FertilizerTable: React.FC = () => {
         console.log('👤 Current user role:', currentUser.role);
         console.log('👤 Current user role_id:', currentUser.role_id);
         
-        // Check if the user has farm data directly in their profile
-        let farms = [];
-        if (currentUser.farms && Array.isArray(currentUser.farms) && currentUser.farms.length > 0) {
-          console.log('✅ Found farms directly in user profile:', currentUser.farms.length);
-          farms = currentUser.farms;
-          
-          console.log('🌾 Current user farms:', farms);
+        // Use the API that includes all farmer registration data
+        const farmsResponse = await getFarmsWithFarmerDetails();
+        console.log('📊 Farms with farmer details response:', farmsResponse);
+        console.log('📊 Response data structure:', JSON.stringify(farmsResponse.data, null, 2));
+        console.log('📊 Response data type:', typeof farmsResponse.data);
+        console.log('📊 Response data keys:', farmsResponse.data ? Object.keys(farmsResponse.data) : 'No keys');
         
-        } else {
-          console.log('⚠️ No farms found in user profile, trying getFarmerProfile API...');
+        if (!farmsResponse || !farmsResponse.data) {
+          throw new Error('Failed to fetch farms data');
+        }
+        
+        const farmsData = farmsResponse.data;
+        console.log('📊 Farms data:', farmsData);
+        console.log('📊 Farms data type:', typeof farmsData);
+        console.log('📊 Farms data keys:', Object.keys(farmsData));
+        
+        // Extract farms array from response
+        let allFarms = [];
+        if (Array.isArray(farmsData)) {
+          allFarms = farmsData;
+        } else if (farmsData.results && Array.isArray(farmsData.results)) {
+          allFarms = farmsData.results;
+        } else if (farmsData.farms && Array.isArray(farmsData.farms)) {
+          allFarms = farmsData.farms;
+        } else if (farmsData.data && Array.isArray(farmsData.data)) {
+          allFarms = farmsData.data;
+        }
+        
+        console.log('📈 Total farms found:', allFarms.length);
+        console.log('📊 All farms data:', allFarms);
+        
+        // Filter farms based on user role and ownership
+        const farms = allFarms.filter(farm => {
+          // Check multiple possible fields for farmer ownership
+          const farmOwnerId = farm.farm_owner?.id;
+          const farmerId = farm.farmer_id;
+          const userId = farm.user_id;
+          const plotFarmerId = farm.plot?.farmer?.id;
+          const createdById = farm.created_by?.id;
+          
+          let matches = false;
+          
+          // Role-based filtering logic
+          if (currentUser.role === 'farmer' || currentUser.role_id === 1) {
+            // For farmers: check if they own the farm or if it was created for them
+            matches = farmOwnerId == currentUser.id || 
+                     farmerId == currentUser.id || 
+                     userId == currentUser.id ||
+                     plotFarmerId == currentUser.id;
+          } else if (currentUser.role === 'fieldofficer' || currentUser.role_id === 2) {
+            // For field officers: check if they created the farm (registered farmers under them)
+            matches = createdById == currentUser.id;
+          } else if (currentUser.role === 'manager' || currentUser.role_id === 3) {
+            // For managers: check if they created the farm or if it belongs to their field officers
+            matches = createdById == currentUser.id || 
+                     farmOwnerId == currentUser.id;
+          } else if (currentUser.role === 'owner' || currentUser.role_id === 4) {
+            // For owners: can see all farms
+            matches = true;
+          } else {
+            // Fallback: check all ownership fields
+            matches = farmOwnerId == currentUser.id || 
+                     farmerId == currentUser.id || 
+                     userId == currentUser.id ||
+                     plotFarmerId == currentUser.id ||
+                     createdById == currentUser.id;
+          }
+          
+          console.log(`🔍 Farm ${farm.id} ownership check for ${currentUser.role}:`);
+          console.log(`  - farm_owner.id: ${farmOwnerId}`);
+          console.log(`  - farmer_id: ${farmerId}`);
+          console.log(`  - user_id: ${userId}`);
+          console.log(`  - plot.farmer.id: ${plotFarmerId}`);
+          console.log(`  - created_by.id: ${createdById}`);
+          console.log(`  - current_user.id: ${currentUser.id}`);
+          console.log(`  - current_user.role: ${currentUser.role}`);
+          console.log(`  - matches: ${matches}`);
+          
+          return matches;
+        });
+        
+        console.log('🌾 Filtered farms for current user:', farms.length);
+        console.log('🌾 Current user farms:', farms);
+        
+        if (farms.length === 0) {
+          console.log('⚠️ No farms found for current user, trying getFarmerProfile API...');
           
           // Fallback to getFarmerProfile API for current user
           try {
@@ -276,17 +352,12 @@ const FertilizerTable: React.FC = () => {
               setData(fertilizerData);
               setIsLoading(false);
               return;
-            } else {
-              throw new Error('No farm data found in profile');
             }
           } catch (profileError) {
             console.error('❌ getFarmerProfile also failed:', profileError);
-            throw new Error('No farm data found for current user');
           }
-        }
-        
-        if (farms.length === 0) {
-          throw new Error('No farms found for current user');
+          
+          throw new Error('No farms found for the current user');
         }
         
         // Use the first farm from the farms array
@@ -488,9 +559,9 @@ const FertilizerTable: React.FC = () => {
         </div>
       ) : (
         <div ref={tableRef} className="overflow-x-auto">
-          <div className="mb-4 flex justify-between items-center">
+          <div className="mb-4">
             <h3 className="text-lg font-semibold text-gray-700 mb-2">Next 7 Days Fertilizer Schedule</h3>
-            <p className=" font-large text-black-500">Weekly status</p>
+            {/* <p className="text-sm text-gray-600">Showing first and last day (same values for all 7 days)</p> */}
           </div>
           <table className="min-w-full bg-white border border-gray-200">
             <thead className="bg-green-200">

@@ -384,9 +384,9 @@
 
 /* Leaflet overrides */
 .leaflet-container {
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 600px;
+  /* width: 100% !important; */
+  /* height: 100% !important; */
+  min-height: 800px;
   min-width: 500px;
 }
 
@@ -495,7 +495,7 @@
   color: #dc2626;
   padding: 8px 12px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 20px;
   max-width: 300px;
   word-wrap: break-word;
 }
@@ -503,7 +503,7 @@
 /* Map legend bottom styles - positioned at bottom of map container */
 .map-legend-bottom {
   position: absolute;
-  bottom: 10px;
+  bottom: 0px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
@@ -513,7 +513,7 @@
 
 .legend-items-bottom {
   display: flex;
-  flex-wrap: wrap;
+  /* flex-wrap: wrap; */
   justify-content: center;
   gap: 15px;
   align-items: center;
@@ -539,8 +539,8 @@
 }
 
 .legend-item-bottom.zero-percent {
-  opacity: 0.5;
-  cursor: not-allowed;
+  /* opacity: 0.5; */
+  /* cursor: not-allowed; */
 }
 
 .legend-item-bottom.zero-percent:hover {
@@ -549,8 +549,8 @@
 }
 
 .legend-circle-bottom {
-  width: 80px;
-  height: 80px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -568,7 +568,7 @@
 }
 
 .legend-percentage-bottom {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: bold;
   color: #f0f0f0;
   text-align: center;
@@ -577,7 +577,7 @@
 .legend-label-bottom {
   font-size: 14px;
   font-weight: 500;
-  color: #555;
+  color: #ffffff;
   text-align: center;
   margin-bottom: 2px;
   line-height: 1.2;
@@ -611,15 +611,15 @@
   }
   
   .legend-percentage-bottom {
-    font-size: 16px;
+    font-size: 20px;
   }
   
   .legend-label-bottom {
-    font-size: 13px;
+    font-size: 14px;
   }
   
   .legend-pixel-count-bottom {
-    font-size: 9px;
+    font-size: 10px;
   }
 }
 
@@ -643,10 +643,10 @@
   }
   
   .legend-percentage-bottom {
-    font-size: 14px;
+    font-size: 20px;
   }
   
   .legend-label-bottom {
-    font-size: 12px;
+    font-size: 14px;
   }
 }

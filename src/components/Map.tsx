@@ -1194,7 +1194,7 @@ const Map: React.FC<MapProps> = ({
         <MapContainer
           center={mapCenter}
           zoom={18}
-          style={{ height: "100%", width: "100%" }}
+          style={{ height: "90%", width: "100%" }}
           zoomControl={true}
           maxZoom={22}
           minZoom={10}
@@ -1253,10 +1253,10 @@ const Map: React.FC<MapProps> = ({
                   title={item.percentage >= 99 ? 'High coverage (99%+) - no individual pixels to show' : ''}
                 >
                   <div
-                    className="legend-circle-bottom cursor-pointer transition-all duration-150"
+                    className="legend-circle-bottom cursor-pointer transition-all duration-150 bg-orange-500"
                     style={{
-                      background: `linear-gradient(135deg, ${item.color}40, ${item.color}80)`,
-                      border: `5px solid ${item.color}`,
+                      // background: `orange`,
+                      // border: `5px solid ${item.color}`,
                       boxShadow: `0 5px 8px ${item.color}40`
                     }}
                   >
@@ -1264,9 +1264,9 @@ const Map: React.FC<MapProps> = ({
                       {item.percentage}
                     </div>
                   </div>
-                  <div className="legend-label-bottom">{item.label}</div>
+                  <div className="legend-label-bottom text-white-500">{item.label}</div>
                   {item.pixelCount && (
-                    <div className="legend-pixel-count-bottom text-lg text-white-900">
+                    <div className="legend-pixel-count-bottom text-lg ">
                       {item.pixelCount} pixels
                     </div>
                   )}
