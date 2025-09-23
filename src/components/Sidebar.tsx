@@ -8,13 +8,12 @@ import {
   ShoppingBag,
   Book,
   LogOut,
-  Newspaper,
+  Cloud,
+  LandPlot,
 } from 'lucide-react';
 import { BiWater } from 'react-icons/bi';
-import { GiGrowth, GiPriceTag,GiNewspaper } from 'react-icons/gi';
+import { GiGrowth, GiPriceTag, GiSugarCane } from 'react-icons/gi';
 import { MdPestControl } from 'react-icons/md';
-import { size } from 'lodash';
-import  Contactuser  from '../components/Contactuser';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -22,6 +21,7 @@ interface SidebarProps {
   onHomeClick: () => void;
   onLogout: () => void;
   userRole: 'farmer' | 'admin' | 'fieldofficer' | 'manager' | 'owner';
+  expandedMenu?: string | null; // Menu to expand when sidebar opens
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -30,8 +30,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onHomeClick,
   onLogout,
   userRole,
+  expandedMenu,
 }) => {
   const [openMenus, setOpenMenus] = useState<string[]>([]);
+
+  // Effect to expand a specific menu when expandedMenu prop changes
+  React.useEffect(() => {
+    if (expandedMenu && !openMenus.includes(expandedMenu)) {
+      setOpenMenus(prev => [...prev, expandedMenu]);
+    }
+  }, [expandedMenu, openMenus]);
 
   const toggleSubmenu = (title: string) => {
     setOpenMenus((prev) =>
@@ -88,44 +96,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ];
       case 'admin':
         return [
-          renderMenu('DataVista', <BarChart3 size={20} />, [
-            'Farm Crop Status',
-            'Harvesting Planning',
-            'Agroclimatic',
-            'Resources',
-            'Plot Birde View',
-          ]),
+          renderMenu('Farm Crop Status', <BarChart3 size={20} />),
+          renderMenu('Harvesting Planning', <GiSugarCane size={20} />),
+          renderMenu('Agroclimatic', <Cloud size={20} />),
+          renderMenu('Resources', <ShoppingBag size={20} />),
+          renderMenu('Plot Birde View', <BarChart3 size={20} />),
           renderMenu('TeamConnect', <List size={20} />, ['Team List']),
           renderMenu('User Desk', <Users size={20} />, ['Contactuser']),
           
         ];
       case 'owner':
         return [
-          renderMenu('DataVista', <BarChart3 size={20} />, [
-            'Farm Crop Status',
-            'Harvesting Planning',
-            'Agroclimatic',
-            'Resources',
-            'Plot Birde View',
-          ]),
+          renderMenu('Farm Crop Status', <BarChart3 size={20} />),
+          renderMenu('Harvesting Planning', <GiSugarCane size={20} />),
+          renderMenu('Agroclimatic', <Cloud size={20} />),
+          renderMenu('Resources', <ShoppingBag size={20} />),
+          renderMenu('Plot Birde View', <BarChart3 size={20} />),
           renderMenu('TeamConnect', <List size={20} />, ['Team List']),
           renderMenu('User Desk', <Users size={20} />, ['Contactuser']),
           
         ];
       case 'fieldofficer':
         return [
-          renderMenu('DataVista', <BarChart3 size={20} />, ['ViewFarmerPlot']),
+          renderMenu('ViewFarmerPlot', <LandPlot size={20}  />),
           renderMenu('User Desk', <Users size={20} />, ['AddFarm', 'Farmlist','Contactuser']),
           renderMenu('MyTask', <Calendar size={20} />, ['TaskCalendar', 'Tasklist']),
           renderMenu('Plan & Book', <Calendar size={20} />, ['Add Booking', 'Booking List']),
         ];
       case 'manager':
         return [
-          renderMenu('DataVista', <BarChart3 size={20} />, [
-            'Farm Crop Status',
-            'Harvesting Planning',
-            'Agroclimatic',
-          ]),
+          renderMenu('Farm Crop Status', <BarChart3 size={20} />),
+          renderMenu('Harvesting Planning', <GiSugarCane size={20} />),
+          renderMenu('Agroclimatic', <Cloud size={20} />),
           renderMenu('UserDesk', <Users size={20} />, [
             'Add User',
             'User List',

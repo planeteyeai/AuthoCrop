@@ -267,14 +267,14 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) 
         {weather && (
           <>
             {/* Location Info */}
-            <div className="weather-item weather-location">
+            <div className="weather-item weather-location text-black-600">
               <MapPin className="weather-icon" size={18} />
               <span className="weather-text">{getLocationText()}</span>
             </div>
 
           {/* Weather Icon and Condition */}
-          <div className="weather-item weather-condition">
-            <span className="weather-icon-text">{getWeatherIcon(weather.temperature_c, weather.humidity, weather.precip_mm)}</span>
+          <div className="weather-item weather-condition bg-yellow-200 text-blue-600">
+            <span className="weather-icon-text text-black-600">{getWeatherIcon(weather.temperature_c, weather.humidity, weather.precip_mm)}</span>
             <span className="weather-text">{getWeatherCondition(weather.temperature_c, weather.humidity, weather.precip_mm)}</span>
           </div>
 

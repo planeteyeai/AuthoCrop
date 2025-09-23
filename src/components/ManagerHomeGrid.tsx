@@ -9,6 +9,7 @@ import FarmCropStatus from './FarmCropStatus';
 
 interface ManagerHomeGridProps {
   onMenuClick: (menuTitle: string) => void;
+  onOpenSidebarWithMenu: (menuTitle: string) => void;
 }
 
 const menuItems = [
@@ -22,7 +23,7 @@ const menuItems = [
   { title: 'Plan & Book', icon: <Book size={32} className="text-indigo-600" />, bgColor: 'bg-indigo-50', hoverColor: 'hover:bg-indigo-100' }
 ];
 
-const ManagerHomeGrid: React.FC<ManagerHomeGridProps> = ({ onMenuClick }) => {
+const ManagerHomeGrid: React.FC<ManagerHomeGridProps> = ({ onMenuClick, onOpenSidebarWithMenu }) => {
   const [currentPage, setCurrentPage] = useState<string | null>(null);
   const [bookings, setBookings] = useState<any[]>([]);
 
@@ -79,7 +80,7 @@ const ManagerHomeGrid: React.FC<ManagerHomeGridProps> = ({ onMenuClick }) => {
             <span>Back to Home</span>
           </button>
         </div>
-        <OfficerDashboard />
+        <FarmCropStatus/>
       </div>
     );
   }
@@ -92,15 +93,18 @@ const ManagerHomeGrid: React.FC<ManagerHomeGridProps> = ({ onMenuClick }) => {
             key={item.title}
             onClick={() => {
               // Handle different navigation based on card type
-              if (item.title === 'User Desk' || item.title === 'Resources Planning') {
-                // Just open sidebar submenu
-                onMenuClick(item.title);
+              if (item.title === 'User Desk') {
+                // Open sidebar and expand User Desk menu
+                onOpenSidebarWithMenu('UserDesk');
+              } else if (item.title === 'Resources Planning') {
+                // Open sidebar and expand Resources Planning menu
+                onOpenSidebarWithMenu('Resoucres Planning');
               } else if (item.title === 'Team Connect') {
                 // Open TeamList page in full window
                 setCurrentPage('team-connect');
               } else if (item.title === 'MyTask') {
-                // Navigate to Calendar page
-                onMenuClick('Calendar');
+                // Open sidebar and expand MyTask menu
+                onOpenSidebarWithMenu('MyTask');
               } else if (item.title === 'Plan & Book') {
                 // Open AddBooking page in full window
                 setCurrentPage('add-booking');

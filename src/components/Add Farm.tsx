@@ -40,8 +40,8 @@ interface Plot {
     acres: number;
   };
   layer: L.Layer;
-  GroupGatNo: string;
-  GatNoId: string;
+  Group_Gat_No: string;
+  Gat_No_Id: string;
   village: string;
   pin_code: string;
   crop_type: string;
@@ -621,8 +621,8 @@ function AddFarm() {
         geometry: geoJson.geometry,
         area: newPlotArea,
         layer: layer,
-        GroupGatNo: "",
-        GatNoId: "",
+        Group_Gat_No: "",
+        Gat_No_Id: "",
         village: "",
         pin_code: "",
         crop_type: "2", // Fixed crop type ID for sugarcane
@@ -1448,10 +1448,10 @@ The farmer can now login with Emailcredentials to access the dashboard and monit
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
                           {renderPlotField(
                             plot.id,
-                            "GroupGatNo",
-                            plot.GroupGatNo
+                            "Group_Gat_No",
+                            plot.Group_Gat_No
                           )}
-                          {renderPlotField(plot.id, "GatNoId", plot.GatNoId)}
+                          {renderPlotField(plot.id, "Gat_No_Id", plot.Gat_No_Id)}
                           {renderPlotField(plot.id, "village", plot.village)}
                           {renderPlotField(plot.id, "pin_code", plot.pin_code)}
                           {renderPlotField(

@@ -81,6 +81,7 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<View>(View.Home);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
+  const [expandedSidebarMenu, setExpandedSidebarMenu] = useState<string | null>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
   const [stocks, setStocks] = useState<any[]>([]);
@@ -220,6 +221,17 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
     setIsSidebarOpen((prev) => !prev);
   };
 
+  const openSidebarWithMenu = (menuTitle: string) => {
+    console.log('🔧 openSidebarWithMenu called with:', menuTitle);
+    setIsSidebarOpen(true);
+    setExpandedSidebarMenu(menuTitle);
+    // Clear the expanded menu after a longer delay to allow the sidebar to open and expand
+    setTimeout(() => {
+      console.log('🔧 Clearing expanded menu after timeout');
+      setExpandedSidebarMenu(null);
+    }, 1000);
+  };
+
   const handleSoilDataChange = (data: {
     plotName: string;
     phValue: number | null;
@@ -240,13 +252,13 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
     switch (userRole) {
       case "manager":
         console.log('Rendering ManagerHomeGrid');
-        return <ManagerHomeGrid onMenuClick={handleMenuSelect} />;
+        return <ManagerHomeGrid onMenuClick={handleMenuSelect} onOpenSidebarWithMenu={openSidebarWithMenu} />;
       case "owner":
         console.log('Rendering OwnerHomeGrid');
         return <OwnerHomeGrid onMenuClick={handleMenuSelect} />;
       case "fieldofficer":
         console.log('Rendering FieldOfficerHomeGrid');
-        return <FieldOfficerHomeGrid onMenuClick={handleMenuSelect} />;
+        return <FieldOfficerHomeGrid onMenuClick={handleMenuSelect} onOpenSidebarWithMenu={openSidebarWithMenu} />;
       case "farmer":
         console.log('Rendering FarmerHomeGrid');
         return <FarmerHomeGrid   onMenuClick={handleMenuSelect} />;
@@ -274,6 +286,7 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
             onHomeClick={handleHomeClick}
             onLogout={onLogout}
             userRole={userRole}
+            expandedMenu={expandedSidebarMenu}
           />
         </div>
         

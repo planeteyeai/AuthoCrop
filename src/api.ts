@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getAuthToken, setAuthToken as setAuthTokenUtil } from './utils/auth';
 
 // Set base URL for backend
-const API_BASE_URL = 'http://192.168.41.73:8001/api'; // changed to root API URL
+const API_BASE_URL = 'https://cropeye-server-1.onrender.com/api'; // changed to root API URL
 
 // KML/GeoJSON API URL
 const KML_API_URL = 'http://192.168.41.73:7030';

@@ -1,39 +1,38 @@
 // src/FieldOfficerHomeGrid.tsx
 import React from 'react';
-import {Calendar,Book,Users, LandPlot } from 'lucide-react'
-import { useNavigate } from 'react-router-dom';
+import {Calendar,Book,Users, LandPlot } from 'lucide-react';
 
 interface FieldOfficerHomeGridProps {
   onMenuClick: (menuTitle: string) => void;
+  onOpenSidebarWithMenu: (menuTitle: string) => void;
 }
 
-const FieldOfficerHomeGrid: React.FC<FieldOfficerHomeGridProps> = ({ onMenuClick }) => {
-  const navigate = useNavigate();
+const FieldOfficerHomeGrid: React.FC<FieldOfficerHomeGridProps> = ({ onMenuClick, onOpenSidebarWithMenu }) => {
 
   const items = [
     {
-      title: 'MyTask',
-      icon: <Calendar size={32} className="text-blue-600" />,
+      title: 'ViewFarmerPlot',
+      icon: <LandPlot size={32} className="text-green-600" />,
+      bgColor: 'bg-green-50',
+      hoverColor: 'hover:bg-green-100'
+    },
+    {
+      title: 'User Desk',
+      icon:<Users size={32} className="text-purple-600" /> ,
       bgColor: 'bg-blue-50',
       hoverColor: 'hover:bg-blue-100'
+    },
+    {
+      title: 'MyTask',
+      icon: <Calendar size={32} className="text-blue-600" />,
+      bgColor: 'bg-purple-50',
+      hoverColor: 'hover:bg-purple-100'
     },
     {
       title: 'Plan & Book',
       icon: <Book size={32} className="text-yellow-600" />,
       bgColor: 'bg-yellow-50',
       hoverColor: 'hover:bg-yellow-100'
-    },
-    {
-      title: 'User Desk',
-      icon: <Users size={32} className="text-purple-600" />,
-      bgColor: 'bg-purple-50',
-      hoverColor: 'hover:bg-purple-100'
-    },
-    {
-      title: 'View Farmer Plot',
-      icon: <LandPlot size={32} className="text-green-600" />,
-      bgColor: 'bg-green-50',
-      hoverColor: 'hover:bg-green-100'
     }
   ];
   
@@ -43,7 +42,23 @@ const FieldOfficerHomeGrid: React.FC<FieldOfficerHomeGridProps> = ({ onMenuClick
         {items.map((item) => (
           <button
             key={item.title}
-            onClick={() => onMenuClick(item.title)}
+            onClick={() => {
+              // Handle different navigation based on card type
+              if (item.title === 'User Desk') {
+                // Open sidebar and expand User Desk menu
+                onOpenSidebarWithMenu('User Desk');
+              } else if (item.title === 'MyTask') {
+                // Open sidebar and expand MyTask menu
+                onOpenSidebarWithMenu('MyTask');
+              } else if (item.title === 'Plan & Book') {
+                // Open sidebar and expand Plan & Book menu
+                console.log('🔧 FieldOfficerHomeGrid: Plan & Book clicked, calling onOpenSidebarWithMenu');
+                onOpenSidebarWithMenu('Plan & Book');
+              } else {
+                // Use regular menu click for other cards
+                onMenuClick(item.title);
+              }
+            }}
             className={`${item.bgColor} ${item.hoverColor} p-4 sm:p-6 lg:p-8 rounded-xl shadow-sm transition-all duration-300 transform hover:scale-105 min-h-[120px] sm:min-h-[140px] lg:min-h-[160px]`}
           >
             <div className="flex flex-col items-center justify-center space-y-2 sm:space-y-4 h-full">
@@ -56,7 +71,7 @@ const FieldOfficerHomeGrid: React.FC<FieldOfficerHomeGridProps> = ({ onMenuClick
                 </div>
               </div>
               <span className="text-sm sm:text-base lg:text-lg font-semibold text-gray-800 text-center leading-tight break-words px-1">
-                {item.title}
+                {item.title === 'ViewFarmerPlot' ? 'View Farmer Plot' : item.title}
               </span>
             </div>
           </button>

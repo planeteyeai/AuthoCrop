@@ -525,7 +525,7 @@ const IrrigationSchedule: React.FC = () => {
               <thead className="bg-green-100">
                 <tr>
                   <th className="px-2 py-2 text-left text-xs font-medium">DATE</th>
-                  <th className="px-2 py-2 text-left text-xs font-medium">EVAPOTRANSPIRATION</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium">ETO</th>
                   <th className="px-2 py-2 text-left text-xs font-medium">RAINFALL (mm)</th>
                   <th className="px-2 py-2 text-left text-xs font-medium">WATER REQ.(L)</th>
                   <th className="px-2 py-2 text-left text-xs font-medium">
