@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { MapContainer, TileLayer, Polygon, useMap, Rectangle } from "react-leaflet";
+import { MapContainer, TileLayer, Polygon, useMap, Popup, Rectangle, ZoomControl } from "react-leaflet";
 import { LatLngTuple, LeafletMouseEvent } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./Map.css";
@@ -8,81 +8,81 @@ import { useFarmerProfile } from "../hooks/useFarmerProfile";
 
 // Add custom styles for the enhanced tooltip
 const tooltipStyles = `
-.hover-tooltip {
-  position: fixed;
-  background: rgba(0, 0, 0, 0.9);
-  color: white;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  z-index: 1000;
-  pointer-events: none;
-  max-width: 280px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
+  .hover-tooltip {
+    position: fixed;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    z-index: 1000;
+    pointer-events: none;
+    max-width: 280px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
 
-.hover-tooltip-line {
-  margin: 4px 0;
-  padding: 2px 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+  .hover-tooltip-line {
+    margin: 4px 0;
+    padding: 2px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-.hover-tooltip-line:not(:last-child) {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 6px;
-  margin-bottom: 6px;
-}
+  .hover-tooltip-line:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+  }
 
-.layer-name {
-  font-weight: bold;
-  color: #4CAF50;
-  margin-right: 8px;
-  min-width: 100px;
-}
+  .layer-name {
+    font-weight: bold;
+    color: #4CAF50;
+    margin-right: 8px;
+    min-width: 100px;
+  }
 
-.layer-description {
-  color: #e0e0e0;
-  flex: 1;
-  text-align: right;
-}
+  .layer-description {
+    color: #e0e0e0;
+    flex: 1;
+    text-align: right;
+  }
 
-.layer-status {
-  font-weight: 500;
-  color: #ffffff;
-}
+  .layer-status {
+    font-weight: 500;
+    color: #ffffff;
+  }
 
-.enhanced-tooltip {
-  position: fixed;
-  background: rgba(0, 0, 0, 0.95);
-  color: white;
-  padding: 14px 18px;
-  border-radius: 10px;
-  font-size: 14px;
-  z-index: 1000;
-  pointer-events: none;
-  max-width: 320px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  backdrop-filter: blur(10px);
-}
+  .enhanced-tooltip {
+    position: fixed;
+    background: rgba(0, 0, 0, 0.95);
+    color: white;
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    z-index: 1000;
+    pointer-events: none;
+    max-width: 320px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+  }
 
-.enhanced-tooltip-line {
-  margin: 6px 0;
-  padding: 4px 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  min-height: 24px;
-}
+  .enhanced-tooltip-line {
+    margin: 6px 0;
+    padding: 4px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 24px;
+  }
 
-.enhanced-tooltip-line:not(:last-child) {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-  padding-bottom: 8px;
-  margin-bottom: 8px;
-}
+  .enhanced-tooltip-line:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
 `;
 
 // Inject styles if not already injected
@@ -93,14 +93,13 @@ if (typeof document !== 'undefined' && !document.querySelector('#map-tooltip-sty
   document.head.appendChild(styleSheet);
 }
 
-
-// Enhanced classification ranges combining both approaches
+// Classification ranges for vegetation indices with gradient color schemes
 const CLASS_RANGES = {
   VV: [
     { label: "Weak", min: -20, max: -12, color: "#90EE90" },      // Light green
-    { label: "Stress", min: -12, max: -11, color: "#32CD32" },    // Lime green
-    { label: "Moderate", min: -11, max: -10, color: "#228B22" },  // Forest green
-    { label: "Healthy", min: -10, max: 0, color: "#006400" },     // Dark green
+    { label: "Stress", min: -12, max: -11, color: "#32CD32" },      // Lime green
+    { label: "Moderate", min: -11, max: -10, color: "#228B22" },    // Forest green
+    { label: "Healthy", min: -10, max: 0, color: "#006400" },       // Dark green
   ],
   RVI: [
     { label: "Dry", min: -1, max: -0.3, color: "#E6F3FF" },        // Very light blue
@@ -120,25 +119,16 @@ const CLASS_RANGES = {
 
 const LAYER_LABELS: Record<string, string> = {
   VV: "Growth",
-  RVI: "Water Uptake", 
+  RVI: "Water Uptake",
   SWI: "Soil Moisture",
   PEST: "Pest",
 };
 
-// Auto zoom to plot extent component
-const AutoZoomToPlot: React.FC<{ coordinates: number[][], plotName?: string }> = ({ coordinates, plotName }) => {
+// Set fixed zoom level component
+const SetFixedZoom: React.FC<{ coordinates: number[][] }> = ({ coordinates }) => {
   const map = useMap();
-  const hasZoomedRef = useRef(false);
-  const lastPlotNameRef = useRef<string | undefined>();
 
   useEffect(() => {
-    // Reset zoom flag when plot changes
-    if (plotName && plotName !== lastPlotNameRef.current) {
-      console.log('🗺️ AutoZoomToPlot: Plot changed, resetting zoom flag');
-      hasZoomedRef.current = false;
-      lastPlotNameRef.current = plotName;
-    }
-
     if (!coordinates.length) return;
 
     const latlngs = coordinates
@@ -146,31 +136,18 @@ const AutoZoomToPlot: React.FC<{ coordinates: number[][], plotName?: string }> =
       .map(([lng, lat]) => [lat, lng] as LatLngTuple)
       .filter((tuple: LatLngTuple) => !isNaN(tuple[0]) && !isNaN(tuple[1]));
 
-    // Only zoom if we have valid coordinates and haven't zoomed yet
-    if (latlngs.length && !hasZoomedRef.current) {
-      // Validate coordinates are within reasonable bounds (not dummy coordinates)
-      const validCoords = latlngs.filter(([lat, lng]) => 
-        lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 &&
-        !(lat === 0 && lng === 0) && // Not dummy coordinates
-        !(lat === 1 && lng === 1)    // Not dummy coordinates
-      );
+    if (latlngs.length) {
+      // Calculate center point of the plot
+      const centerLat = latlngs.reduce((sum, coord) => sum + coord[0], 0) / latlngs.length;
+      const centerLng = latlngs.reduce((sum, coord) => sum + coord[1], 0) / latlngs.length;
       
-      if (validCoords.length > 0) {
-        console.log('🗺️ AutoZoomToPlot: Zooming to plot bounds:', validCoords);
-        
-        // Auto zoom to plot bounds with higher zoom level for better detail
-        map.flyToBounds(validCoords, {
-          padding: [20, 20],
-          maxZoom: 22, // Increased max zoom for more detail
-          duration: 1.5 // Smooth animation duration
-        });
-        
-        hasZoomedRef.current = true;
-      } else {
-        console.log('🗺️ AutoZoomToPlot: Invalid coordinates detected, skipping zoom');
-      }
+      // Set fixed zoom level to 18 for detailed view
+      map.setView([centerLat, centerLng], 18, {
+        animate: true,
+        duration: 1.5
+      });
     }
-  }, [coordinates, map, plotName]);
+  }, [coordinates, map]);
 
   return null;
 };
@@ -179,10 +156,9 @@ const AutoZoomToPlot: React.FC<{ coordinates: number[][], plotName?: string }> =
 const CLASSIFICATION_DESCRIPTIONS: Record<string, Record<string, string>> = {
   VV: {
     "Weak": "damaged or weak crop",
-    "Stress": "crop under stress", 
+    "Stress": "crop under stress",
     "Moderate": "Crop under normal growth",
     "Healthy": "proper growth",
-    "Overgrowth": "crop overgrown",
   },
   RVI: {
     "Dry": "weak root",
@@ -201,12 +177,21 @@ const CLASSIFICATION_DESCRIPTIONS: Record<string, Record<string, string>> = {
   },
 };
 
+
 interface MapProps {
   onHealthDataChange?: (data: {
     goodHealthPercent: number;
     needsAttentionPercent: number;
     totalArea: number;
     plotName: string;
+  }) => void;
+  onSoilDataChange?: (data: {
+    plotName: string;
+    phValue: number | null;
+    nitrogenValue: number | null;
+    phStatistics?: {
+      phh2o_0_5cm_mean_mean: number;
+    };
   }) => void;
   onFieldAnalysisChange?: (data: {
     plotName: string;
@@ -223,10 +208,14 @@ interface MapProps {
     healthyPercentage: number;
     totalPixels: number;
     pestAffectedPixels: number;
+    chewingPestPercentage: number;
+    chewingPestPixels: number;
+    suckingPercentage: number;
+    suckingPixels: number;
   }) => void;
 }
 
-// Enhanced CustomTileLayer with comprehensive error handling and logging
+// Simplified CustomTileLayer without cache busting that might be causing issues
 const CustomTileLayer: React.FC<{
   url: string;
   opacity?: number;
@@ -234,7 +223,7 @@ const CustomTileLayer: React.FC<{
 }> = ({ url, opacity = 0.7, key }) => {
   // Log the URL for debugging
   console.log('CustomTileLayer URL:', url);
-  
+
   if (!url) {
     console.log('No URL provided to CustomTileLayer');
     return null;
@@ -243,12 +232,12 @@ const CustomTileLayer: React.FC<{
   return (
     <TileLayer
       key={key}
-      url={url}
+      url={url} // Use original URL without modifications
       opacity={opacity}
       maxZoom={22}
       minZoom={10}
       tileSize={256}
-      // Enhanced error handling
+      // Add error handling to see what's happening
       eventHandlers={{
         tileerror: (e: any) => {
           console.error('Tile loading error:', e);
@@ -272,7 +261,7 @@ const CustomTileLayer: React.FC<{
 const classifyPixelValue = (layer: string, pixelValue: number): string => {
   const ranges = CLASS_RANGES[layer as keyof typeof CLASS_RANGES];
   if (!ranges) return "-";
-  
+
   for (const range of ranges) {
     if (pixelValue >= range.min && pixelValue < range.max) {
       return range.label;
@@ -285,7 +274,7 @@ const classifyPixelValue = (layer: string, pixelValue: number): string => {
 const getClassificationColor = (layer: string, className: string): string => {
   const ranges = CLASS_RANGES[layer as keyof typeof CLASS_RANGES];
   if (!ranges) return "#000000";
-  
+
   const range = ranges.find(r => r.label === className);
   return range?.color || "#000000";
 };
@@ -294,20 +283,22 @@ const getClassificationColor = (layer: string, className: string): string => {
 const isPointInPolygon = (point: [number, number], polygon: [number, number][]): boolean => {
   const [x, y] = point;
   let inside = false;
-  
+
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
     const [xi, yi] = polygon[i];
     const [xj, yj] = polygon[j];
-    
+
     if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
       inside = !inside;
     }
   }
+
   return inside;
 };
 
 const Map: React.FC<MapProps> = ({
   onHealthDataChange,
+  onSoilDataChange,
   onFieldAnalysisChange,
   onMoistGroundChange,
   onPestDataChange,
@@ -321,7 +312,7 @@ const Map: React.FC<MapProps> = ({
     17.842832246588202,
     74.91558702408217,
   ]);
-  const [selectedPlotName, setSelectedPlotName] = useState<string>("");
+  const [selectedPlotName, setSelectedPlotName] = useState("Sarang Gulve 122436");
   const [activeLayer, setActiveLayer] = useState<"VV" | "RVI" | "SWI" | "PEST">("VV");
   const [pestData, setPestData] = useState<any>(null);
   const [hoveredPlotInfo, setHoveredPlotInfo] = useState<{
@@ -337,7 +328,7 @@ const Map: React.FC<MapProps> = ({
     }[];
   } | null>(null);
 
-  // Reduced hover timeout for faster response
+  // Reduced hover timeout for faster response (from 100ms to 50ms)
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Add state for selected legend class
@@ -346,17 +337,10 @@ const Map: React.FC<MapProps> = ({
   // Add layer change counter to force tile layer re-render
   const [layerChangeKey, setLayerChangeKey] = useState(0);
 
-  // Add AbortController to cancel ongoing fetch requests
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  // Add flag to prevent multiple API calls
-  const hasInitializedRef = useRef(false);
-
   // Update layer change key when active layer changes
   useEffect(() => {
     setLayerChangeKey(prev => prev + 1);
   }, [activeLayer]);
-
 
   // Function to get current date in YYYY-MM-DD format
   const getCurrentDate = () => {
@@ -369,9 +353,9 @@ const Map: React.FC<MapProps> = ({
 
   const getClassificationDescription = (layer: string, className: string): string => {
     if (!className || className === "-") return "";
-    
+
     let cleanClassName = className.trim();
-    
+
     if (CLASSIFICATION_DESCRIPTIONS[layer]?.[cleanClassName]) {
       return CLASSIFICATION_DESCRIPTIONS[layer][cleanClassName];
     }
@@ -385,9 +369,11 @@ const Map: React.FC<MapProps> = ({
         return description;
       }
     }
+
     return cleanClassName;
   };
 
+  // Auto-select first plot from farmer profile when profile loads
   useEffect(() => {
     console.log('🗺️ Map useEffect: profileLoading:', profileLoading, 'profile:', profile);
     
@@ -397,31 +383,19 @@ const Map: React.FC<MapProps> = ({
       return;
     }
 
-    // Prevent multiple API calls
-    if (hasInitializedRef.current) {
-      console.log('🗺️ Map useEffect: Already initialized, skipping...');
-      return;
-    }
-
-    // Get the default plot from the loaded profile
+    // Get the first plot from the loaded profile
     const plotNames = profile.plots?.map(plot => plot.fastapi_plot_id) || [];
     const defaultPlot = plotNames.length > 0 ? plotNames[0] : null;
     
     console.log('🗺️ Map useEffect: Available plots:', plotNames);
     console.log('🗺️ Map useEffect: Setting default plot from profile:', defaultPlot);
     console.log('🗺️ Map useEffect: Profile plots data:', profile.plots);
-    console.log('🗺️ Map useEffect: Plot details:', profile.plots?.map(plot => ({
-      id: plot.id,
-      fastapi_plot_id: plot.fastapi_plot_id,
-      gat_number: plot.gat_number,
-      plot_number: plot.plot_number
-    })));
     
-    setSelectedPlotName(defaultPlot || '');
-    localStorage.setItem('selectedPlot', defaultPlot || '');
-
-    // Fetch data for the selected plot
     if (defaultPlot) {
+      setSelectedPlotName(defaultPlot);
+      localStorage.setItem('selectedPlot', defaultPlot);
+      
+      // Fetch data for the selected plot
       console.log('🗺️ Map useEffect: Fetching data for plot:', defaultPlot);
       fetchPlotData(defaultPlot);
       fetchFieldAnalysis(defaultPlot);
@@ -434,248 +408,30 @@ const Map: React.FC<MapProps> = ({
         plotsData: profile.plots
       });
     }
-
-    // Mark as initialized to prevent future calls
-    hasInitializedRef.current = true;
-
-    // Cleanup function - only abort requests, don't clear data
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      // Don't clear plot data and pest data here as it causes data to disappear
-      // setLoading(false);
-      // setError(null);
-      // setPlotData(null);
-      // setPestData(null);
-      // hasInitializedRef.current = false;
-    };
   }, [profile, profileLoading]);
 
-  // Enhanced plot data fetching with robust error handling
-  const fetchPlotData = async (plotName: string, retryCount = 0) => {
-    if (!plotName || plotName.trim() === '') {
-      console.log('fetchPlotData: No plot name provided, skipping API call');
-      setLoading(false);
-      return;
-    }
-
-    // Cancel any previous request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    // Create new AbortController for this request
-    abortControllerRef.current = new AbortController();
-
+  const fetchPlotData = async (plotName: string) => {
     setLoading(true);
     setError(null);
-
-    // Don't retry more than 2 times
-    if (retryCount > 2) {
-      setError('Failed to fetch plot data after multiple attempts');
-      setLoading(false);
-      return;
-    }
-
     try {
       const currentDate = getCurrentDate();
-      // Try different API endpoints for plot data since the analyze endpoint is not working
-      const apiEndpoints = [
-        `http://192.168.41.73:7031/plot-data?plot_name=${plotName}&end_date=${currentDate}`,
-        `http://192.168.41.73:7031/plots/${plotName}?end_date=${currentDate}`,
-        `http://192.168.41.73:7031/field-data?plot_name=${plotName}&end_date=${currentDate}`,
-        `http://192.168.41.73:7031/analyze?plot_name=${plotName}&end_date=${currentDate}&days_back=7` // Keep original as fallback
-      ];
-      
-      console.log('🗺️ Trying multiple plot data endpoints:', apiEndpoints);
-      
-      console.log('🗺️ Plot name:', plotName);
-      console.log('🗺️ Current date:', currentDate);
-
-      // Try each endpoint until one works
-      let data = null;
-      let lastError = null;
-      
-      for (let i = 0; i < apiEndpoints.length; i++) {
-        const apiUrl = apiEndpoints[i];
-        console.log(`🗺️ Trying endpoint ${i + 1}/${apiEndpoints.length}:`, apiUrl);
-        
-        try {
-          // Add timeout to the fetch request
-          const timeoutId = setTimeout(() => {
-            if (abortControllerRef.current) {
-              abortControllerRef.current.abort();
-            }
-          }, 15000); // 15 second timeout
-
-          const resp = await fetch(apiUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            signal: abortControllerRef.current.signal,
-          });
-
-          clearTimeout(timeoutId);
-
-          console.log(`🗺️ Endpoint ${i + 1} response status:`, resp.status);
-          
-          if (!resp.ok) {
-            const errorText = await resp.text();
-            console.error(`🗺️ Endpoint ${i + 1} error:`, errorText);
-            lastError = new Error(`API Error: ${resp.status} ${resp.statusText} - ${errorText}`);
-            continue; // Try next endpoint
-          }
-
-          data = await resp.json();
-          console.log(`🗺️ Endpoint ${i + 1} data received:`, data);
-          console.log('🗺️ Plot data structure:', {
-            hasFeatures: !!data.features,
-            featuresLength: data.features?.length,
-            hasProperties: !!data.features?.[0]?.properties,
-            hasTileUrls: !!data.features?.[0]?.properties?.tile_urls,
-            hasIndicesAnalysis: !!data.features?.[0]?.properties?.indices_analysis,
-            tileUrls: data.features?.[0]?.properties?.tile_urls,
-            indicesAnalysis: data.features?.[0]?.properties?.indices_analysis
-          });
-          
-          // If we got valid data, break out of the loop
-          if (data && (data.features || data.type === 'FeatureCollection')) {
-            console.log(`🗺️ Successfully got data from endpoint ${i + 1}`);
-            break;
-          } else {
-            console.log(`🗺️ Endpoint ${i + 1} returned invalid data structure`);
-            lastError = new Error('Invalid data structure received');
-          }
-          
-        } catch (err: any) {
-          console.error(`🗺️ Endpoint ${i + 1} failed:`, err);
-          lastError = err;
-          continue; // Try next endpoint
+      const resp = await fetch(
+        ` http://192.168.41.73:7031/analyze?plot_name=${plotName}&end_date=${currentDate}&days_back=7`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
-      }
-      
-      if (!data) {
-        // Try to use field analysis data as fallback since it's working
-        console.log('🗺️ All plot data endpoints failed, trying field analysis fallback...');
-        try {
-          const fieldAnalysisUrl = `http://192.168.41.73:7002/analyze?plot_name=${plotName}&end_date=${currentDate}&days_back=7`;
-          const fieldResp = await fetch(fieldAnalysisUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-          
-          if (fieldResp.ok) {
-            const fieldData = await fieldResp.json();
-            console.log('🗺️ Field analysis fallback data:', fieldData);
-            
-            // Convert field analysis data to plot data format
-            if (fieldData && fieldData.map_url) {
-              const fallbackPlotData = {
-                type: 'FeatureCollection',
-                features: [{
-                  type: 'Feature',
-                  properties: {
-                    plot_name: plotName,
-                    area_hectares: fieldData.area_hectares || 0,
-                    tile_urls: {
-                      VV_tile_url: fieldData.map_url,
-                      VH_tile_url: fieldData.map_url,
-                      RVI_tile_url: fieldData.map_url,
-                      SWI_tile_url: fieldData.map_url
-                    },
-                    // Add indices_analysis with sample data to prevent zero values
-                    indices_analysis: [
-                      {
-                        index_name: "VV",
-                        total_pixels: 1000,
-                        current_value: 0.5,
-                        classifications: [
-                          { class_name: "Weak", pixel_count: 580 },
-                          { class_name: "Stress", pixel_count: 170 },
-                          { class_name: "Moderate", pixel_count: 40 },
-                          { class_name: "Healthy", pixel_count: 150 }
-                        ]
-                      },
-                      {
-                        index_name: "RVI",
-                        total_pixels: 1000,
-                        current_value: 0.6,
-                        classifications: [
-                          { class_name: "Dry", pixel_count: 200 },
-                          { class_name: "Less Uptake", pixel_count: 300 },
-                          { class_name: "Sufficient Uptake", pixel_count: 350 },
-                          { class_name: "Adequate", pixel_count: 100 },
-                          { class_name: "Excess", pixel_count: 50 }
-                        ]
-                      },
-                      {
-                        index_name: "SWI",
-                        total_pixels: 1000,
-                        current_value: 0.4,
-                        classifications: [
-                          { class_name: "Dry", pixel_count: 200 },
-                          { class_name: "Water Stress", pixel_count: 250 },
-                          { class_name: "Moist Ground", pixel_count: 300 },
-                          { class_name: "Shallow Water", pixel_count: 150 },
-                          { class_name: "Water Bodies", pixel_count: 100 }
-                        ]
-                      }
-                    ]
-                  },
-                  geometry: {
-                    type: 'Polygon',
-                    coordinates: [[[74.724843, 19.931853], [74.724971, 19.932166], [74.723727, 19.932509], [74.723662, 19.932166], [74.724843, 19.931853]]] // Real coordinates from your logs
-                  }
-                }]
-              };
-              
-              console.log('🗺️ Using field analysis fallback data');
-              setPlotData(fallbackPlotData);
-              setError(null);
-              return;
-            }
-          }
-        } catch (fallbackErr) {
-          console.error('🗺️ Field analysis fallback also failed:', fallbackErr);
-        }
-        
-        throw lastError || new Error('All plot data endpoints failed');
-      }
-      
-      setPlotData(data);
-      setError(null);
+      );
+
+      if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`);
+
+      setPlotData(await resp.json());
     } catch (err: any) {
-      // Don't set error if request was aborted
-      if (err.name === 'AbortError') {
-        console.log('Request was aborted');
-        return;
-      }
-
-      console.error('Fetch plot data error:', err);
-      
-      if (err.message.includes('Failed to fetch')) {
-        setError('Network error: Unable to connect to plot data service');
-      } else if (err.message.includes('API Error:')) {
-        setError(err.message);
-      } else {
-        setError(`Failed to fetch plot data: ${err.message}`);
-      }
-      
-      // Don't clear existing data on error - keep previous data visible
-      // setPlotData(null);
-
-      // Retry for network errors
-      if (err.message.includes('Failed to fetch') && retryCount < 2) {
-        console.log(`Retrying request (attempt ${retryCount + 1})...`);
-        setTimeout(() => {
-          fetchPlotData(plotName, retryCount + 1);
-        }, 2000);
-        return;
-      }
+      console.error(err);
+      setError(err.message);
+      setPlotData(null);
     } finally {
       setLoading(false);
     }
@@ -683,8 +439,7 @@ const Map: React.FC<MapProps> = ({
 
 
   const fetchFieldAnalysis = async (plotName: string) => {
-    if (!plotName || plotName.trim() === '') {
-      console.log("Map.tsx: No plot name for field analysis, skipping API call");
+    if (!plotName) {
       onFieldAnalysisChange?.({
         plotName: "",
         overallHealth: 0,
@@ -694,8 +449,6 @@ const Map: React.FC<MapProps> = ({
       return;
     }
 
-
-    
     try {
       console.log("Map.tsx: Fetching field analysis for plot:", plotName);
       const currentDate = getCurrentDate();
@@ -710,17 +463,21 @@ const Map: React.FC<MapProps> = ({
       );
 
       if (!resp.ok) throw new Error(`Field analysis API failed: ${resp.status} ${resp.statusText}`);
-      
+
       const data = await resp.json();
       console.log("Map.tsx: Field analysis API response:", data);
 
+      // Handle the response data
       let fieldData: any = null;
       if (Array.isArray(data)) {
+        // Find the most recent data for this plot
         const plotData = data.filter((item: any) => {
           const itemPlotName = item.plot_name || item.plot || item.name || '';
           return itemPlotName === plotName;
         });
+
         if (plotData.length > 0) {
+          // Sort by date and get the latest
           plotData.sort((a: any, b: any) => {
             const dateA = a.date || a.analysis_date || '';
             const dateB = b.date || b.analysis_date || '';
@@ -736,6 +493,7 @@ const Map: React.FC<MapProps> = ({
         throw new Error(`No field data found for plot: ${plotName}`);
       }
 
+      // Extract field analysis values
       const overallHealth = fieldData?.overall_health ?? fieldData?.health_score ?? fieldData?.field_health ?? 0;
       const healthStatus = fieldData?.health_status ?? fieldData?.status ?? fieldData?.condition ?? "Unknown";
       const meanValue = fieldData?.statistics?.mean ?? fieldData?.mean ?? fieldData?.average ?? 0;
@@ -744,7 +502,9 @@ const Map: React.FC<MapProps> = ({
         plotName: fieldData.plot_name ?? plotName,
         overallHealth: overallHealth,
         healthStatus: healthStatus,
-        statistics: { mean: meanValue },
+        statistics: {
+          mean: meanValue,
+        },
       };
 
       console.log("Map.tsx: Calling onFieldAnalysisChange with:", fieldAnalysisResult);
@@ -761,18 +521,16 @@ const Map: React.FC<MapProps> = ({
   };
 
   const fetchPestData = async (plotName: string) => {
-    if (!plotName || plotName.trim() === '') {
-      console.log("Map.tsx: No plot name for pest data, skipping API call");
-      // Don't clear existing pest data when no plot name - keep previous data visible
-      // setPestData(null);
+    if (!plotName) {
+      setPestData(null);
       return;
     }
 
     try {
-      console.log("Map.tsx: Fetching pest detection for plot:", plotName);
+      console.log("Map.tsx: Fetching chewing pest detection for plot:", plotName);
       const currentDate = getCurrentDate();
       const resp = await fetch(
-        `http://192.168.41.73:7031/pest-detection?plot_name=${plotName}&end_date=${currentDate}&pest_threshold=0.3&nir_threshold=0.15&ndwi_threshold=0.4&cloud_threshold=30`,
+        `http://192.168.41.73:7031/pest-detection-combined?plot_name=${plotName}&end_date=${currentDate}&pest_threshold=0.3&nir_threshold=0.15&ndwi_threshold=0.4&cloud_threshold=30`,
         {
           method: "POST",
           headers: {
@@ -781,133 +539,67 @@ const Map: React.FC<MapProps> = ({
         }
       );
 
-      if (!resp.ok) throw new Error(`Pest detection API failed: ${resp.status} ${resp.statusText}`);
-      
+      if (!resp.ok) throw new Error(`Chewing pest detection API failed: ${resp.status} ${resp.statusText}`);
+
       const data = await resp.json();
-      console.log("Map.tsx: Pest detection API response:", data);
-      
+      console.log("Map.tsx: Chewing pest detection API response:", data);
+
       setPestData(data);
 
-      if (data?.pest_statistics && onPestDataChange) {
-        const pestStats = data.pest_statistics;
+      // Call the pest data change callback with all pest type data from pixel_summary
+      if (data?.pixel_summary && onPestDataChange) {
+        const chewingPestPercentage = data.pixel_summary.chewing_affected_pixel_percentage || 0;
+        const suckingPercentage = data.pixel_summary.sucking_affected_pixel_percentage || 0;
+        const fungiiPercentage = data.pixel_summary.fungii_affected_pixel_percentage || 0;
+        const soilBornePercentage = data.pixel_summary.SoilBorne_affected_pixel_percentage || 0;
+        const totalAffectedPercentage = chewingPestPercentage + suckingPercentage + fungiiPercentage + soilBornePercentage;
+        const healthyPercentage = 100 - totalAffectedPercentage;
+        
         onPestDataChange({
           plotName: plotName,
-          pestPercentage: pestStats.pest_percentage || 0,
-          healthyPercentage: pestStats.healthy_percentage || 0,
-          totalPixels: pestStats.total_pixels || 0,
-          pestAffectedPixels: pestStats.pest_affected_pixels || 0,
+          pestPercentage: totalAffectedPercentage,
+          healthyPercentage: healthyPercentage,
+          totalPixels: data.pixel_summary.total_pixel_count || 0,
+          pestAffectedPixels: (data.pixel_summary.chewing_affected_pixel_count || 0) + 
+                             (data.pixel_summary.sucking_affected_pixel_count || 0) + 
+                             (data.pixel_summary.fungii_affected_pixel_count || 0) + 
+                             (data.pixel_summary.SoilBorne_pixel_count || 0),
+          chewingPestPercentage: chewingPestPercentage,
+          chewingPestPixels: data.pixel_summary.chewing_affected_pixel_count || 0,
+          suckingPercentage: suckingPercentage,
+          suckingPixels: data.pixel_summary.sucking_affected_pixel_count || 0,
         });
       }
     } catch (err) {
       console.error("Map.tsx: Error in fetchPestData:", err);
-      // Don't clear existing pest data on error - keep previous data visible
-      // setPestData(null);
+      setPestData(null);
     }
   };
 
-  // Enhanced active layer URL getter with comprehensive fallbacks
   const getActiveLayerUrl = () => {
-    console.log('🗺️ getActiveLayerUrl: activeLayer:', activeLayer);
-    console.log('🗺️ getActiveLayerUrl: plotData:', plotData);
-    console.log('🗺️ getActiveLayerUrl: pestData:', pestData);
-    
     if (activeLayer === "PEST") {
       const pestTileUrl = pestData?.features?.[0]?.properties?.tile_url;
-      console.log('🗺️ Pest tile URL:', pestTileUrl);
+      console.log('Pest tile URL:', pestTileUrl);
       return pestTileUrl;
     }
 
-    // Try multiple possible structures for tile URLs
-    let urls = null;
-    
-    // Structure 1: Direct tile_urls object (this should match your API response)
-    if (plotData?.features?.[0]?.properties?.tile_urls) {
-      urls = plotData.features[0].properties.tile_urls;
-      console.log('🗺️ ✅ Found tile_urls in features[0].properties:', urls);
-      console.log('🗺️ Available layers:', Object.keys(urls));
-    }
-    // Structure 2: Nested in properties
-    else if (plotData?.properties?.tile_urls) {
-      urls = plotData.properties.tile_urls;
-      console.log('🗺️ Found tile_urls in root properties:', urls);
-    }
-    // Structure 3: Direct in plotData
-    else if (plotData?.tile_urls) {
-      urls = plotData.tile_urls;
-      console.log('🗺️ Found tile_urls in root:', urls);
-    }
-
-    console.log('🗺️ All tile URLs found:', urls);
+    const urls = plotData?.features?.[0]?.properties?.tile_urls;
+    console.log('All tile URLs:', urls); // Debug log
 
     if (!urls) {
-      console.log('🗺️ ❌ No tile URLs found in plot data. Plot data structure:', plotData);
-      console.log('🗺️ ❌ Plot data features:', plotData?.features);
-      console.log('🗺️ ❌ First feature properties:', plotData?.features?.[0]?.properties);
+      console.log('No tile URLs found in plot data');
       return null;
     }
 
-    // Map active layer to the correct tile URL key
-    let layerUrlKey: string;
-    switch (activeLayer) {
-      case "VV":
-        layerUrlKey = "VV_tile_url";
-        break;
-      case "RVI":
-        layerUrlKey = "RVI_tile_url";
-        break;
-      case "SWI":
-        layerUrlKey = "SWI_tile_url";
-        break;
-      case "PEST":
-        layerUrlKey = "VV_tile_url"; // Use VV as fallback for pest
-        break;
-      default:
-        layerUrlKey = "VV_tile_url";
-    }
-
+    const layerUrlKey = `${activeLayer}_tile_url` as "VV_tile_url" | "RVI_tile_url" | "SWI_tile_url";
     const url = urls[layerUrlKey];
-    console.log(`🗺️ Active layer: ${activeLayer}, URL key: ${layerUrlKey}, URL: ${url}`);
+    console.log(`Active layer: ${activeLayer}, URL key: ${layerUrlKey}, URL: ${url}`); // Debug log
 
-    if (!url) {
-      console.log(`🗺️ ❌ No URL found for layer ${activeLayer} with key ${layerUrlKey}`);
-      console.log('🗺️ Available keys:', Object.keys(urls));
-      return null;
-    }
-
-    console.log(`🗺️ ✅ Returning tile URL: ${url}`);
     return url;
   };
 
   const currentPlotFeature = plotData?.features?.[0];
-  
-  // Debug logging for current plot feature - Only log when data changes
-  React.useEffect(() => {
-    if (currentPlotFeature) {
-      console.log('🗺️ currentPlotFeature:', currentPlotFeature);
-      console.log('🗺️ currentPlotFeature geometry:', currentPlotFeature?.geometry);
-      console.log('🗺️ currentPlotFeature properties:', currentPlotFeature?.properties);
-      console.log('🗺️ currentPlotFeature indices_analysis:', currentPlotFeature?.properties?.indices_analysis);
-      
-      // Log each index analysis in detail
-      if (currentPlotFeature?.properties?.indices_analysis) {
-        currentPlotFeature.properties.indices_analysis.forEach((analysis: any, index: number) => {
-          console.log(`🗺️ Index Analysis ${index}:`, {
-            index_name: analysis.index_name,
-            classifications: analysis.classifications,
-            total_pixels: analysis.total_pixels,
-            current_value: analysis.current_value
-          });
-        });
-      }
-    }
-  }, [currentPlotFeature]);
-  
-  // TEST CONSOLE LOG - Only show once on component mount
-  React.useEffect(() => {
-    console.log('🚨 TEST: Map component mounted at:', new Date().toLocaleTimeString());
-  }, []);
 
-  // Enhanced health analysis with updated classification ranges
   const healthAnalysis = useMemo(() => {
     if (!currentPlotFeature?.properties?.indices_analysis) return null;
 
@@ -917,9 +609,9 @@ const Map: React.FC<MapProps> = ({
 
     if (!ndvi?.classifications) return null;
 
-    const healthy = ["Healthy", "Moderate"];
+    const healthy = ["Healthy", "Over Growth"];
     const goodPx = ndvi.classifications
-      .filter((c: any) => healthy.some((h) => c.class_name.includes(h)))
+      .filter((c: any) => healthy.some((h) => c.class_name?.includes(h)))
       .reduce((sum: number, c: any) => sum + (c && typeof c.pixel_count === 'number' ? c.pixel_count : 0), 0);
 
     const total = ndvi.total_pixels || 1;
@@ -927,7 +619,7 @@ const Map: React.FC<MapProps> = ({
     return {
       goodHealthPercent: Math.round((goodPx / total) * 100),
       needsAttentionPercent: 100 - Math.round((goodPx / total) * 100),
-      totalArea: currentPlotFeature?.properties?.area_hectares || 0,
+      totalArea: currentPlotFeature.properties?.area_acres || 0,
       plotName: selectedPlotName || "",
     };
   }, [currentPlotFeature, selectedPlotName]);
@@ -936,82 +628,73 @@ const Map: React.FC<MapProps> = ({
     if (healthAnalysis) onHealthDataChange?.(healthAnalysis);
   }, [healthAnalysis, onHealthDataChange]);
 
-  // Enhanced legend data generation with improved debugging
   const legendData = useMemo(() => {
-    console.log('🗺️ legendData: activeLayer:', activeLayer);
-    console.log('🗺️ legendData: currentPlotFeature:', currentPlotFeature);
-    console.log('🗺️ legendData: pestData:', pestData);
-    console.log('🗺️ legendData: currentPlotFeature?.properties:', currentPlotFeature?.properties);
-    console.log('🗺️ legendData: currentPlotFeature?.properties?.indices_analysis:', currentPlotFeature?.properties?.indices_analysis);
-    
     if (activeLayer === "PEST") {
-      if (!pestData?.pest_statistics) {
-        console.log('🗺️ legendData: No pest statistics found');
-        return [];
-      }
+      // Get all pest type percentages from pixel_summary in the API response
+      const chewingPestPercentage = pestData?.pixel_summary?.chewing_affected_pixel_percentage || 0;
+      const suckingPercentage = pestData?.pixel_summary?.sucking_affected_pixel_percentage || 0;
+      const fungiiPercentage = pestData?.pixel_summary?.fungii_affected_pixel_percentage || 0;
+      const soilBornePercentage = pestData?.pixel_summary?.SoilBorne_affected_pixel_percentage || 0;
       
-      const pestStats = pestData.pest_statistics;
-      console.log('🗺️ legendData: Pest statistics:', pestStats);
       return [
         {
-          label: "Healthy",
-          percentage: pestStats.healthy_percentage || 0,
-          color: "#00c800",
-          pixelValue: 0,
+          label: "Chewing Pests",
+          color: "#DC2626", // Red-600
+          percentage: Math.round(chewingPestPercentage), // Display as rounded whole number (e.g., 9)
+          description: "Areas affected by chewing pests"
         },
         {
-          label: "Pest Affected", 
-          percentage: pestStats.pest_percentage || 0,
-          color: "#ff0000",
-          pixelValue: 1,
+          label: "Sucking Pests", 
+          color: "#B91C1C", // Red-700
+          percentage: Math.round(suckingPercentage), // Display as rounded whole number (e.g., 3)
+          description: "Areas affected by sucking disease"
         },
+        {
+          label: "Fungi",
+          color: "#991B1B", // Red-800
+          percentage: Math.round(fungiiPercentage), // Display fungii percentage from API
+          description: "fungii infections affecting plants"
+        },
+        {
+          label: "Soil    Borne",
+          color: "#7F1D1D", // Red-900
+          percentage: Math.round(soilBornePercentage), // Display SoilBorne percentage from API
+          description: "SoilBorne infections affecting plants"
+        }
       ];
     }
 
-    if (!currentPlotFeature?.properties?.indices_analysis) {
-      console.log('🗺️ legendData: No indices_analysis found in currentPlotFeature');
-      console.log('🗺️ legendData: currentPlotFeature properties keys:', currentPlotFeature?.properties ? Object.keys(currentPlotFeature.properties) : 'No properties');
-      return [];
-    }
+    if (!currentPlotFeature?.properties?.indices_analysis) return [];
 
-    const analysis = currentPlotFeature.properties.indices_analysis.find(
+    const analysis = currentPlotFeature?.properties?.indices_analysis?.find(
       (i: any) => i.index_name === activeLayer
     );
 
-    console.log('🗺️ legendData: Found analysis for', activeLayer, ':', analysis);
-    console.log('🗺️ legendData: All available analyses:', currentPlotFeature?.properties?.indices_analysis?.map((a: any) => a.index_name) || []);
-
-    if (!analysis?.classifications) {
-      console.log('🗺️ legendData: No classifications found in analysis');
-      console.log('🗺️ legendData: Analysis structure:', analysis);
-      return [];
-    }
+    if (!analysis?.classifications) return [];
 
     const totalPixels = analysis.total_pixels || 1;
 
     return CLASS_RANGES[activeLayer].map((range) => {
-      const matching = analysis.classifications.filter((c: any) => 
-        c.class_name && c.class_name.toLowerCase().includes(range.label.toLowerCase())
+      const matching = analysis.classifications.filter((c: any) =>
+        c?.class_name && c.class_name.toLowerCase().includes(range.label.toLowerCase())
       );
 
       const pixelCount = matching.reduce(
-        (sum: number, c: any) => sum + (typeof c.pixel_count === 'number' ? c.pixel_count : 0), 
+        (sum: number, c: any) => sum + (typeof c.pixel_count === 'number' ? c.pixel_count : 0),
         0
       );
 
       const percentage = Math.round((pixelCount / totalPixels) * 100);
 
-      // Enhanced debugging for all layers
-      console.log(`🗺️ Legend item "${range.label}" for ${activeLayer}:`, {
-        matching: matching.map((c: any) => ({ 
-          class_name: c.class_name, 
-          pixel_count: c.pixel_count 
-        })),
-        totalPixels,
-        pixelCount,
-        percentage,
-        allClassifications: analysis.classifications
-      });
+      // Debug: Log matching for SWI layer
+      if (activeLayer === "SWI") {
+        console.log(`Legend item "${range.label}":`, {
+          matching: matching.map((c: any) => ({ class_name: c.class_name, pixel_count: c.pixel_count })),
+          totalPixels,
+          pixelCount,
+          percentage
+        });
+      }
 
       return {
         label: range.label,
@@ -1022,44 +705,79 @@ const Map: React.FC<MapProps> = ({
     });
   }, [currentPlotFeature, activeLayer, pestData]);
 
-  // Debug logging for legend data
-  useEffect(() => {
-    console.log('🗺️ legendData result:', legendData);
-    console.log('🗺️ legendData length:', legendData.length);
-  }, [legendData]);
-
-  // Enhanced filtered pixels with comprehensive debugging
+  // FIXED: Get filtered pixels based on selected legend class
   const getFilteredPixels = useMemo(() => {
     if (!selectedLegendClass) return [];
     
-    if (activeLayer === "PEST") return [];
+    // For pest detection, show pixels for all pest categories
+    if (activeLayer === "PEST") {
+      if (!pestData || !currentPlotFeature) return [];
+      
+      // Show pixels for any pest category
+      if (!["Chewing Pests", "sucking Pests", "fungii", "SoilBorne"].includes(selectedLegendClass)) return [];
+      
+      let coordinates = [];
+      let pestType = "";
+      
+      if (selectedLegendClass === "Chewing Pests") {
+        coordinates = pestData.pixel_summary?.chewing_affected_pixel_coordinates || [];
+        pestType = "Chewing Pests";
+      } else if (selectedLegendClass === "sucking Pests") {
+        coordinates = pestData.pixel_summary?.sucking_affected_pixel_coordinates || [];
+        pestType = "sucking Pests";
+      } else if (selectedLegendClass === "fungii") {
+        coordinates = pestData.pixel_summary?.fungii_affected_pixel_coordinates || [];
+        pestType = "fungii";
+      } else if (selectedLegendClass === "SoilBorne") {
+        coordinates = pestData.pixel_summary?.SoilBorne_affected_pixel_coordinates || [];
+        pestType = "SoilBorne";
+      }
+      
+      if (!coordinates || !Array.isArray(coordinates)) return [];
+      
+      // Convert API coordinates to pixel objects
+      const actualPixels = coordinates.map((coord, index) => {
+        if (!Array.isArray(coord) || coord.length < 2) return null;
+        
+        return {
+          geometry: { coordinates: [coord[0], coord[1]] }, // [lng, lat]
+          properties: {
+            pixel_id: `${pestType.toLowerCase().replace(/\s+/g, '-')}-${index}`,
+            pest_type: pestType,
+            pest_category: pestType
+          }
+        };
+      }).filter(Boolean); // Remove any null entries
+      
+      return actualPixels;
+    }
     
     if (!plotData?.features || !currentPlotFeature) return [];
-
-    // Don't show pixels if percentage is 99% or higher
+    
+    // Don't show pixels if percentage is 99% or higher (almost entire plot is one classification)
     const selectedLegendItem = legendData.find(item => item.label === selectedLegendClass);
     if (selectedLegendItem && selectedLegendItem.percentage >= 99) return [];
-
+    
     // Get plot boundary coordinates
-    const plotGeometry = currentPlotFeature?.geometry;
+    const plotGeometry = currentPlotFeature.geometry;
     if (!plotGeometry || plotGeometry.type !== "Polygon") return [];
-
+    
     const plotBoundary = plotGeometry.coordinates[0].map((coord: [number, number]) => 
       [coord[0], coord[1]] as [number, number]
     );
-
-    // Get all pixel features
+    
+    // Get all pixel features (features with feature_type === "pixel_data")
     const pixelFeatures = plotData.features.filter(
-      (feature: any) => feature.properties.feature_type === "pixel_data"
+      (feature: any) => feature?.properties?.feature_type === "pixel_data"
     );
-
+    
     if (!pixelFeatures.length) return [];
-
+    
     console.log(`Total pixel features found: ${pixelFeatures.length}`);
     console.log(`Selected legend class: ${selectedLegendClass}`);
     console.log(`Active layer: ${activeLayer}`);
-
-    // Enhanced debugging for SWI layer
+    
+    // Debug: Log sample pixel values for SWI layer
     if (activeLayer === "SWI") {
       console.log('Sample SWI pixel values:', pixelFeatures.slice(0, 10).map((p: any) => ({
         id: p.id || 'unknown',
@@ -1067,90 +785,118 @@ const Map: React.FC<MapProps> = ({
         coords: p.geometry.coordinates
       })));
     }
-
+    
     // Get the classification range for the selected legend class
     const classRange = CLASS_RANGES[activeLayer]?.find(range => 
       range.label === selectedLegendClass
     );
-
+    
     if (!classRange) {
       console.log(`No class range found for ${selectedLegendClass} in ${activeLayer}`);
       return [];
     }
-
+    
     console.log(`Class range for ${selectedLegendClass}:`, classRange);
-
+    
     // Filter pixels based on the classification range
     const filteredPixels = pixelFeatures.filter((pixel: any) => {
-      const pixelValue = pixel.properties[activeLayer];
+      const pixelValue = pixel?.properties?.[activeLayer];
       
       if (typeof pixelValue !== 'number') {
-        console.log(`Pixel ${pixel.id || 'unknown'} has non-numeric value:`, pixelValue);
+        console.log(`Pixel ${pixel?.id || 'unknown'} has non-numeric value:`, pixelValue);
         return false;
       }
-
+      
       // Check if pixel value falls within the classification range
       const isInRange = pixelValue >= classRange.min && 
-        (classRange.max === Infinity ? true : pixelValue < classRange.max);
-
+                       (classRange.max === Infinity ? true : pixelValue < classRange.max);
+      
       console.log(`Pixel ${pixel.id || 'unknown'} value: ${pixelValue}, range: ${classRange.min} to ${classRange.max}, inRange: ${isInRange}`);
-
+      
       if (!isInRange) return false;
-
+      
       // Check if pixel is inside plot boundary
-      const pixelCoords = pixel.geometry.coordinates;
+      const pixelCoords = pixel?.geometry?.coordinates;
+      if (!pixelCoords || !Array.isArray(pixelCoords) || pixelCoords.length < 2) {
+        console.log(`Pixel ${pixel?.id || 'unknown'} has invalid coordinates:`, pixelCoords);
+        return false;
+      }
       const isInsidePlot = isPointInPolygon([pixelCoords[0], pixelCoords[1]], plotBoundary);
-
+      
       if (!isInsidePlot) {
         console.log(`Pixel ${pixel.id || 'unknown'} is outside plot boundary`);
         return false;
       }
-
+      
       return true;
     });
-
+    
     console.log(`Filtered pixels for "${selectedLegendClass}":`, filteredPixels.length);
     console.log('Sample pixel values:', filteredPixels.slice(0, 5).map((p: any) => ({
       value: p.properties[activeLayer],
       coords: p.geometry.coordinates,
       classification: classifyPixelValue(activeLayer, p.properties[activeLayer])
     })));
-
+    
     return filteredPixels;
   }, [plotData, selectedLegendClass, activeLayer, currentPlotFeature, legendData]);
 
   // Handle legend click
   const handleLegendClick = (label: string, percentage: number) => {
     if (percentage === 0) return;
-    
+
     // Don't show pixels if percentage is 99% or higher
     if (percentage >= 99) {
       setSelectedLegendClass(null);
       return;
     }
-    
+
     setSelectedLegendClass((prev) => (prev === label ? null : label));
   };
 
-  const getLayerClassificationInfo = (layerName: string, baseValue: number, _x: number, _y: number) => {
+  const getLayerClassificationInfo = (layerName: string, baseValue: number) => {
     if (layerName === "PEST") {
-      if (!pestData?.pest_statistics) return null;
+      if (!pestData?.pixel_summary) return null;
+
+      const chewingPestPercentage = pestData.pixel_summary.chewing_affected_pixel_percentage || 0;
+      const suckingPercentage = pestData.pixel_summary.sucking_affected_pixel_percentage || 0;
+      const fungiiPercentage = pestData.pixel_summary.fungii_affected_pixel_percentage || 0;
+      const soilBornePercentage = pestData.pixel_summary.SoilBorne_affected_pixel_percentage || 0;
       
-      const pestStats = pestData.pest_statistics;
-      const className = pestStats.pest_percentage > 0 ? "Pest Affected" : "Healthy";
-      const description = pestStats.pest_percentage > 0 ? "pest detected in area" : "no pest detected";
+      // Determine the most prominent pest type
+      let className = "Healthy";
+      let description = "no pest damage detected";
+      let value = 0;
       
+      // Find the highest percentage pest type
+      const pestTypes = [
+        { name: "Chewing Pests", percentage: chewingPestPercentage, description: "chewing pest damage detected in area" },
+        { name: "sucking Pests", percentage: suckingPercentage, description: "sucking disease damage detected in area" },
+        { name: "fungii", percentage: fungiiPercentage, description: "fungii infections detected in area" },
+        { name: "SoilBorne", percentage: soilBornePercentage, description: "SoilBorne infections detected in area" }
+      ];
+      
+      const dominantPest = pestTypes.reduce((prev, current) => 
+        (current.percentage > prev.percentage) ? current : prev
+      );
+      
+      if (dominantPest.percentage > 0) {
+        className = dominantPest.name;
+        description = dominantPest.description;
+        value = dominantPest.percentage;
+      }
+
       return {
         layer: layerName,
         label: LAYER_LABELS[layerName],
         className: className,
         description: description,
-        value: pestStats.pest_percentage,
-        pixelValue: pestStats.pest_percentage,
+        value: value,
+        pixelValue: value,
       };
     }
 
-    const analysis = currentPlotFeature?.properties?.indices_analysis?.find(
+    const analysis = currentPlotFeature?.properties.indices_analysis.find(
       (i: any) => i.index_name === layerName
     );
 
@@ -1176,7 +922,7 @@ const Map: React.FC<MapProps> = ({
       clearTimeout(hoverTimeoutRef.current);
     }
 
-    const analysis = currentPlotFeature?.properties?.indices_analysis?.find(
+    const analysis = currentPlotFeature?.properties.indices_analysis.find(
       (i: any) => i.index_name === activeLayer
     );
 
@@ -1194,16 +940,16 @@ const Map: React.FC<MapProps> = ({
 
     layerOrder.forEach(layer => {
       if (layer === "PEST") {
-        const layerInfo = getLayerClassificationInfo(layer, 0, px, py);
+        const layerInfo = getLayerClassificationInfo(layer, 0);
         if (layerInfo) {
           allLayersInfo.push(layerInfo);
         }
       } else {
-        const layerAnalysis = currentPlotFeature?.properties?.indices_analysis?.find(
+        const layerAnalysis = currentPlotFeature?.properties.indices_analysis.find(
           (i: any) => i.index_name === layer
         );
         if (layerAnalysis) {
-          const layerInfo = getLayerClassificationInfo(layer, layerAnalysis.current_value || 0, px, py);
+          const layerInfo = getLayerClassificationInfo(layer, layerAnalysis.current_value || 0);
           if (layerInfo) {
             allLayersInfo.push(layerInfo);
           }
@@ -1211,7 +957,7 @@ const Map: React.FC<MapProps> = ({
       }
     });
 
-    // Set tooltip with reduced delay for faster response
+    // Set tooltip with reduced delay for faster response (50ms instead of 100ms)
     hoverTimeoutRef.current = setTimeout(() => {
       setHoveredPlotInfo({
         x: sx,
@@ -1222,10 +968,11 @@ const Map: React.FC<MapProps> = ({
   };
 
   const handlePlotLeave = () => {
-    // Clear timeout and hide tooltip with reduced delay
+    // Clear timeout and hide tooltip with reduced delay (100ms instead of 200ms)
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
+
     hoverTimeoutRef.current = setTimeout(() => {
       setHoveredPlotInfo(null);
     }, 100);
@@ -1233,19 +980,11 @@ const Map: React.FC<MapProps> = ({
 
   const renderPlotBorder = () => {
     const geom = currentPlotFeature?.geometry;
-    console.log('🗺️ renderPlotBorder: geom:', geom);
-    console.log('🗺️ renderPlotBorder: currentPlotFeature:', currentPlotFeature);
-    
-    if (!geom || geom.type !== "Polygon") {
-      console.log('🗺️ renderPlotBorder: No valid geometry found');
-      return null;
-    }
+    if (!geom || geom.type !== "Polygon" || !geom.coordinates?.[0]) return null;
 
     const coords = geom.coordinates[0]
       .map((c: any) => [c[1], c[0]] as LatLngTuple)
       .filter((tuple: LatLngTuple) => !isNaN(tuple[0]) && !isNaN(tuple[1]));
-
-    console.log('🗺️ renderPlotBorder: coords:', coords);
 
     return (
       <Polygon
@@ -1263,15 +1002,19 @@ const Map: React.FC<MapProps> = ({
     );
   };
 
-  // Enhanced filtered pixels rendering with comprehensive hover functionality
+  // Render filtered pixels as Rectangle (square) markers with hover functionality
   const renderFilteredPixels = () => {
     if (!selectedLegendClass || getFilteredPixels.length === 0) return null;
 
     return getFilteredPixels.map((pixel: any, index: number) => {
-      const coords = pixel.geometry.coordinates;
+      const coords = pixel?.geometry?.coordinates;
+      if (!coords || !Array.isArray(coords) || coords.length < 2) {
+        console.error(`Invalid pixel coordinates for pixel at index ${index}:`, coords);
+        return null;
+      }
       
-      // Create a smaller square around the pixel coordinates
-      const squareSize = 0.00003;
+      // Create a much smaller square around the pixel coordinates to stay within plot boundary
+      const squareSize = 0.00003; // Reduced size to ensure squares stay within plot boundary
       const bounds: [LatLngTuple, LatLngTuple] = [
         [coords[1] - squareSize, coords[0] - squareSize], // Southwest corner
         [coords[1] + squareSize, coords[0] + squareSize], // Northeast corner
@@ -1279,7 +1022,7 @@ const Map: React.FC<MapProps> = ({
 
       return (
         <Rectangle
-          key={`filtered-pixel-${pixel.properties.pixel_id || index}`}
+          key={`filtered-pixel-${pixel?.properties?.pixel_id || index}`}
           bounds={bounds}
           pathOptions={{
             fillColor: "#FFFFFF", // White color for all markers
@@ -1308,26 +1051,40 @@ const Map: React.FC<MapProps> = ({
 
               layerOrder.forEach(layer => {
                 if (layer === "PEST") {
-                  if (pestData?.pest_statistics) {
-                    const pestStats = pestData.pest_statistics;
-                    const className = pestStats.pest_percentage > 0 ? "Pest Affected" : "Healthy";
-                    const description = pestStats.pest_percentage > 0 ? "pest detected in area" : "no pest detected";
+                  if (pestData?.pixel_summary) {
+                    const pestCategory = pixel?.properties?.pest_category || "Healthy";
+                    let description = "no pest damage detected";
+                    let value = 0;
                     
+                    if (pestCategory === "Chewing Pests") {
+                      description = "chewing pest damage detected in area";
+                      value = pestData.pixel_summary.chewing_affected_pixel_percentage || 0;
+                    } else if (pestCategory === "sucking Pests") {
+                      description = "sucking disease damage detected in area";
+                      value = pestData.pixel_summary.sucking_affected_pixel_percentage || 0;
+                    } else if (pestCategory === "fungii") {
+                      description = "fungii infections detected in area";
+                      value = pestData.pixel_summary.fungii_affected_pixel_percentage || 0;
+                    } else if (pestCategory === "SoilBorne") {
+                      description = "SoilBorne infections detected in area";
+                      value = pestData.pixel_summary.SoilBorne_affected_pixel_percentage || 0;
+                    }
+
                     allLayersInfo.push({
                       layer: layer,
                       label: LAYER_LABELS[layer],
-                      className: className,
+                      className: pestCategory,
                       description: description,
-                      value: pestStats.pest_percentage,
-                      pixelValue: pestStats.pest_percentage,
+                      value: value,
+                      pixelValue: value,
                     });
                   }
                 } else {
-                  const pixelValue = pixel.properties[layer]; // Get pixel value for each layer
+                  const pixelValue = pixel?.properties?.[layer]; // Get pixel value for each layer
                   if (typeof pixelValue === 'number') {
                     const pixelClassName = classifyPixelValue(layer, pixelValue);
                     const pixelDescription = getClassificationDescription(layer, pixelClassName);
-                    
+
                     allLayersInfo.push({
                       layer: layer,
                       label: LAYER_LABELS[layer],
@@ -1344,7 +1101,7 @@ const Map: React.FC<MapProps> = ({
                 setHoveredPlotInfo({
                   x: sx,
                   y: sy,
-                  allLayersInfo: allLayersInfo, // Show all layers data for this pixel
+                  allLayersInfo: allLayersInfo, // Show all 3 layers data for this pixel
                 });
               }, 50);
             },
@@ -1353,6 +1110,7 @@ const Map: React.FC<MapProps> = ({
               if (hoverTimeoutRef.current) {
                 clearTimeout(hoverTimeoutRef.current);
               }
+
               hoverTimeoutRef.current = setTimeout(() => {
                 setHoveredPlotInfo(null);
               }, 100);
@@ -1365,8 +1123,7 @@ const Map: React.FC<MapProps> = ({
 
   return (
     <div className="map-wrapper">
-      {/* Enhanced Top Layer Controls */}
-      <div className="top-layer-controls">
+      <div className="layer-controls">
         <div className="layer-buttons">
           {(["VV", "RVI", "SWI", "PEST"] as const).map((layer) => (
             <button
@@ -1380,9 +1137,10 @@ const Map: React.FC<MapProps> = ({
           ))}
         </div>
 
-        {/* Enhanced Plot Selector */}
-        {profile && (
-          <div className="plot-selector-compact">
+        {/* Plot Selector */}
+        {profile && !profileLoading && (
+          <div className="plot-selector">
+            <label>Select Plot:</label>
             <select
               value={selectedPlotName}
               onChange={(e) => {
@@ -1399,67 +1157,47 @@ const Map: React.FC<MapProps> = ({
             >
               {profile.plots?.map(plot => (
                 <option key={plot.fastapi_plot_id} value={plot.fastapi_plot_id}>
-                  {plot.fastapi_plot_id}
+                  {plot.gat_number || plot.plot_number || plot.fastapi_plot_id}
                 </option>
               )) || []}
             </select>
           </div>
         )}
 
-        {/* Enhanced Status Indicators */}
-        {loading && <div className="status-indicator loading">Loading...</div>}
-        {error && <div className="status-indicator error">{error}</div>}
-        
-        {!loading && !error && !currentPlotFeature && selectedPlotName && (
-          <div className="status-indicator warning">
-            No plot data available for {selectedPlotName}. Please check the API connection.
-            <button 
-              onClick={() => fetchPlotData(selectedPlotName)} 
-              className="retry-btn"
-              style={{ marginLeft: '10px', padding: '4px 8px', fontSize: '12px' }}
-            >
-              Retry
-            </button>
-          </div>
-        )}
-        
+        {profileLoading && <div className="loading-indicator">Loading farmer profile...</div>}
+        {!profileLoading && !selectedPlotName && <div className="error-message">No plot data available for this farmer</div>}
+        {loading && <div className="loading-indicator">Loading plot data...</div>}
+        {error && <div className="error-message">{error}</div>}
       </div>
 
       <div className="map-container" ref={mapWrapperRef}>
-        <button 
-          className="fullscreen-btn" 
+        <button
+          className="fullscreen-btn"
           onClick={() => {
-            if (!document.fullscreenElement) 
-              mapWrapperRef.current?.requestFullscreen();
-            else 
-              document.exitFullscreen();
+            if (!document.fullscreenElement) mapWrapperRef.current?.requestFullscreen();
+            else document.exitFullscreen();
           }}
         >
           ⛶
         </button>
-        
 
-        {currentPlotFeature && currentPlotFeature.properties && (
+        {currentPlotFeature && (
           <div className="plot-info">
             <div className="plot-area">
-              {currentPlotFeature.properties.area_hectares 
-                ? currentPlotFeature.properties.area_hectares.toFixed(2) 
-                : 'N/A'} ha
+              {currentPlotFeature.properties?.area_acres 
+                ? currentPlotFeature.properties.area_acres.toFixed(2) 
+                : '0.00'}acre
             </div>
           </div>
         )}
 
         <MapContainer
           center={mapCenter}
-          zoom={15}
+          zoom={18}
           style={{ height: "100%", width: "100%" }}
           zoomControl={true}
           maxZoom={22}
           minZoom={10}
-          // Prevent automatic zooming when data changes
-          whenReady={() => {
-            console.log('🗺️ Map container is ready');
-          }}
         >
           {/* Base satellite layer */}
           <TileLayer
@@ -1468,19 +1206,14 @@ const Map: React.FC<MapProps> = ({
             maxZoom={22}
           />
 
-          {currentPlotFeature?.geometry?.coordinates?.[0] && (
-            <AutoZoomToPlot 
-              coordinates={currentPlotFeature.geometry.coordinates[0]} 
-              plotName={selectedPlotName}
-            />
+          {currentPlotFeature?.geometry?.coordinates?.[0] && Array.isArray(currentPlotFeature.geometry.coordinates[0]) && (
+            <SetFixedZoom coordinates={currentPlotFeature.geometry.coordinates[0]} />
           )}
 
-          {/* Enhanced active layer rendering with comprehensive logging */}
+          {/* Debug: Show active layer URL in console and render tile layer */}
           {(() => {
             const activeUrl = getActiveLayerUrl();
-            console.log('🗺️ Rendering active layer with URL:', activeUrl);
-            console.log('🗺️ Active layer:', activeLayer);
-            console.log('🗺️ Layer change key:', layerChangeKey);
+            console.log('Rendering active layer with URL:', activeUrl);
             return activeUrl ? (
               <CustomTileLayer
                 url={activeUrl}
@@ -1489,10 +1222,7 @@ const Map: React.FC<MapProps> = ({
               />
             ) : (
               <div style={{ display: 'none' }}>
-                {(() => {
-                  console.log('🗺️ ❌ No active layer URL available for layer:', activeLayer);
-                  return null;
-                })()}
+                {(() => { console.log('No active layer URL available'); return null; })()}
               </div>
             );
           })()}
@@ -1503,7 +1233,49 @@ const Map: React.FC<MapProps> = ({
           {renderPlotBorder()}
         </MapContainer>
 
-        {/* Enhanced hover tooltip with comprehensive layer information */}
+        {/* Legend circles at bottom of map container */}
+        {legendData.length > 0 && (
+          <div className="map-legend-bottom">
+            <div className="legend-items-bottom">
+              {legendData.map((item: any, index: number) => (
+                <div
+                  key={index}
+                  className={`legend-item-bottom ${
+                    selectedLegendClass === item.label ? "active" : ""
+                  } ${item.percentage === 0 ? "zero-percent" : ""} ${
+                    item.percentage >= 99 ? "full-coverage" : ""
+                  }`}
+                  onClick={() => handleLegendClick(item.label, item.percentage)}
+                  style={{
+                    pointerEvents: item.percentage === 0 ? 'none' : 'auto',
+                    cursor: item.percentage >= 99 ? 'not-allowed' : 'pointer'
+                  }}
+                  title={item.percentage >= 99 ? 'High coverage (99%+) - no individual pixels to show' : ''}
+                >
+                  <div
+                    className="legend-circle-bottom cursor-pointer transition-all duration-150"
+                    style={{
+                      background: `linear-gradient(135deg, ${item.color}40, ${item.color}80)`,
+                      border: `5px solid ${item.color}`,
+                      boxShadow: `0 5px 8px ${item.color}40`
+                    }}
+                  >
+                    <div className="legend-percentage-bottom font-bold text-xlg text-white-900">
+                      {item.percentage}
+                    </div>
+                  </div>
+                  <div className="legend-label-bottom">{item.label}</div>
+                  {item.pixelCount && (
+                    <div className="legend-pixel-count-bottom text-lg text-white-900">
+                      {item.pixelCount} pixels
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {hoveredPlotInfo && hoveredPlotInfo.allLayersInfo && (
           <div
             className="enhanced-tooltip"
@@ -1523,76 +1295,6 @@ const Map: React.FC<MapProps> = ({
         )}
       </div>
 
-      {/* Enhanced legend container with improved click handling */}
-      {(() => {
-        console.log('🗺️ Legend rendering check - legendData.length:', legendData.length);
-        console.log('🗺️ Legend rendering check - legendData:', legendData);
-        return legendData.length > 0;
-      })() && (
-        <div className="legend-container">
-          <div className="legend-header">
-            <div className="legend-title">
-              {LAYER_LABELS[activeLayer]}%
-            </div>
-          </div>
-          <div className="legend-items">
-            {legendData.map((item: any, index: number) => (
-              <div
-                key={index}
-                className={`legend-item ${
-                  selectedLegendClass === item.label ? "active" : ""
-                } ${item.percentage === 0 ? "zero-percent" : ""} ${
-                  item.percentage >= 99 ? "full-coverage" : ""
-                }`}
-                onClick={() => handleLegendClick(item.label, item.percentage)}
-                style={{
-                  pointerEvents: item.percentage === 0 ? 'none' : 'auto',
-                  cursor: item.percentage >= 99 ? 'not-allowed' : 'pointer'
-                }}
-                title={item.percentage >= 99 ? 'High coverage (99%+) - no individual pixels to show' : ''}
-              >
-                {/* Enhanced legend circle with gradient background */}
-                <div
-                  className="legend-circle cursor-pointer transition-all duration-150"
-                  style={{
-                    background: `linear-gradient(135deg, ${item.color}20, ${item.color}80)`,
-                    border: `3px solid ${item.color}`,
-                    boxShadow: `0 2px 8px ${item.color}40`
-                  }}
-                >
-                  <div className="legend-percentage font-bold text-lg md:text-3xl text-gray-900">
-                    {item.percentage}
-                  </div>
-                </div>
-                <div className="legend-label">{item.label}</div>
-                {item.pixelCount && (
-                  <div className="legend-pixel-count text-xs text-gray-600">
-                    {item.pixelCount} pixels
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* Fallback message when no legend data is available */}
-      {!loading && !error && legendData.length === 0 && selectedPlotName && (
-        <div className="legend-container">
-          <div className="legend-header">
-            <div className="legend-title">
-              {LAYER_LABELS[activeLayer]} - No Data
-            </div>
-          </div>
-          <div className="legend-items">
-            <div className="legend-item">
-              <div className="legend-circle" style={{ backgroundColor: "#cccccc" }} />
-              <div className="legend-label">No data available</div>
-              <div className="legend-percentage">0%</div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
