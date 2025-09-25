@@ -309,7 +309,7 @@ export const registerUser = (data: {
 // };
 
 export const getCurrentUser = () => {
-  return api.get('/users/me/');
+  return api.get('/users/me/');   
 };
 
 export const getUsers = () => {
@@ -628,8 +628,8 @@ export const getFarmerProfile = async () => {
       plotsData = farmsData.map((farm: any, index: number) => ({
         id: farm.id || index + 1,
         fastapi_plot_id: farm.farm_uid || `plot_${index + 1}`,
-        gat_number: farm.gat_number || `GAT_${index + 1}`,
-        plot_number: farm.plot_number || `PLOT_${index + 1}`,
+        gat_number: farm.gat_number || "",
+        plot_number: farm.plot_number || "",
         address: {
           village: farm.village || userData.village || '',
           taluka: farm.taluka || userData.taluka || '',
@@ -837,6 +837,18 @@ const convertToAllInOneFormat = (formData: any, plots: any[]) => {
   }
 
   console.log("🎯 First Plot Data:", firstPlot);
+  console.log("🎯 GAT/Plot Number Fields:", {
+    Group_Gat_No: firstPlot.Group_Gat_No,
+    Gat_No_Id: firstPlot.Gat_No_Id,
+    GroupGatNo: firstPlot.GroupGatNo,
+    GatNoId: firstPlot.GatNoId,
+    "Group_Gat_No type": typeof firstPlot.Group_Gat_No,
+    "Gat_No_Id type": typeof firstPlot.Gat_No_Id,
+    "Group_Gat_No length": firstPlot.Group_Gat_No?.length,
+    "Gat_No_Id length": firstPlot.Gat_No_Id?.length,
+    "Group_Gat_No value": `"${firstPlot.Group_Gat_No}"`,
+    "Gat_No_Id value": `"${firstPlot.Gat_No_Id}"`
+  });
 
   // Calculate center coordinates for location
   const coordinates = firstPlot.geometry.coordinates[0];
@@ -866,8 +878,8 @@ const convertToAllInOneFormat = (formData: any, plots: any[]) => {
       taluka: formData.taluka,
     },
     plot: {
-      gat_number: firstPlot.GroupGatNo || `GAT_${Date.now()}`,
-      plot_number: firstPlot.GatNoId || `PLOT_${Date.now()}`,
+      gat_number: firstPlot.Group_Gat_No || firstPlot.GroupGatNo || "",
+      plot_number: firstPlot.Gat_No_Id || firstPlot.GatNoId || "",
       village: firstPlot.village || formData.district,
       taluka: formData.taluka,
       district: formData.district,
@@ -918,7 +930,23 @@ const convertToAllInOneFormat = (formData: any, plots: any[]) => {
     },
   };
 
+  // Validate that GAT and plot numbers are provided
+  if (!payload.plot.gat_number || payload.plot.gat_number.trim() === "") {
+    throw new Error("GAT Number is required. Please fill in the GAT Number field in the form.");
+  }
+  if (!payload.plot.plot_number || payload.plot.plot_number.trim() === "") {
+    throw new Error("Plot Number is required. Please fill in the Plot Number field in the form.");
+  }
+
   console.log("📦 Generated Payload:", JSON.stringify(payload, null, 2));
+  console.log("🎯 Final GAT/Plot Numbers being sent:", {
+    gat_number: payload.plot.gat_number,
+    plot_number: payload.plot.plot_number,
+    "gat_number type": typeof payload.plot.gat_number,
+    "plot_number type": typeof payload.plot.plot_number,
+    "gat_number length": payload.plot.gat_number?.length,
+    "plot_number length": payload.plot.plot_number?.length
+  });
 
   // Validate the payload before returning
   validateAllInOnePayload(payload);

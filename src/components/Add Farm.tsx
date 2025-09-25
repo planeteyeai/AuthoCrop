@@ -795,6 +795,18 @@ function AddFarm() {
       return;
     }
 
+    // Validate that all plots have GAT and plot numbers
+    const plotsWithMissingData = plots.filter(plot => 
+      !plot.Group_Gat_No || !plot.Gat_No_Id || 
+      plot.Group_Gat_No.trim() === "" || plot.Gat_No_Id.trim() === ""
+    );
+    
+    if (plotsWithMissingData.length > 0) {
+      setSubmitStatus("error");
+      setSubmitMessage("❌ GAT Number and Plot Number are required for all plots. Please fill in these fields with actual values (e.g., GAT: '123', Plot: '456').");
+      return;
+    }
+
     if (areaError) {
       setSubmitStatus("error");
       setSubmitMessage(areaError);
@@ -814,6 +826,18 @@ function AddFarm() {
           plots.length !== 1 ? "s" : ""
         }`
       );
+      
+      // Debug: Log plot data before submission
+      console.log("📋 Plot data being submitted:", plots.map(plot => ({
+        id: plot.id,
+        Group_Gat_No: plot.Group_Gat_No,
+        Gat_No_Id: plot.Gat_No_Id,
+        village: plot.village,
+        "Group_Gat_No type": typeof plot.Group_Gat_No,
+        "Gat_No_Id type": typeof plot.Gat_No_Id,
+        "Group_Gat_No length": plot.Group_Gat_No?.length,
+        "Gat_No_Id length": plot.Gat_No_Id?.length
+      })));
 
       // Use all-in-one registration API for all users
       const registrationResult = await registerFarmerAllInOneOnly(
@@ -1295,6 +1319,11 @@ The farmer can now login with Emailcredentials to access the dashboard and monit
             {getFieldIcon(key)}
           </span>
         </div>
+        {(key === "Group_Gat_No" || key === "Gat_No_Id") && (
+          <p className="mt-1 text-xs text-yellow-600 font-medium">
+            ⚠️ REQUIRED: Enter GAT/Plot number (e.g., "123", "456")
+          </p>
+        )}
       </div>
     );
   };

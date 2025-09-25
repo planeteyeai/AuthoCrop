@@ -1014,7 +1014,7 @@ const Map: React.FC<MapProps> = ({
       }
       
       // Create a much smaller square around the pixel coordinates to stay within plot boundary
-      const squareSize = 0.00003; // Reduced size to ensure squares stay within plot boundary
+      const squareSize = 0.000025; // Reduced size to ensure squares stay within plot boundary
       const bounds: [LatLngTuple, LatLngTuple] = [
         [coords[1] - squareSize, coords[0] - squareSize], // Southwest corner
         [coords[1] + squareSize, coords[0] + squareSize], // Northeast corner
@@ -1155,11 +1155,44 @@ const Map: React.FC<MapProps> = ({
               }}
               disabled={loading}
             >
-              {profile.plots?.map(plot => (
-                <option key={plot.fastapi_plot_id} value={plot.fastapi_plot_id}>
-                  {plot.gat_number || plot.plot_number || plot.fastapi_plot_id}
-                </option>
-              )) || []}
+              {profile.plots?.map(plot => {
+                // Create display name in format: gat_number_plot_number (e.g., "123_456")
+                let displayName = '';
+                
+                // Check if we have actual user-entered values (not empty or generated ones)
+                if (plot.gat_number && plot.plot_number && 
+                    plot.gat_number.trim() !== "" && plot.plot_number.trim() !== "" &&
+                    !plot.gat_number.startsWith('GAT_') && 
+                    !plot.plot_number.startsWith('PLOT_')) {
+                  // Use the actual user-entered values in format: gat_plot
+                  displayName = `${plot.gat_number}_${plot.plot_number}`;
+                } else if (plot.gat_number && plot.gat_number.trim() !== "" && !plot.gat_number.startsWith('GAT_')) {
+                  // Only gat_number is user-entered
+                  displayName = plot.gat_number;
+                } else if (plot.plot_number && plot.plot_number.trim() !== "" && !plot.plot_number.startsWith('PLOT_')) {
+                  // Only plot_number is user-entered
+                  displayName = plot.plot_number;
+                } else {
+                  // No valid user input - show location info
+                  const village = plot.address?.village;
+                  const taluka = plot.address?.taluka;
+                  
+                  if (village) {
+                    displayName = `Plot in ${village}`;
+                    if (taluka) {
+                      displayName += `, ${taluka}`;
+                    }
+                  } else {
+                    displayName = 'Plot (No GAT/Plot Number)';
+                  }
+                }
+                
+                return (
+                  <option key={plot.fastapi_plot_id} value={plot.fastapi_plot_id}>
+                    {displayName}
+                  </option>
+                );
+              }) || []}
             </select>
           </div>
         )}
