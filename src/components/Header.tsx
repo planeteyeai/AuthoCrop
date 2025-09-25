@@ -267,7 +267,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) 
         {weather && (
           <>
             {/* Location Info */}
-            <div className="weather-item weather-location text-black-600">
+            <div className="weather-item weather-location ">
               <MapPin className="weather-icon" size={18} />
               <span className="weather-text">{getLocationText()}</span>
             </div>
@@ -279,7 +279,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) 
           </div>
 
           {/* Temperature */}
-          <div className="weather-item weather-temp">
+          <div className="weather-item weather-temp ">
             <Thermometer className="weather-icon" size={18} />
             <span className="weather-text">{formatTemperature(weather.temperature_c)}</span>
           </div>

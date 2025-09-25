@@ -132,20 +132,20 @@
 }
 
 .weather-temp {
-  color: #2563eb;
-  background: rgba(37, 99, 235, 0.1);
+  color: #ffffff;
+  background: rgba(0, 81, 255, 0.683);
   border-color: rgba(37, 99, 235, 0.3);
 }
 
 .weather-humidity {
-  color: #0891b2;
-  background: rgba(8, 145, 178, 0.1);
+  color: #ffffff;
+  background: rgba(0, 204, 255, 0.724);
   border-color: rgba(8, 145, 178, 0.3);
 }
 
 .weather-wind {
-  color: #059669;
-  background: rgba(5, 150, 105, 0.1);
+  color: #ffffff;
+  background: rgba(1, 137, 249, 0.587);
   border-color: rgba(5, 150, 105, 0.3);
 }
 
