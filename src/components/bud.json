@@ -1,152 +1,449 @@
-{
-    "fertilizer_schedule": [
-      {
-        "method": "3-bud",
-        "stages": [
-          {
-            "stage": "Germination",
-            "days": "0–30",
-            "N_kg_ha": "35-40",
-            "P_kg_ha": "90-110",
-            "K_kg_ha": "10-20"
-          },
-          {
-            "stage": "Tillering",
-            "days": "31–90",
-            "N_kg_ha": "85-90",
-            "P_kg_ha": "80-90",
-            "K_kg_ha": "15-25"
-          },
-          {
-            "stage": "Grand Growth",
-            "days": "91–210",
-            "N_kg_ha": "155-160",
-            "P_kg_ha": "80-90",
-            "K_kg_ha": "60-70 "
-          },
-          {
-            "stage": "Maturity & Ripening",
-            "days": "211–360",
-            "N_kg_ha": "70-80",
-            "P_kg_ha": "45-60",
-            "K_kg_ha": "35-45"
-          }
-        ],
-        "total": {
-          "N_kg_ha": 357,
-          "P_kg_ha": 357,
-          "K_kg_ha": 143
-        }
-      },
-      {
-        "method": "2-bud",
-        "stages": [
-          {
-            "stage": "Germination",
-            "days": "0–30",
-            "N_kg_ha": "25-35",
-            "P_kg_ha": "80-90",
-            "K_kg_ha": "10-20"
-          },
-          {
-            "stage": "Tillering",
-            "days": "31–90",
-            "N_kg_ha": "70-75",
-            "P_kg_ha": "65-75",
-            "K_kg_ha": "15-20"
-          },
-          {
-            "stage": "Grand Growth",
-            "days": "91–210",
-            "N_kg_ha": "130-135",
-            "P_kg_ha": "65-75",
-            "K_kg_ha": "50-60"
-          },
-          {
-            "stage": "Maturity&Ripening",
-            "days": "211–360",
-            "N_kg_ha": "50-60",
-            "P_kg_ha": "50-60",
-            "K_kg_ha": "30-40"
-          }
-        ],
-        "total": {
-          "N_kg_ha": 300,
-          "P_kg_ha": 300,
-          "K_kg_ha": 120
-        }
-      },
-      {
-        "method": "1-bud",
-        "stages": [
-          {
-            "stage": "Germination",
-            "days": "0–30",
-            "N_kg_ha": "25-30",
-            "P_kg_ha": "80-90",
-            "K_kg_ha": "10-20"
-          },
-          {
-            "stage": "Tillering",
-            "days": "31–90",
-            "N_kg_ha": "75-80",
-            "P_kg_ha": "75-80",
-            "K_kg_ha": "15-20"
-          },
-          {
-            "stage": "Grand Growth",
-            "days": "91–210",
-            "N_kg_ha": "130-140",
-            "P_kg_ha": "75-80",
-            "K_kg_ha": "50-60"
-          },
-          {
-            "stage": "Maturity",
-            "days": "211–360",
-            "N_kg_ha": "50-60",
-            "P_kg_ha": "50-60",
-            "K_kg_ha": "30-35"
-          }
-        ],
-        "total": {
-          "N_kg_ha": 313,
-          "P_kg_ha": 313,
-          "K_kg_ha": 125
-        }
-      },
-      {
-        "method": "1-bud STIP",
-        "stages": [
-          {
-            "stage": "Germination",
-            "days": "0–45",
-            "N_kg_ha": "35-40",
-            "P_kg_ha": "30-40",
-            "K_kg_ha": "10-20"
-          },
-          {
-            "stage": "Tillering",
-            "days": "46–90",
-            "N_kg_ha": "70-75",
-            "P_kg_ha": "70-75",
-            "K_kg_ha": "30-35"
-          },
-          {
-            "stage": "Grand Growth",
-            "days": "91–210",
-            "N_kg_ha": "170-180",
-            "P_kg_ha": "170-180",
-            "K_kg_ha": "70-80"
-          },
-          {
-            "stage": "Maturity",
-            "days": "211–365",
-            "N_kg_ha": "60-70",
-            "P_kg_ha": "60-70",
-            "K_kg_ha": "25-30"
-          }
-        ]
-      }
-    ]
-  }
+// {
+//     "fertilizer_schedule": [
+//       {
+//         "method": "3-bud",
+//         "stages": [
+//           {
+//             "stage": "Germination",
+//             "days": "0–30",
+//             "N_kg_ha": "35-40",
+//             "P_kg_ha": "90-110",
+//             "K_kg_ha": "10-20"
+//           },
+//           {
+//             "stage": "Tillering",
+//             "days": "31–90",
+//             "N_kg_ha": "85-90",
+//             "P_kg_ha": "80-90",
+//             "K_kg_ha": "15-25"
+//           },
+//           {
+//             "stage": "Grand Growth",
+//             "days": "91–210",
+//             "N_kg_ha": "155-160",
+//             "P_kg_ha": "80-90",
+//             "K_kg_ha": "60-70 "
+//           },
+//           {
+//             "stage": "Maturity & Ripening",
+//             "days": "211–360",
+//             "N_kg_ha": "70-80",
+//             "P_kg_ha": "45-60",
+//             "K_kg_ha": "35-45"
+//           }
+//         ],
+//         "total": {
+//           "N_kg_ha": 357,
+//           "P_kg_ha": 357,
+//           "K_kg_ha": 143
+//         }
+//       },
+//       {
+//         "method": "2-bud",
+//         "stages": [
+//           {
+//             "stage": "Germination",
+//             "days": "0–30",
+//             "N_kg_ha": "25-35",
+//             "P_kg_ha": "80-90",
+//             "K_kg_ha": "10-20"
+//           },
+//           {
+//             "stage": "Tillering",
+//             "days": "31–90",
+//             "N_kg_ha": "70-75",
+//             "P_kg_ha": "65-75",
+//             "K_kg_ha": "15-20"
+//           },
+//           {
+//             "stage": "Grand Growth",
+//             "days": "91–210",
+//             "N_kg_ha": "130-135",
+//             "P_kg_ha": "65-75",
+//             "K_kg_ha": "50-60"
+//           },
+//           {
+//             "stage": "Maturity&Ripening",
+//             "days": "211–360",
+//             "N_kg_ha": "50-60",
+//             "P_kg_ha": "50-60",
+//             "K_kg_ha": "30-40"
+//           }
+//         ],
+//         "total": {
+//           "N_kg_ha": 300,
+//           "P_kg_ha": 300,
+//           "K_kg_ha": 120
+//         }
+//       },
+//       {
+//         "method": "1-bud",
+//         "stages": [
+//           {
+//             "stage": "Germination",
+//             "days": "0–30",
+//             "N_kg_ha": "25-30",
+//             "P_kg_ha": "80-90",
+//             "K_kg_ha": "10-20"
+//           },
+//           {
+//             "stage": "Tillering",
+//             "days": "31–90",
+//             "N_kg_ha": "75-80",
+//             "P_kg_ha": "75-80",
+//             "K_kg_ha": "15-20"
+//           },
+//           {
+//             "stage": "Grand Growth",
+//             "days": "91–210",
+//             "N_kg_ha": "130-140",
+//             "P_kg_ha": "75-80",
+//             "K_kg_ha": "50-60"
+//           },
+//           {
+//             "stage": "Maturity",
+//             "days": "211–360",
+//             "N_kg_ha": "50-60",
+//             "P_kg_ha": "50-60",
+//             "K_kg_ha": "30-35"
+//           }
+//         ],
+//         "total": {
+//           "N_kg_ha": 313,
+//           "P_kg_ha": 313,
+//           "K_kg_ha": 125
+//         }
+//       },
+//       {
+//         "method": "1-bud STIP",
+//         "stages": [
+//           {
+//             "stage": "Germination",
+//             "days": "0–45",
+//             "N_kg_ha": "35-40",
+//             "P_kg_ha": "30-40",
+//             "K_kg_ha": "10-20"
+//           },
+//           {
+//             "stage": "Tillering",
+//             "days": "46–90",
+//             "N_kg_ha": "70-75",
+//             "P_kg_ha": "70-75",
+//             "K_kg_ha": "30-35"
+//           },
+//           {
+//             "stage": "Grand Growth",
+//             "days": "91–210",
+//             "N_kg_ha": "170-180",
+//             "P_kg_ha": "170-180",
+//             "K_kg_ha": "70-80"
+//           },
+//           {
+//             "stage": "Maturity",
+//             "days": "211–365",
+//             "N_kg_ha": "60-70",
+//             "P_kg_ha": "60-70",
+//             "K_kg_ha": "25-30"
+//           }
+//         ]
+//       }
+//     ]
+//   }
   
+
+{
+  "fertilizer_schedule": [
+    {
+      "method": "2-bud",
+      "stages": [
+        {
+          "stage": "Germination",
+          "days": "0–30",
+          "N_kg_acre": "10–14",
+          "P_kg_acre": "32–36",
+          "K_kg_acre": "4–8",
+          "fertilizers": {
+            "Urea_N_kg_per_acre": 30,
+            "SuperPhosphate_P_kg_per_acre": 225,
+            "Potash_K_kg_per_acre": 13
+          },
+          "organic_inputs": [
+            "300 kg vermicompost",
+            "25–30 kg bone meal",
+            "15–20 kg bio-potash"
+          ]
+        },
+        {
+          "stage": "Tillering",
+          "days": "31–90",
+          "N_kg_acre": "28–30",
+          "P_kg_acre": "26–30",
+          "K_kg_acre": "6–8",
+          "fertilizers": {
+            "Urea_N_kg_per_acre": 65,
+            "SuperPhosphate_P_kg_per_acre": 187,
+            "Potash_K_kg_per_acre": 13
+          },
+          "organic_inputs": [
+            "1.5 tons FYM",
+            "20 kg rock phosphate",
+            "20 kg bio-potash"
+          ]
+        },
+        {
+          "stage": "Grand Growth",
+          "days": "91–210",
+          "N_kg_acre": "52–54",
+          "P_kg_acre": "26–30",
+          "K_kg_acre": "20–24",
+          "fertilizers": {
+            "Urea_N_kg_per_acre": 117,
+            "SuperPhosphate_P_kg_per_acre": 187,
+            "Potash_K_kg_per_acre": 39
+          },
+          "organic_inputs": [
+            "2–2.5 tons FYM",
+            "30–35 kg bone meal",
+            "25–30 kg bio-potash"
+          ]
+        },
+        {
+          "stage": "Maturity & Ripening",
+          "days": "211–360",
+          "N_kg_acre": "20–24",
+          "P_kg_acre": "20–24",
+          "K_kg_acre": "12–16",
+          "fertilizers": {
+            "Urea_N_kg_per_acre": 52,
+            "SuperPhosphate_P_kg_per_acre": 150,
+            "Potash_K_kg_per_acre": 26
+          },
+          "organic_inputs": [
+            "1–1.5 tons FYM",
+            "15 kg rock phosphate",
+            "15–20 kg bio-potash"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "1-bud",
+      "stages": [
+        {
+          "stage": "Germination",
+          "days": "0–30",
+          "N_kg_acre": "10–14",
+          "P_kg_acre": "32–36",
+          "K_kg_acre": "4–8",
+          "fertilizers": {
+            "Urea_N_kg_per_acre": 30,
+            "SuperPhosphate_P_kg_per_acre": 225,
+            "Potash_K_kg_per_acre": 13
+          },
+          "organic_inputs": [
+            "300 kg vermicompost",
+            "25–30 kg bone meal",
+            "15–20 kg bio-potash"
+          ]
+        },
+        {
+          "stage": "Tillering",
+          "days": "31–90",
+          "N_kg_acre": "28–30",
+          "P_kg_acre": "26–30",
+          "K_kg_acre": "6–8",
+          "fertilizers": {
+            "Urea_N_kg_per_acre": 65,
+            "SuperPhosphate_P_kg_per_acre": 187,
+            "Potash_K_kg_per_acre": 13
+          },
+          "organic_inputs": [
+            "1.5 tons FYM",
+            "20 kg rock phosphate",
+            "20 kg bio-potash"
+          ]
+        },
+        {
+          "stage": "Grand Growth",
+          "days": "91–210",
+          "N_kg_acre": "52–54",
+          "P_kg_acre": "26–30",
+          "K_kg_acre": "20–24",
+          "fertilizers": {
+            "Urea_N_kg_per_acre": 117,
+            "SuperPhosphate_P_kg_per_acre": 187,
+            "Potash_K_kg_per_acre": 39
+          },
+          "organic_inputs": [
+            "2–2.5 tons FYM",
+            "30–35 kg bone meal",
+            "25–30 kg bio-potash"
+          ]
+        },
+        {
+          "stage": "Maturity & Ripening",
+          "days": "211–360",
+          "N_kg_acre": "20–24",
+          "P_kg_acre": "20–24",
+          "K_kg_acre": "12–16",
+          "fertilizers": {
+            "Urea_N_kg_per_acre": 52,
+            "SuperPhosphate_P_kg_per_acre": 150,
+            "Potash_K_kg_per_acre": 26
+          },
+          "organic_inputs": [
+            "1–1.5 tons FYM",
+            "15 kg rock phosphate",
+            "15–20 kg bio-potash"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "3-bud",
+      "stages": [
+        {
+          "stage": "Germination",
+          "days": "0–30",
+          "N_kg_acre": "14–16",
+          "P_kg_acre": "36–44",
+          "K_kg_acre": "4–8",
+          "fertilizers": {
+            "Urea_N_kg_per_acre": 34,
+            "SuperPhosphate_P_kg_per_acre": 275,
+            "Potash_K_kg_per_acre": 13
+          },
+          "organic_inputs": [
+            "400 kg vermicompost",
+            "25–30 kg rock phosphate",
+            "300 kg compost"
+          ]
+        },
+        {
+          "stage": "Tillering",
+          "days": "31–90",
+          "N_kg_acre": "34–36",
+          "P_kg_acre": "32–36",
+          "K_kg_acre": "6–10",
+          "fertilizers": {
+            "Urea_N_kg_per_acre": 78,
+            "SuperPhosphate_P_kg_per_acre": 225,
+            "Potash_K_kg_per_acre": 16
+          },
+          "organic_inputs": [
+            "2–2.5 tons FYM",
+            "30–35 kg bone meal",
+            "25–30 kg bio-potash"
+          ]
+        },
+        {
+          "stage": "Grand Growth",
+          "days": "91–210",
+          "N_kg_acre": "62–64",
+          "P_kg_acre": "32–36",
+          "K_kg_acre": "24–28",
+          "fertilizers": {
+            "Urea_N_kg_per_acre": 138,
+            "SuperPhosphate_P_kg_per_acre": 225,
+            "Potash_K_kg_per_acre": 46
+          },
+          "organic_inputs": [
+            "600 kg poultry manure",
+            "35 kg bone meal",
+            "30 kg bio-potash"
+          ]
+        },
+        {
+          "stage": "Maturity & Ripening",
+          "days": "211–360",
+          "N_kg_acre": "28–32",
+          "P_kg_acre": "18–24",
+          "K_kg_acre": "14–18",
+          "fertilizers": {
+            "Urea_N_kg_per_acre": 69,
+            "SuperPhosphate_P_kg_per_acre": 150,
+            "Potash_K_kg_per_acre": 29
+          },
+          "organic_inputs": [
+            "1.5 tons FYM",
+            "20–25 kg bone meal",
+            "15–20 kg bio-potash"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "1-bud STIP",
+      "stages": [
+        {
+          "stage": "Germination",
+          "days": "0–45",
+          "N_kg_acre": "14–16",
+          "P_kg_acre": "12–16",
+          "K_kg_acre": "4–8",
+          "fertilizers": {
+            "Urea_N_kg_per_acre": 34,
+            "SuperPhosphate_P_kg_per_acre": 100,
+            "Potash_K_kg_per_acre": 13
+          },
+          "organic_inputs": [
+            "400 kg vermicompost",
+            "25 kg rock phosphate",
+            "300 kg compost"
+          ]
+        },
+        {
+          "stage": "Tillering",
+          "days": "46–90",
+          "N_kg_acre": "28–30",
+          "P_kg_acre": "28–30",
+          "K_kg_acre": "12–14",
+          "fertilizers": {
+            "Urea_N_kg_per_acre": 65,
+            "SuperPhosphate_P_kg_per_acre": 187,
+            "Potash_K_kg_per_acre": 23
+          },
+          "organic_inputs": [
+            "400–500 kg poultry manure",
+            "30 kg bone meal",
+            "20–25 kg wood ash"
+          ]
+        },
+        {
+          "stage": "Grand Growth",
+          "days": "91–210",
+          "N_kg_acre": "68–72",
+          "P_kg_acre": "68–72",
+          "K_kg_acre": "28–32",
+          "fertilizers": {
+            "Urea_N_kg_per_acre": 156,
+            "SuperPhosphate_P_kg_per_acre": 450,
+            "Potash_K_kg_per_acre": 53
+          },
+          "organic_inputs": [
+            "3 tons FYM",
+            "1.5 tons compost",
+            "30 kg bio-potash"
+          ]
+        },
+        {
+          "stage": "Maturity",
+          "days": "211–365",
+          "N_kg_acre": "24–28",
+          "P_kg_acre": "24–28",
+          "K_kg_acre": "10–12",
+          "fertilizers": {
+            "Urea_N_kg_per_acre": 60,
+            "SuperPhosphate_P_kg_per_acre": 175,
+            "Potash_K_kg_per_acre": 19
+          },
+          "organic_inputs": [
+            "300 kg compost",
+            "20 kg rock phosphate",
+            "15–20 kg bio-potash"
+          ]
+        }
+      ]
+    }
+  ]
+}
