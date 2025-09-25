@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Satellite } from 'lucide-react';
-import api, { getFarmsWithFarmerDetails } from '../api';
+import api, { getFarmsWithFarmerDetails, getFarmerProfile } from '../api';
 import budData from './bud.json';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -9,9 +9,15 @@ interface FertilizerEntry {
   date: string;
   stage: string;
   days: string;
-  N_kg_ha: string;
-  P_kg_ha: string;
-  K_kg_ha: string;
+  N_kg_acre: string;
+  P_kg_acre: string;
+  K_kg_acre: string;
+  fertilizers?: {
+    Urea_N_kg_per_acre: number;
+    SuperPhosphate_P_kg_per_acre: number;
+    Potash_K_kg_per_acre: number;
+  };
+  organic_inputs?: string[];
 }
 
 interface FarmData {
@@ -188,9 +194,11 @@ const FertilizerTable: React.FC = () => {
         date: targetDate.toLocaleDateString('en-GB'),
         stage: currentStage.stage,
         days: `${targetDays}`,
-        N_kg_ha: currentStage.N_kg_ha,
-        P_kg_ha: currentStage.P_kg_ha,
-        K_kg_ha: currentStage.K_kg_ha,
+        N_kg_acre: currentStage.N_kg_acre,
+        P_kg_acre: currentStage.P_kg_acre,
+        K_kg_acre: currentStage.K_kg_acre,
+        fertilizers: currentStage.fertilizers,
+        organic_inputs: currentStage.organic_inputs,
       });
     }
 
@@ -246,7 +254,7 @@ const FertilizerTable: React.FC = () => {
         console.log('📊 All farms data:', allFarms);
         
         // Filter farms based on user role and ownership
-        const farms = allFarms.filter(farm => {
+        const farms = allFarms.filter((farm: any) => {
           // Check multiple possible fields for farmer ownership
           const farmOwnerId = farm.farm_owner?.id;
           const farmerId = farm.farmer_id;
@@ -563,26 +571,23 @@ const FertilizerTable: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-700 mb-2">Next 7 Days Fertilizer Schedule</h3>
             {/* <p className="text-sm text-gray-600">Showing first and last day (same values for all 7 days)</p> */}
           </div>
-          <table className="min-w-full bg-white border border-gray-200">
+          <table className="min-w-full bg-green-400 border border-gray-200">
             <thead className="bg-green-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-large text-black-500 uppercase tracking-wider border-b">
+                <th className="px-6 py-3 text-left text-sm font-weight-bold text-black-500 border-b">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-large text-black-500 uppercase tracking-wider border-b">
+                <th className="px-6 py-3 text-left text-sm font-weight-bold text-black-500 border-b">
                   Stage
                 </th>
-                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-                  Days
-                </th> */}
-                <th className="px-6 py-3 text-left text-xs font-large text-black-500 uppercase tracking-wider border-b">
-                  N (kg/ha)
+                <th className="px-6 py-3 text-left text-sm font-weight-bold text-black-500 border-b">
+                  Nutrients(kg/acre)
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-large text-black-500 uppercase tracking-wider border-b">
-                  P (kg/ha)
+                <th className="px-6 py-3 text-left text-sm font-weight-bold text-black-500 border-b">
+                  Chemical Inputs
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-large text-black-500 uppercase tracking-wider border-b">
-                  K (kg/ha)
+                <th className="px-6 py-3 text-left text-sm font-weight-bold text-black-500 border-b">
+                  Organic Inputs
                 </th>
               </tr>
             </thead>
@@ -590,20 +595,30 @@ const FertilizerTable: React.FC = () => {
               {/* First row - show actual data */}
               {data.length > 0 && (
                 <tr className="bg-white">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b ">
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-normal text-gray-900 border-b">
                     {data[0].date}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-normal text-gray-900 border-b">
                     {/* {data[0].stage} */}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b ">
-                    {/* {data[0].N_kg_ha} */}
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-normal text-gray-900 border-b">
+                    N : {data[0].N_kg_acre}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b ">
-                    {/* {data[0].P_kg_ha} */}
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-normal text-gray-900 border-b">
+                    {data[0].fertilizers && (
+                      <div className="text-sm font-normal">
+                        <div>Urea: {data[0].fertilizers?.Urea_N_kg_per_acre} kg</div>
+                      </div>
+                    )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b ">
-                    {/* {data[0].K_kg_ha} */}
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-normal text-gray-900 border-b">
+                    {data[0].organic_inputs && (
+                      <div className="text-sm font-normal">
+                        {data[0].organic_inputs?.map((input, index) => (
+                          <div key={index}>{index === 0 ? input : ''}</div>
+                        ))}
+                      </div>
+                    )}
                   </td>
                 </tr>
               )}
@@ -611,20 +626,28 @@ const FertilizerTable: React.FC = () => {
               {/* Middle rows - show dots if there are more than 2 days */}
               {data.length > 2 && (
                 <tr className="bg-gray-50">
-                  <td className="px-6 py-4  whitespace-nowrap text-sm text-black-500 border-b ">
-                    <span className="text-large">To</span>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-normal text-gray-900 border-b">
+                    To
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-black-500 border-b">
-                    <span className="text-large">{data[0].stage}</span>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-normal text-gray-900 border-b">
+                    {data[0].stage}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-black-500 border-b">
-                    <span className="text-large">{data[0].N_kg_ha}</span>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-normal text-gray-900 border-b">
+                    P : {data[0].P_kg_acre}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-black-500 border-b ">
-                    <span className="text-large">{data[0].P_kg_ha}</span>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-normal text-gray-900 border-b">
+                    <div className="text-sm font-normal">
+                      SuperPhosphate: {data[0].fertilizers?.SuperPhosphate_P_kg_per_acre} kg
+                    </div>
                   </td>
-                  <td className="px-6 py-4 mr-4  whitespace-nowrap text-sm text-black-500 border-b ">
-                    <span className="text-large">{data[0].K_kg_ha}</span>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-normal text-gray-900 border-b">
+                    {data[0].organic_inputs && (
+                      <div className="text-sm font-normal">
+                        {data[0].organic_inputs?.map((input, index) => (
+                          <div key={index}>{index === 1 ? input : ''}</div>
+                        ))}
+                      </div>
+                    )}
                   </td>
                 </tr>
               )}
@@ -632,20 +655,30 @@ const FertilizerTable: React.FC = () => {
               {/* Last row - show actual data if there are more than 1 day */}
               {data.length > 1 && (
                 <tr className="bg-white">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-normal text-gray-900 border-b">
                     {data[data.length - 1].date}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-normal text-gray-900 border-b">
                     {/* {data[data.length - 1].stage} */}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                    {/* {data[data.length - 1].N_kg_ha} */}
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-normal text-gray-900 border-b">
+                    K : {data[0].K_kg_acre}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                    {/* {data[data.length - 1].P_kg_ha} */}
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-normal text-gray-900 border-b">
+                    {data[data.length - 1].fertilizers && (
+                      <div className="text-sm font-normal">
+                        <div>Muriate of Potash: {data[data.length - 1].fertilizers?.Potash_K_kg_per_acre} kg</div>
+                      </div>  
+                    )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b">
-                    {/* {data[data.length - 1].K_kg_ha} */}
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-normal text-gray-900 border-b">
+                    {data[0].organic_inputs && (
+                      <div className="text-sm font-normal">
+                        {data[0].organic_inputs?.map((input, index) => (
+                          <div key={index}>{index === 2 ? input : ''}</div>
+                        ))}
+                      </div>
+                    )}
                   </td>
                 </tr>
               )}

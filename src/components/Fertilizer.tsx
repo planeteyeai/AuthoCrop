@@ -4,6 +4,7 @@ import html2canvas from "html2canvas";
 import { Download } from "lucide-react";
 import "./App.css";
 import { useAppContext } from "../context/AppContext";
+import FertilizerTable from "./FertilizerTable";
 
 interface FertilizerEntry {
   day: number;
@@ -287,7 +288,7 @@ const Fertilizer: React.FC = () => {
         </div>
 
         {/* Fertilizer Table */}
-        <div
+        {/* <div
           className="bg-white shadow-lg rounded-lg overflow-hidden mb-12"
           ref={tableRef}
         >
@@ -350,7 +351,8 @@ const Fertilizer: React.FC = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        </div> */}
+        <FertilizerTable />
 
         {/* Videos */}
         <div className="mt-12">
