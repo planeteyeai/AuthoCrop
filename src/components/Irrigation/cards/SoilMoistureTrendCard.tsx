@@ -15,27 +15,20 @@ interface SoilMoistureTrendCardProps {
   selectedPlotName?: string | null;
 }
 
-interface MoistureAPIResponse {
-  type: string;
-  features: Array<{
-    type: string;
-    properties: {
-      plot_name?: string;
-      feature_type?: string;
-      start_date?: string;
-      end_date?: string;
-      indices_analysis?: Array<{
-        index_name: string;
-        classifications: Array<{
-          class_name: string;
-          value_range: string;
-          pixel_count: number;
-          percentage: number;
-        }>;
-        total_pixels?: number;
-      }>;
-    };
-  }>;
+// New API response (9006) types
+interface SoilMoistureStackItem {
+  day: string;               // e.g. "2025-09-24"
+  soil_moisture: number;     // percentage value 0-100
+  rainfall_mm_yesterday: number;
+  rainfall_provisional: boolean;
+  et_mean_mm_yesterday: number;
+}
+
+interface SoilMoistureStackResponse {
+  plot_name: string;
+  latitude: number;
+  longitude: number;
+  soil_moisture_stack: SoilMoistureStackItem[];
 }
 
 const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
@@ -54,68 +47,54 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
 
   // Set plot name when profile loads
   useEffect(() => {
+    if (selectedPlotName) {
+      setPlotName(selectedPlotName);
+      console.log('SoilMoistureTrendCard: Using selected plot:', selectedPlotName);
+      return;
+    }
     if (profile && !profileLoading) {
-      const plotNames = profile.plots?.map(plot => plot.fastapi_plot_id) || [];
-      const defaultPlot = plotNames.length > 0 ? plotNames[0] : null;
-      setPlotName(defaultPlot || "");
-      console.log('SoilMoistureTrendCard: Setting plot name to:', defaultPlot);
+      // Priority order: fastapi_plot_id -> gat_number_plot_number -> first available farms[].farm_uid
+      const plots = profile.plots || [];
+      const fastapi = plots.find(p => p.fastapi_plot_id)?.fastapi_plot_id;
+      const gatCombo = !fastapi && plots.length ? `${plots[0].gat_number}_${plots[0].plot_number}` : null;
+      const fallbackFarmUid = !fastapi && !gatCombo && plots[0]?.farms?.length ? plots[0].farms[0].farm_uid : null;
+      const resolved = (fastapi || gatCombo || fallbackFarmUid || "").toString();
+      setPlotName(resolved);
+      console.log('SoilMoistureTrendCard: Resolved plot name:', resolved, 'from profile');
     }
-  }, [profile, profileLoading]);
+  }, [profile, profileLoading, selectedPlotName]);
 
-  // Extract moisture ground percentage and convert to 0-100% range
-  const extractMoistGroundPercentage = (data: MoistureAPIResponse): number => {
-    // Find the plot boundary feature (first feature with plot boundary)
-    const plotFeature = data.features.find(feature => 
-      feature.properties?.feature_type === 'plot_boundary' ||
-      feature.properties?.plot_name
-    );
+  // New endpoint utilities
+  const fetchSoilMoistureStack = async (plot: string): Promise<SoilMoistureStackResponse> => {
+    const base = 'http://192.168.41.73:9006';
+    const attempts: Array<{ url: string; init?: RequestInit; note: string }> = [
+      { url: `${base}/soil-moisture/${encodeURIComponent(plot)}`, note: 'GET path param' },
+      { url: `${base}/soil-moisture/${encodeURIComponent(plot)}/`, note: 'GET path param trailing slash' },
+      { url: `${base}/soil-moisture?plot_name=${encodeURIComponent(plot)}`, note: 'GET query param' },
+      { url: `${base}/soil-moisture/${encodeURIComponent(plot)}`, init: { method: 'POST', headers: { 'Content-Type': 'application/json' } }, note: 'POST path param' },
+      { url: `${base}/soil-moisture`, init: { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plot_name: plot }) }, note: 'POST body JSON' },
+    ];
 
-    if (!plotFeature || !plotFeature.properties?.indices_analysis) {
-      console.log("No plot boundary feature found");
-      console.log("Available features:", data.features.map(f => f.properties?.feature_type));
-      return 0;
+    let lastErr: any = null;
+    for (const attempt of attempts) {
+      try {
+        console.log('Fetching soil moisture stack:', attempt.note, attempt.url);
+        const resp = await fetch(attempt.url, attempt.init);
+        if (!resp.ok) {
+          const body = await resp.text().catch(() => '');
+          console.warn('Attempt failed:', attempt.note, resp.status, body);
+          lastErr = new Error(`HTTP ${resp.status}: ${body || resp.statusText}`);
+          continue;
+        }
+        const json = await resp.json();
+        console.log('Soil moisture raw response (via', attempt.note, '):', json);
+        return json;
+      } catch (e) {
+        console.warn('Attempt exception:', attempt.note, e);
+        lastErr = e;
+      }
     }
-
-    const swiAnalysis = plotFeature.properties.indices_analysis.find(
-      (analysis) => analysis.index_name === "SWI"
-    );
-
-    if (!swiAnalysis) {
-      console.log("No SWI analysis found");
-      return 0;
-    }
-
-    const moistGroundClasses = swiAnalysis.classifications.filter((cls) =>
-      cls.class_name.toLowerCase().includes("moist ground")
-    );
-
-    console.log("Moist Ground Classifications found:", moistGroundClasses);
-
-    // Sum all moist ground percentages
-    const moistGroundTotal = moistGroundClasses.reduce(
-      (acc, cls) => acc + cls.percentage,
-      0
-    );
-
-    // Convert to 0-100% scale for graph display
-    // The API gives pixel percentages, we want soil moisture percentage for display
-    const soilMoisturePercentage = parseFloat(moistGroundTotal.toFixed(2));
-
-    // Log individual classifications for debugging
-    moistGroundClasses.forEach((classification, index) => {
-      console.log(`Classification ${index + 1}:`, {
-        class_name: classification.class_name,
-        value_range: classification.value_range,
-        pixel_count: classification.pixel_count,
-        percentage: classification.percentage
-      });
-    });
-
-    console.log(`Total Moist Ground Pixel Percentage: ${moistGroundTotal}%`);
-    console.log(`Converted Soil Moisture Percentage for Graph: ${soilMoisturePercentage}%`);
-
-    // Example: 15.47 + 28.47 + 16.71 = 60.65% (this becomes the soil moisture value)
-    return soilMoisturePercentage;
+    throw lastErr || new Error('All soil moisture fetch attempts failed');
   };
 
   // Get current date in YYYY-MM-DD format
@@ -123,76 +102,22 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
     return new Date().toISOString().split("T")[0];
   };
 
-  // Fetch current date moisture data using same method as SoilMoistureCard
-  const fetchCurrentDateMoisture = async () => {
-    try {
-      const currentDate = getCurrentDate();
-      const url = `http://192.168.41.73:7031/analyze?plot_name=${encodeURIComponent(
-        plotName
-      )}&end_date=${currentDate}&days_back=7`;
-
-      console.log(`Fetching current date moisture for: ${currentDate}`);
-      console.log(`API URL: ${url}`);
-
-      const response = await fetch(url, {
-        method: "POST", // Using POST method like SoilMoistureCard
-        headers: {
-          "Content-Type": "application/json", // Using same headers as SoilMoistureCard
-        },
-        body: "", // Empty body like SoilMoistureCard
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result: MoistureAPIResponse = await response.json();
-      console.log("Current date API response:", result);
-
-      const moistGroundPercent = extractMoistGroundPercentage(result);
-      setCurrentDateMoisture(moistGroundPercent);
-      
-      // Store current moisture in app context for SoilMoistureCard to use
-      console.log('SoilMoistureTrendCard: Setting shared value in app context:', moistGroundPercent);
-      setAppState((prev: any) => ({
-        ...prev,
-        currentSoilMoisture: moistGroundPercent,
-      }));
-      
-      return moistGroundPercent;
-    } catch (err) {
-      console.error(`Error fetching current date moisture data:`, err);
-      setError("Failed to fetch current date moisture data");
-      return 0;
-    }
-  };
-
-  // Fetch moisture data for historical dates using same method as SoilMoistureCard
-  const fetchMoistureData = async (dateStr: string) => {
-    try {
-      const url = `http://192.168.41.73:7031/analyze?plot_name=${encodeURIComponent(
-        plotName
-      )}&end_date=${dateStr}&days_back=7`;
-
-      const response = await fetch(url, {
-        method: "POST", // Using POST method like SoilMoistureCard
-        headers: {
-          "Content-Type": "application/json", // Using same headers as SoilMoistureCard
-        },
-        body: "", // Empty body like SoilMoistureCard
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result: MoistureAPIResponse = await response.json();
-      const moistGroundPercent = extractMoistGroundPercentage(result);
-      return moistGroundPercent;
-    } catch (err) {
-      console.error(`Error fetching data for ${dateStr}:`, err);
-      return 0;
-    }
+  // Map new endpoint response to chart data
+  const mapStackToWeekData = (stack: SoilMoistureStackItem[]): MoistureData[] => {
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const todayStr = getCurrentDate();
+    // Keep only last 7 records; ensure sorted by day asc
+    const sorted = [...stack].sort((a, b) => a.day.localeCompare(b.day)).slice(-7);
+    return sorted.map((item, idx) => {
+      const d = new Date(item.day);
+      return {
+        date: item.day,
+        value: parseFloat(item.soil_moisture.toFixed(2)),
+        day: dayNames[d.getDay()],
+        x: idx,
+        isCurrentDate: item.day === todayStr,
+      } as MoistureData;
+    });
   };
 
   const getPrevious7Days = (): string[] => {
@@ -214,57 +139,15 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
       setLoading(true);
       setError(null);
 
-      const previous7Dates = getPrevious7Days();
-      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-      const weekData: MoistureData[] = [];
-      const currentDate = getCurrentDate();
-
-      // First, fetch current date moisture data
-      const currentMoisture = await fetchCurrentDateMoisture();
-      console.log(`Current date (${currentDate}) moisture:`, currentMoisture);
-   
-
-      // Fetch data for each day separately
-      for (let i = 0; i < previous7Dates.length; i++) {
-        const dateStr = previous7Dates[i];
-        const date = new Date(dateStr);
-        const dayIndex = date.getDay();
-        const isCurrentDate = dateStr === currentDate;
-
-        let moistPercent: number;
-
-        if (isCurrentDate) {
-          // Use the current date moisture data we fetched
-          moistPercent = currentMoisture || 0;
-          console.log(`Using current date moisture: ${moistPercent}%`);
-        } else {
-          // Try to fetch historical data for other days
-          moistPercent = await fetchMoistureData(dateStr);
-          console.log(`Historical data for ${dateStr}: ${moistPercent}%`);
-
-          // If historical data returns 0, generate realistic sample data for demonstration
-          if (moistPercent === 0) {
-            // Generate sample moisture values based on days from current
-            const daysFromCurrent = Math.abs(i - (previous7Dates.length - 1));
-            const baseValue = currentMoisture || 45; // Use current moisture as base or default to 45%
-            // Simulate natural moisture variation (decrease over time, with some randomness)
-            const variation = Math.random() * 10 - 5; // ±5% random variation
-            const timeDecay = daysFromCurrent * 2; // 2% decrease per day from current
-            moistPercent = Math.max(15, Math.min(85, baseValue - timeDecay + variation));
-            console.log(`Generated sample data for ${dateStr}: ${moistPercent}% (${daysFromCurrent} days from current)`);
-          }
-        }
-
-        weekData.push({
-          date: dateStr,
-          value: parseFloat(moistPercent.toFixed(2)),
-          day: dayNames[dayIndex],
-          x: i,
-          isCurrentDate: isCurrentDate,
-        });
+      // Fetch from new 9006 endpoint
+      if (!plotName) throw new Error('Missing plot name');
+      const apiResp = await fetchSoilMoistureStack(plotName);
+      console.log('SoilMoisture API response:', apiResp);
+      if (!apiResp?.soil_moisture_stack || !Array.isArray(apiResp.soil_moisture_stack)) {
+        throw new Error('Invalid API shape: soil_moisture_stack missing');
       }
-
-      console.log("Final week data:", weekData);
+      const weekData = mapStackToWeekData(apiResp.soil_moisture_stack);
+      console.log('Mapped week data:', weekData);
 
       setAppState((prev: any) => ({
         ...prev,
@@ -272,9 +155,14 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
       }));
 
       setCached(`soilMoistureTrend_${plotName}`, weekData);
+
+      // Set current date moisture for the header indicator
+      const todayStr = getCurrentDate();
+      const todayItem = apiResp.soil_moisture_stack.find(item => item.day === todayStr);
+      if (todayItem) setCurrentDateMoisture(parseFloat(todayItem.soil_moisture.toFixed(2)));
     } catch (err: any) {
       console.error("Failed to fetch moisture trend data:", err);
-      setError("Unable to load soil moisture trend");
+      setError(`Unable to load soil moisture trend: ${err?.message || err}`);
     } finally {
       setLoading(false);
     }
@@ -282,19 +170,6 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
 
   useEffect(() => {
     if (!plotName) return;
-    
-    const cacheKey = `soilMoistureTrend_${plotName}`;
-    const cached = getCached(cacheKey);
-
-    if (cached) {
-      setAppState((prev: any) => ({
-        ...prev,
-        soilMoistureTrendData: cached,
-      }));
-      setLoading(false);
-      return;
-    }
-
     fetchWeeklyTrend();
   }, [plotName]);
 
@@ -496,7 +371,7 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
                 fontWeight={point.isCurrentDate ? "700" : "600"} // Increased weight
               >
                 {point.day}
-                {point.isCurrentDate && " (Today)"}
+                {point.isCurrentDate && " (Tody)"}      
               </text>
             ))}
 
@@ -589,5 +464,4 @@ const SoilMoistureTrendCard: React.FC<SoilMoistureTrendCardProps> = ({
     </div>
   );
 };
-
 export default SoilMoistureTrendCard;
