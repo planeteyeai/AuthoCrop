@@ -5,7 +5,7 @@ interface SingleCategoryRiskMeterProps {
   highCount: number;
   moderateCount: number;
   lowCount: number;
-  icon: string;
+  // icon: string;
   onRiskClick?: (category: 'Pests' | 'Diseases' | 'Weeds', level: 'High' | 'Moderate' | 'Low') => void;
   selectedCategory?: 'Pests' | 'Diseases' | 'Weeds' | null;
   selectedRiskLevel?: 'High' | 'Moderate' | 'Low' | null;
@@ -16,7 +16,6 @@ export const SingleCategoryRiskMeter: React.FC<SingleCategoryRiskMeterProps> = (
   highCount,
   moderateCount,
   lowCount,
-  icon,
   onRiskClick,
   selectedCategory,
   selectedRiskLevel
@@ -71,15 +70,15 @@ export const SingleCategoryRiskMeter: React.FC<SingleCategoryRiskMeterProps> = (
   const totalCount = highCount + moderateCount + lowCount;
 
   return (
-    <div className={`${config.bgColor} ${config.borderColor} border-2 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl`}>
+    <div className={`${config.bgColor} ${config.borderColor} border-2 rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl`}>
       {/* Category Title */}
-      <div className="flex items-center justify-center gap-2 mb-4">
+      <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4">
         {/* <span className="text-3xl">{icon}</span> */}
-        <h3 className={`text-2xl font-bold ${config.textColor}`}>{category}</h3>
+        <h3 className={`text-xl sm:text-2xl font-bold ${config.textColor}`}>{category}</h3>
       </div>
 
       {/* Risk Gauge */}
-      <div className="relative w-full max-w-xs h-40 mx-auto mb-4">
+      <div className="relative w-full max-w-xs h-32 sm:h-40 mx-auto mb-3 sm:mb-4">
         <svg viewBox="0 0 200 120" className="w-full h-full">
           <defs>
             <linearGradient id={config.gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
@@ -128,46 +127,46 @@ export const SingleCategoryRiskMeter: React.FC<SingleCategoryRiskMeterProps> = (
       </div>
 
       {/* Risk Counts Display - Clickable */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-3 sm:mb-4">
         <button
           onClick={() => onRiskClick?.(category, 'High')}
-          className={`text-center p-2 rounded-lg transition-all ${
+          className={`text-center p-1.5 sm:p-2 rounded-md sm:rounded-lg transition-all ${
             selectedCategory === category && selectedRiskLevel === 'High'
               ? 'bg-red-100 ring-2 ring-red-500'
               : 'hover:bg-red-50'
           }`}
         >
-          <div className="text-2xl font-bold text-red-600">{highCount}</div>
+          <div className="text-xl sm:text-2xl font-bold text-red-600">{highCount}</div>
           <div className="text-xs text-gray-600">High Risk</div>
         </button>
         <button
           onClick={() => onRiskClick?.(category, 'Moderate')}
-          className={`text-center p-2 rounded-lg transition-all ${
+          className={`text-center p-1.5 sm:p-2 rounded-md sm:rounded-lg transition-all ${
             selectedCategory === category && selectedRiskLevel === 'Moderate'
               ? 'bg-yellow-100 ring-2 ring-yellow-500'
               : 'hover:bg-yellow-50'
           }`}
         >
-          <div className="text-2xl font-bold text-yellow-600">{moderateCount}</div>
+          <div className="text-xl sm:text-2xl font-bold text-yellow-600">{moderateCount}</div>
           <div className="text-xs text-gray-600">Moderate</div>
         </button>
         <button
           onClick={() => onRiskClick?.(category, 'Low')}
-          className={`text-center p-2 rounded-lg transition-all ${
+          className={`text-center p-1.5 sm:p-2 rounded-md sm:rounded-lg transition-all ${
             selectedCategory === category && selectedRiskLevel === 'Low'
               ? 'bg-green-100 ring-2 ring-green-500'
               : 'hover:bg-green-50'
           }`}
         >
-          <div className="text-2xl font-bold text-green-600">{lowCount}</div>
+          <div className="text-xl sm:text-2xl font-bold text-green-600">{lowCount}</div>
           <div className="text-xs text-gray-600">Low Risk</div>
         </button>
       </div>
 
       {/* Total Count */}
-      <div className="text-center pt-4 border-t-2 border-gray-200">
-        <div className={`text-3xl font-extrabold ${config.textColor}`}>{totalCount}</div>
-        <div className="text-sm text-gray-600 mt-1">Total Detected</div>
+      <div className="text-center pt-3 sm:pt-4 border-t-2 border-gray-200">
+        <div className={`text-2xl sm:text-3xl font-extrabold ${config.textColor}`}>{totalCount}</div>
+        <div className="text-xs sm:text-sm text-gray-600 mt-1">Total Detected</div>
       </div>
     </div>
   );

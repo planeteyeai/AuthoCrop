@@ -147,15 +147,15 @@ export const PestDisease: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2 sm:p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 text-center mb-4 sm:mb-6">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 text-center mb-4 sm:mb-6 px-2">
             Pest & Diseases Weeds Risk Assessment
           </h2>
 
           {/* Three Separate Risk Meters - One for each category */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
             {/* Pests Risk Meter */}
             <SingleCategoryRiskMeter
               category="Pests"
@@ -196,13 +196,13 @@ export const PestDisease: React.FC = () => {
 
         {/* Conditionally Render Based on Selected Category and Risk Level */}
         {selectedCategory === 'Pests' && selectedRiskLevel && (
-          <div className="mb-6 sm:mb-10">
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 capitalize mb-3 sm:mb-4">
+          <div className="mb-6 sm:mb-10 px-2 sm:px-0">
+            <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-800 capitalize mb-3 sm:mb-4">
               {selectedRiskLevel} Risk Pests ({displayedPests.length})
             </h3>
 
             {displayedPests.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-start">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6 items-start">
                 {displayedPests.map((pest: any, index: number) => {
                   const cardKey = `pest-${pest.name}-${index}`;
                   return (
@@ -226,12 +226,12 @@ export const PestDisease: React.FC = () => {
 
         {/* Disease Cards */}
         {selectedCategory === 'Diseases' && selectedRiskLevel && (
-          <div className="mb-6 sm:mb-10">
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 capitalize mb-3 sm:mb-4">
+          <div className="mb-6 sm:mb-10 px-2 sm:px-0">
+            <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-800 capitalize mb-3 sm:mb-4">
               {selectedRiskLevel} Risk Diseases ({displayedDiseases.length})
             </h3>
             {displayedDiseases.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-start">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6 items-start">
                 {displayedDiseases.map((disease: any, index: number) => {
                   const cardKey = `disease-${disease.name}-${index}`;
                   return (
@@ -255,11 +255,11 @@ export const PestDisease: React.FC = () => {
 
         {/* Weeds Cards */}
         {selectedCategory === 'Weeds' && selectedRiskLevel && (
-          <div className="mb-6 sm:mb-10">
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 capitalize mb-3 sm:mb-4">
+          <div className="mb-6 sm:mb-10 px-2 sm:px-0">
+            <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-800 capitalize mb-3 sm:mb-4">
               {selectedRiskLevel} Risk Weeds
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
               {(() => {
                 // Filter weeds based on selected risk level
                 let filteredWeeds;
@@ -272,26 +272,26 @@ export const PestDisease: React.FC = () => {
                 }
                 
                 return filteredWeeds.map((weed, index) => (
-                  <div key={index} className="bg-white rounded-xl p-6 shadow-lg border-2 border-gray-200 hover:shadow-xl transition-shadow">
-                    <h4 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                      <span className="text-2xl">🌿</span>
+                  <div key={index} className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-lg border-2 border-gray-200 hover:shadow-xl transition-shadow">
+                    <h4 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
+                      <span className="text-xl sm:text-2xl">🌿</span>
                       {weed.name}
                     </h4>
-                    <div className="space-y-3 text-sm">
-                      <div className="flex items-start">
-                        <span className="font-semibold text-gray-700 w-24">Season:</span>
+                    <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+                      <div className="flex flex-col sm:flex-row sm:items-start">
+                        <span className="font-semibold text-gray-700 sm:w-28 mb-1 sm:mb-0">Season:</span>
                         <span className="text-gray-600">{weed.season}</span>
                       </div>
-                      <div className="flex items-start">
-                        <span className="font-semibold text-gray-700 w-24">Chemical:</span>
-                        <span className="text-gray-600">{weed.chemical}</span>
+                      <div className="flex flex-col sm:flex-row sm:items-start">
+                        <span className="font-semibold text-gray-700 sm:w-28 mb-1 sm:mb-0">Chemical:</span>
+                        <span className="text-gray-600 break-words">{weed.chemical}</span>
                       </div>
-                      <div className="flex items-start">
-                        <span className="font-semibold text-gray-700 w-24">Dosage:</span>
-                        <span className="text-gray-600">{weed.dosage}</span>
+                      <div className="flex flex-col sm:flex-row sm:items-start">
+                        <span className="font-semibold text-gray-700 sm:w-28 mb-1 sm:mb-0">Dosage:</span>
+                        <span className="text-gray-600 break-words">{weed.dosage}</span>
                       </div>
-                      <div className="flex items-start">
-                        <span className="font-semibold text-gray-700 w-24">Organic:</span>
+                      <div className="flex flex-col sm:flex-row sm:items-start">
+                        <span className="font-semibold text-gray-700 sm:w-28 mb-1 sm:mb-0">Organic:</span>
                         <span className="text-gray-600">{weed.organic}</span>
                       </div>
                     </div>

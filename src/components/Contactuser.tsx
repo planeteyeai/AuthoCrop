@@ -588,8 +588,8 @@ const Contactuser: React.FC<ContactuserProps> = () => {
                                         onClick={(e) => e.stopPropagation()}
                                       >
                                         <Phone size={14} />
-                                        {contact.phone}
-                                      </a>
+                      {contact.phone}
+                    </a>
                                     )}
                                     {contact.email !== 'N/A' && (
                                       <a 
