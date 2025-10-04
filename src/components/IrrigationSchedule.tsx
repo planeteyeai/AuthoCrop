@@ -361,7 +361,7 @@ import { fetchWeatherForecast, extractNumericValue } from "../services/weatherFo
 import { Sun } from "lucide-react";
 
 const IrrigationSchedule: React.FC = () => {
-  const { getCached, setCached } = useAppContext();
+  const { getCached, setCached, setAppState } = useAppContext();
   const { profile, loading: profileLoading } = useFarmerProfile();
   
   const [plotName, setPlotName] = useState<string>("");
@@ -677,6 +677,17 @@ const IrrigationSchedule: React.FC = () => {
   };
 
   const scheduleData = generateScheduleData();
+
+  // Store schedule data in appState for WaterUptakeCard to access
+  useEffect(() => {
+    if (scheduleData && scheduleData.length > 0) {
+      setAppState((prev: any) => ({
+        ...prev,
+        irrigationScheduleData: scheduleData,
+      }));
+      console.log('✅ Irrigation schedule data stored in appState:', scheduleData);
+    }
+  }, [scheduleData]);
 
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow h-full">
