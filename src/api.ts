@@ -793,7 +793,18 @@ export const registerFarmerAllInOne = async (data: {
     distance_motor_to_plot_m?: number;
   };
 }) => {
-  return api.post("/farms/register-farmer/", data);
+  console.log("🚀 Sending registration request to API:", JSON.stringify(data, null, 2));
+  try {
+    const response = await api.post("/farms/register-farmer/", data);
+    console.log("✅ Registration successful:", response.data);
+    return response;
+  } catch (error: any) {
+    console.error("❌ Registration API error:", error);
+    console.error("❌ Error response:", error.response?.data);
+    console.error("❌ Error status:", error.response?.status);
+    console.error("❌ Error details:", JSON.stringify(error.response?.data, null, 2));
+    throw error;
+  }
 };
 
 // Simplified farmer registration - uses ONLY all-in-one API for ALL users
@@ -919,7 +930,10 @@ const convertToAllInOneFormat = (formData: any, plots: any[]) => {
       },
       // Conditional irrigation details based on type
       ...(firstPlot.irrigation_Type === "drip" ? {
-        plants_per_acre: parseFloat(firstPlot.plants_Per_Acre) || 2000,
+        plants_per_acre: parseFloat(firstPlot.plants_Per_Acre) || 
+          (parseFloat(firstPlot.spacing_A) && parseFloat(firstPlot.spacing_B) 
+            ? Math.floor(43560 / (parseFloat(firstPlot.spacing_A) * parseFloat(firstPlot.spacing_B))) 
+            : 2000),
         flow_rate_lph: parseFloat(firstPlot.flow_Rate) || 2.5,
         emitters_count: parseInt(firstPlot.emitters) || 150,
       } : firstPlot.irrigation_Type === "flood" ? {

@@ -627,7 +627,7 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
         soilData?.nitrogen,
         soilData?.total_nitrogen
       ),
-      unit: "Kg/ha",
+      unit: "Kg/acre",
       optimalRange: "50 - 150",
       level: getNitrogenLevel(
         getSoilValue(soilData?.nitrogen, soilData?.total_nitrogen) || 0
@@ -644,7 +644,7 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
       name: "Phosphorus",
       symbol: "P",
       value: getSoilValue(soilData?.phosphorus, undefined),
-      unit: "Kg/ha",
+      unit: "Kg/acre",
       optimalRange: "25 - 75",
       level: getPhosphorusLevel(getSoilValue(soilData?.phosphorus, undefined)),
       percentage: calculatePercentage(
@@ -659,7 +659,7 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
       name: "Potassium",
       symbol: "K",
       value: getSoilValue(soilData?.potassium, undefined),
-      unit: "Kg/ha",
+      unit: "Kg/acre",
       optimalRange: "20 - 100",
       level: getPotassiumLevel(getSoilValue(soilData?.potassium, undefined)),
       percentage: calculatePercentage(
@@ -713,7 +713,7 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
       name: "Organic Carbon",
       symbol: "OC",
       value: getSoilValue(soilData?.organic_carbon_stock, soilData?.ocs_0_30cm_mean),
-      unit: " T/ha",
+      unit: " T/acre",
       optimalRange: "2 - 15",
       level: getOrganicCarbonStockLevel(
         getSoilValue(soilData?.organic_carbon_stock, soilData?.ocs_0_30cm_mean)

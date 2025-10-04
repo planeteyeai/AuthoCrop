@@ -6,6 +6,7 @@
         {
           "stage": "Germination",
           "days": "0–30",
+          "kc": 0.3,
           "N_kg_acre": "10–14",
           "P_kg_acre": "32–36",
           "K_kg_acre": "4–8",
@@ -23,6 +24,7 @@
         {
           "stage": "Tillering",
           "days": "31–90",
+          "kc": 0.7,
           "N_kg_acre": "28–30",
           "P_kg_acre": "26–30",
           "K_kg_acre": "6–8",
@@ -40,6 +42,7 @@
         {
           "stage": "Grand Growth",
           "days": "91–210",
+          "kc": 1.2,
           "N_kg_acre": "52–54",
           "P_kg_acre": "26–30",
           "K_kg_acre": "20–24",
@@ -57,6 +60,7 @@
         {
           "stage": "Maturity & Ripening",
           "days": "211–360",
+          "kc": 1.4,
           "N_kg_acre": "20–24",
           "P_kg_acre": "20–24",
           "K_kg_acre": "12–16",
@@ -79,6 +83,7 @@
         {
           "stage": "Germination",
           "days": "0–30",
+          "kc": 0.3,
           "N_kg_acre": "10–14",
           "P_kg_acre": "32–36",
           "K_kg_acre": "4–8",
@@ -96,6 +101,7 @@
         {
           "stage": "Tillering",
           "days": "31–90",
+          "kc": 0.7,
           "N_kg_acre": "28–30",
           "P_kg_acre": "26–30",
           "K_kg_acre": "6–8",
@@ -113,6 +119,7 @@
         {
           "stage": "Grand Growth",
           "days": "91–210",
+          "kc": 1.2,
           "N_kg_acre": "52–54",
           "P_kg_acre": "26–30",
           "K_kg_acre": "20–24",
@@ -130,6 +137,7 @@
         {
           "stage": "Maturity & Ripening",
           "days": "211–360",
+          "kc": 1.4,
           "N_kg_acre": "20–24",
           "P_kg_acre": "20–24",
           "K_kg_acre": "12–16",
@@ -152,6 +160,7 @@
         {
           "stage": "Germination",
           "days": "0–30",
+          "kc": 0.3,
           "N_kg_acre": "14–16",
           "P_kg_acre": "36–44",
           "K_kg_acre": "4–8",
@@ -169,6 +178,7 @@
         {
           "stage": "Tillering",
           "days": "31–90",
+          "kc": 0.7,
           "N_kg_acre": "34–36",
           "P_kg_acre": "32–36",
           "K_kg_acre": "6–10",
@@ -186,6 +196,7 @@
         {
           "stage": "Grand Growth",
           "days": "91–210",
+          "kc": 1.2,
           "N_kg_acre": "62–64",
           "P_kg_acre": "32–36",
           "K_kg_acre": "24–28",
@@ -203,6 +214,7 @@
         {
           "stage": "Maturity & Ripening",
           "days": "211–360",
+          "kc": 1.4,
           "N_kg_acre": "28–32",
           "P_kg_acre": "18–24",
           "K_kg_acre": "14–18",
@@ -225,6 +237,7 @@
         {
           "stage": "Germination",
           "days": "0–45",
+          "kc": 0.3,
           "N_kg_acre": "14–16",
           "P_kg_acre": "12–16",
           "K_kg_acre": "4–8",
@@ -242,6 +255,7 @@
         {
           "stage": "Tillering",
           "days": "46–90",
+          "kc": 0.7,
           "N_kg_acre": "28–30",
           "P_kg_acre": "28–30",
           "K_kg_acre": "12–14",
@@ -259,6 +273,7 @@
         {
           "stage": "Grand Growth",
           "days": "91–210",
+          "kc": 1.2,
           "N_kg_acre": "68–72",
           "P_kg_acre": "68–72",
           "K_kg_acre": "28–32",
@@ -276,6 +291,7 @@
         {
           "stage": "Maturity",
           "days": "211–365",
+          "kc": 1.4,
           "N_kg_acre": "24–28",
           "P_kg_acre": "24–28",
           "K_kg_acre": "10–12",
