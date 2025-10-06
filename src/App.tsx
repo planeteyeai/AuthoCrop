@@ -101,10 +101,7 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
   });
 
   // NEW: Add currentUser state
-  const [
-    currentUser,
-    setCurrentUser,
-  ] = useState<{
+  const [currentUser, setCurrentUser] = useState<{
     id: number;
     role: string;
     name: string;
@@ -370,7 +367,7 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
           } overflow-auto`}
         >
           <div className="w-full h-full">
-            {console.log("Current view:", currentView, "View.Home:", View.Home)}
+            {/* {console.log("Current view:", currentView, "View.Home:", View.Home)} */}
             {currentView === View.Home && renderHomeGrid()}
 
             {currentView === View.Dashboard && activeSubmenu && (
@@ -392,7 +389,11 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
                 setUsers={setUsers}
                 currentUserId={currentUser.id}
                 currentUserRole={
-                  currentUser.role as "owner" | "manager" | "fieldofficer" | "farmer"
+                  currentUser.role as
+                    | "owner"
+                    | "manager"
+                    | "fieldofficer"
+                    | "farmer"
                 }
               />
             )}
@@ -487,8 +488,11 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
             {currentView === View.Tasklist && currentUser && (
               <Tasklist
                 currentUserId={currentUser.id}
-                currentUserRole={currentUser.role as 'manager' | 'fieldofficer' | 'farmer'}
-                currentUserName={currentUser.name} 
+                currentUserRole={
+                  currentUser.role as "manager" | "fieldofficer" | "farmer"
+                }
+                currentUserName={currentUser.name}
+              />
             )}
             {currentView === View.PestDisease && <PestDisease />}
 

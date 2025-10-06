@@ -320,6 +320,7 @@ const Map: React.FC<MapProps> = ({
   onFieldAnalysisChange,
   onMoistGroundChange,
   onPestDataChange,
+  onPlotChange,
 }) => {
   const { profile, loading: profileLoading } = useFarmerProfile();
   const mapWrapperRef = useRef<HTMLDivElement>(null);
