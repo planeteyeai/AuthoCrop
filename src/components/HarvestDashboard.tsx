@@ -1,4 +1,6 @@
+import api from "../api";
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import CommonSpinner from "./CommanSpinner";
 import axios from "axios";
 import {
   MapPin,
@@ -37,8 +39,8 @@ import {
 import "leaflet/dist/leaflet.css";
 import { useMap } from "react-leaflet";
 
-const BASE_URL = "http://192.168.41.51:9000";
-const PLOT_ID = 289138;
+const API_BASE_URL =
+  "https://cropeye-server-1.onrender.com/api/users/my-field-officers/";
 
 // Chart Types
 const CHART_TYPES = {
@@ -50,11 +52,6 @@ const CHART_TYPES = {
 type ChartType = (typeof CHART_TYPES)[keyof typeof CHART_TYPES];
 
 // Type definitions
-interface RepresentativeEndpoint {
-  name: string;
-  url: string;
-}
-
 interface Filters {
   region: string;
   representative: string;
@@ -159,85 +156,6 @@ interface CombinedChartProps {
   setActiveChart: (chart: ChartType) => void;
 }
 
-// List of representative endpoints
-const REPRESENTATIVE_ENDPOINTS: RepresentativeEndpoint[] = [
-  { name: "Ajay Dhale", url: "http://localhost:3000/Ajay Dhale" },
-  { name: "Sri Sri", url: "http://localhost:3000/Sri Sri" },
-  { name: "Amol Gajare", url: "http://localhost:3000/Amol Gajare" },
-  { name: "Ananda Kale", url: "http://localhost:3000/Ananda Kale" },
-  { name: "Avatade Pravin", url: "http://localhost:3000/Avatade Pravin" },
-  { name: "Bapu Devkate", url: "http://localhost:3000/Bapu Devkate" },
-  { name: "Ganesh", url: "http://localhost:3000/Ganesh" },
-  { name: "Somnath Patil", url: "http://localhost:3000/Somnath Patil" },
-  { name: "Tushar Kale", url: "http://localhost:3000/Tushar Kale" },
-  { name: "Ajit Sawant 5", url: "http://localhost:3000/Ajit Sawant 5" },
-  { name: "Ajit Sawant 6", url: "http://localhost:3000/Ajit Sawant 6" },
-  { name: "Ajit Sawant 7", url: "http://localhost:3000/Ajit Sawant 7" },
-  { name: "Ajit Sawant 8", url: "http://localhost:3000/Ajit Sawant 8" },
-  { name: "Ajit Sawant 9", url: "http://localhost:3000/Ajit Sawant 9" },
-  { name: "Ajit Sawant 10", url: "http://localhost:3000/Ajit Sawant 10" },
-  { name: "Ajit Sawant 11", url: "http://localhost:3000/Ajit Sawant 11" },
-  { name: "Dagade Meghnath", url: "http://localhost:3000/Dagade Meghnath" },
-  { name: "Datta Bhandgar", url: "http://localhost:3000/Datta Bhandgar" },
-  { name: "Dhiraj", url: "http://localhost:3000/Dhiraj" },
-  { name: "Ganesh Mane", url: "http://localhost:3000/Ganesh Mane" },
-  { name: "Sayyad Taher", url: "http://localhost:3000/Sayyad Taher" },
-  { name: "Ajit Keche", url: "http://localhost:3000/Ajit Keche" },
-  { name: "Ajit Sawant 1", url: "http://localhost:3000/Ajit Sawant 1" },
-  { name: "Sunil Shinde", url: "http://localhost:3000/Sunil Shinde" },
-  { name: "Shashikant Dethe", url: "http://localhost:3000/Shashikant Dethe" },
-  { name: "Mangesh Devkate", url: "http://localhost:3000/Mangesh Devkate" },
-  { name: "Bharat Kesarkar", url: "http://localhost:3000/Bharat Kesarkar" },
-  { name: "Ajit Sawant 4", url: "http://localhost:3000/Ajit Sawant 4" },
-  { name: "Ajit Sawant 2", url: "http://localhost:3000/Ajit Sawant 2" },
-  { name: "Jitendra Disale", url: "http://localhost:3000/Jitendra Disale" },
-  { name: "Kolegaon West", url: "http://localhost:3000/Kolegaon West" },
-  { name: "Mauli Waghmode", url: "http://localhost:3000/Mauli Waghmode" },
-  { name: "Nikhil Bandgar", url: "http://localhost:3000/Nikhil Bandgar" },
-  { name: "Prakash Kale", url: "http://localhost:3000/Prakash Kale" },
-  { name: "Sachin Khatke", url: "http://localhost:3000/Sachin Khatke" },
-  { name: "Samadhan Kamate", url: "http://localhost:3000/Samadhan Kamate" },
-  { name: "Santosh Hulge", url: "http://localhost:3000/Santosh Hulge" },
-  { name: "Satish Dubule", url: "http://localhost:3000/Satish Dubule" },
-  { name: "Onkar Mane", url: "http://localhost:3000/Onkar Mane" },
-];
-
-const ALL_REPRESENTATIVES = [
-  "All",
-  ...REPRESENTATIVE_ENDPOINTS.map((r) => r.name),
-];
-
-// Filter options
-const REGION_OPTIONS = [
-  "All",
-  "Atpadi",
-  "Indapur",
-  "Madha",
-  "Malshiras",
-  "Pandharpur",
-  "Sangole",
-];
-const SUGARCANE_TYPE_OPTIONS = ["All", "Adsali", "Ratoon", "Suru"];
-const VARIETY_OPTIONS = ["All", "Phule 265"];
-
-// Color maps for filter-wise plotting
-const REGION_COLORS: { [key: string]: string } = {
-  Atpadi: "#3B82F6",
-  Indapur: "#60A5FA",
-  Madha: "#FB923C",
-  Malshiras: "#10B981",
-  Pandharpur: "#6366F1",
-  Sangole: "#eab308",
-};
-const SUGARCANE_TYPE_COLORS: { [key: string]: string } = {
-  Adsali: "#3B82F6",
-  Ratoon: "#60A5FA",
-  Suru: "#FB923C",
-};
-const VARIETY_COLORS: { [key: string]: string } = {
-  "Phule 265": "#10B981",
-};
-
 // Pie chart color palette (used for both pie and map points)
 const STATUS_COLOR_PALETTE = [
   "#3B82F6",
@@ -269,7 +187,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   activeChart,
   setActiveChart,
 }) => {
-  // Add styles for the slider
   React.useEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
@@ -301,7 +218,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     };
   }, []);
 
-  // Custom tooltip for Brix chart
   const BrixTooltip: React.FC<BrixTooltipProps> = ({
     active,
     payload,
@@ -333,7 +249,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return null;
   };
 
-  // Custom tooltip for Harvest chart
   const HarvestTooltip: React.FC<HarvestTooltipProps> = ({
     active,
     payload,
@@ -399,7 +314,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             </BarChart>
           </ResponsiveContainer>
         );
-
       case CHART_TYPES.HARVEST:
         return (
           <ResponsiveContainer width="100%" height="100%">
@@ -470,7 +384,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             </ComposedChart>
           </ResponsiveContainer>
         );
-
       case CHART_TYPES.PLANTATION:
         return (
           <ResponsiveContainer width="100%" height="100%">
@@ -502,7 +415,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             </BarChart>
           </ResponsiveContainer>
         );
-
       default:
         return null;
     }
@@ -510,7 +422,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 h-[500px] flex flex-col">
-      {/* Toggle Buttons and Slider */}
       <div className="flex justify-between items-center border-b border-gray-200 p-4">
         <div className="flex bg-gray-100 rounded-lg p-1">
           {chartButtons.map((button) => (
@@ -527,8 +438,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             </button>
           ))}
         </div>
-
-        {/* Harvest Range Slider - Only show for harvest chart */}
         {activeChart === CHART_TYPES.HARVEST && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
             <div className="flex items-center gap-2 mb-1">
@@ -552,8 +461,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           </div>
         )}
       </div>
-
-      {/* Chart Content */}
       <div className="flex-1 p-4">{renderChart()}</div>
     </div>
   );
@@ -568,148 +475,141 @@ const HarvestDashboard: React.FC = () => {
     sugarcaneType: "All",
     variety: "All",
   });
-
   const [dateRange, setDateRange] = useState<DateRange>({
     start: "2024-12-14",
     end: "2024-12-14",
   });
-
   const [harvestRange, setHarvestRange] = useState<[number, number]>([
     -50, 100,
   ]);
-
-  const [indices, setIndices] = useState<any[]>([]);
-  const [stressEvents, setStressEvents] = useState<any[]>([]);
-  const [stressCount, setStressCount] = useState<number>(0);
-  const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [area, setArea] = useState<number | null>(null);
-  const [expectedYield, setExpectedYield] = useState<number | null>(null);
-  const [recovery, setRecovery] = useState<number | null>(null);
-  const [plantationStages, setPlantationStages] = useState<any[]>([]);
   const [rawData, setRawData] = useState<HarvestData[]>([]);
-  const [loadingStress, setLoadingStress] = useState<boolean>(false);
+
+  // Dynamic filter options
+  const [regionOptions, setRegionOptions] = useState<string[]>(["All"]);
+  const [representativeOptions, setRepresentativeOptions] = useState<string[]>([
+    "All",
+  ]);
+  const [sugarcaneTypeOptions, setSugarcaneTypeOptions] = useState<string[]>([
+    "All",
+  ]);
+  const [varietyOptions] = useState<string[]>(["All", "Phule 265"]);
 
   // Debounce non-representative filters
   const debouncedRegion = useDebouncedValue(filters.region, 300);
   const debouncedSugarcaneType = useDebouncedValue(filters.sugarcaneType, 300);
   const debouncedVariety = useDebouncedValue(filters.variety, 300);
 
-  const getRepresentativeEndpoints = (): string[] => {
-    if (!filters.representative || filters.representative === "All") {
-      return REPRESENTATIVE_ENDPOINTS.map((r) => r.url);
-    }
-    const found = REPRESENTATIVE_ENDPOINTS.find(
-      (r) => r.name === filters.representative
-    );
-    return found ? [found.url] : [];
-  };
-
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
       try {
-        // Fetch data from all representative endpoints
-        let allData: HarvestData[] = [];
+        console.log(`Fetching data from ${API_BASE_URL}`);
+        const response = await api.get(API_BASE_URL);
 
-        for (const rep of REPRESENTATIVE_ENDPOINTS) {
-          try {
-            console.log(`Fetching data from ${rep.name} at ${rep.url}`);
-            const response = await axios.get(rep.url);
+        if (response.data && response.data.field_officers) {
+          const apiData = response.data;
+          let allData: HarvestData[] = [];
 
-            if (response.data && Array.isArray(response.data)) {
-              // Add representative information to each data point
-              const dataWithRep = response.data.map((item: any) => ({
-                ...item,
-                representative: rep.name,
-                representativeUrl: rep.url,
-              }));
+          const talukaSet = new Set<string>();
+          const representativeSet = new Set<string>();
+          const plantationTypeSet = new Set<string>();
 
-              allData = allData.concat(dataWithRep);
-              console.log(
-                `Successfully fetched ${dataWithRep.length} records from ${rep.name}`
-              );
-            } else {
-              console.warn(
-                `Invalid data format from ${rep.name}:`,
-                response.data
-              );
-            }
-          } catch (err) {
-            console.warn(
-              `Failed to fetch from ${rep.name} at ${rep.url}:`,
-              err
-            );
+          apiData.field_officers.forEach((officer: any) => {
+            const representativeName = `${officer.first_name} ${officer.last_name}`;
+            representativeSet.add(representativeName);
 
-            // Fallback to mock data if API fails
-            const mockData: HarvestData[] = [
-              {
-                id: rep.name + "-1",
-                "Plot No": `${rep.name}-P001`,
-                Latitude: 19.765 + Math.random() * 0.01,
-                Longitude: 74.475 + Math.random() * 0.01,
-                "Sugarcane Status": "Ready to Harvest",
-                "Area (Hect)": 2.5 + Math.random() * 2,
-                Days: 45 + Math.floor(Math.random() * 30),
-                "Prediction Yield (T/Ha)": 85 + Math.random() * 20,
-                "Brix (Degree)": 20.5 + Math.random() * 5,
-                "Recovery (Degree)": 10.2 + Math.random() * 2,
-                "Distance (km)": 2.3 + Math.random() * 5,
-                Stage: "Maturity",
-                Region: [
-                  "Atpadi",
-                  "Indapur",
-                  "Madha",
-                  "Malshiras",
-                  "Pandharpur",
-                  "Sangole",
-                ][Math.floor(Math.random() * 6)],
-                "Sugarcane Type": ["Adsali", "Ratoon", "Suru"][
-                  Math.floor(Math.random() * 3)
-                ],
-                Variety: "Phule 265",
-                representative: rep.name,
-                representativeUrl: rep.url,
-              },
-              {
-                id: rep.name + "-2",
-                "Plot No": `${rep.name}-P002`,
-                Latitude: 19.764 + Math.random() * 0.01,
-                Longitude: 74.476 + Math.random() * 0.01,
-                "Sugarcane Status": "Growing",
-                "Area (Hect)": 1.8 + Math.random() * 2,
-                Days: 30 + Math.floor(Math.random() * 30),
-                "Prediction Yield (T/Ha)": 70 + Math.random() * 20,
-                "Brix (Degree)": 18.2 + Math.random() * 5,
-                "Recovery (Degree)": 9.5 + Math.random() * 2,
-                "Distance (km)": 1.8 + Math.random() * 5,
-                Stage: "Vegetative",
-                Region: [
-                  "Atpadi",
-                  "Indapur",
-                  "Madha",
-                  "Malshiras",
-                  "Pandharpur",
-                  "Sangole",
-                ][Math.floor(Math.random() * 6)],
-                "Sugarcane Type": ["Adsali", "Ratoon", "Suru"][
-                  Math.floor(Math.random() * 3)
-                ],
-                Variety: "Phule 265",
-                representative: rep.name,
-                representativeUrl: rep.url,
-              },
-            ];
-            allData = allData.concat(mockData);
-          }
+            officer.farmers.forEach((farmer: any) => {
+              farmer.plots.forEach((plot: any) => {
+                if (plot.taluka) {
+                  talukaSet.add(plot.taluka);
+                }
+
+                plot.farms.forEach((farm: any) => {
+                  if (farm.plantation_type) {
+                    plantationTypeSet.add(farm.plantation_type);
+                  }
+
+                  const coordinates = plot.boundary?.coordinates?.[0] || [];
+                  let centerLat = 0;
+                  let centerLng = 0;
+
+                  if (coordinates.length > 0) {
+                    coordinates.forEach((coord: number[]) => {
+                      centerLng += coord[0];
+                      centerLat += coord[1];
+                    });
+                    centerLat /= coordinates.length;
+                    centerLng /= coordinates.length;
+                  }
+
+                  const plantationDate = new Date(farm.plantation_date);
+                  const today = new Date();
+                  const days = Math.floor(
+                    (today.getTime() - plantationDate.getTime()) /
+                      (1000 * 60 * 60 * 24)
+                  );
+
+                  let stage = "Germination Stage";
+                  if (days > 150) stage = "Maturity Stage";
+                  else if (days > 90) stage = "Grand Growth Stage";
+                  else if (days > 30) stage = "Tillering Stage";
+
+                  let status = "Growing";
+                  if (days > 300) status = "Ready to Harvest";
+                  else if (days > 270) status = "Partially Harvested";
+
+                  const brix = Math.min(15 + days / 10, 25);
+                  const recovery = Math.min(8 + days / 30, 12);
+
+                  const area = parseFloat(farm.area_size || "0");
+                  const yieldPerHa = Math.min(60 + days / 3, 100);
+
+                  const dataPoint: HarvestData = {
+                    id: `${plot.id}-${farm.id}`,
+                    "Plot No": plot.plot_number || "",
+                    Latitude: centerLat || 19.765,
+                    Longitude: centerLng || 74.475,
+                    "Sugarcane Status": status,
+                    "Area (Hect)": area,
+                    Days: days,
+                    "Prediction Yield (T/Ha)": yieldPerHa,
+                    "Brix (Degree)": brix,
+                    "Recovery (Degree)": recovery,
+                    "Distance (km)": Math.random() * 10 + 1,
+                    Stage: stage,
+                    Region: plot.taluka || "Unknown",
+                    "Sugarcane Type": farm.plantation_type || "Unknown",
+                    Variety: "Phule 265",
+                    representative: representativeName,
+                    representativeUrl: "",
+                  };
+
+                  allData.push(dataPoint);
+                });
+              });
+            });
+          });
+
+          setRegionOptions(["All", ...Array.from(talukaSet).sort()]);
+          setRepresentativeOptions([
+            "All",
+            ...Array.from(representativeSet).sort(),
+          ]);
+          setSugarcaneTypeOptions([
+            "All",
+            ...Array.from(plantationTypeSet).sort(),
+          ]);
+
+          console.log(`Successfully processed ${allData.length} data points`);
+          setRawData(allData);
+        } else {
+          console.warn("Invalid data format:", response.data);
+          setRawData([]);
         }
-
-        console.log(
-          `Total data fetched: ${allData.length} records from all representatives`
-        );
-        setRawData(allData);
       } catch (err) {
         console.error("API fetch error", err);
+        setRawData([]);
       } finally {
         setLoading(false);
       }
@@ -718,7 +618,6 @@ const HarvestDashboard: React.FC = () => {
     fetchData();
   }, []);
 
-  // Memoize filteredData and all derived data
   const filteredData = useMemo(
     () =>
       rawData.filter((item) => {
@@ -743,7 +642,6 @@ const HarvestDashboard: React.FC = () => {
     ]
   );
 
-  // Pie Chart Data for Sugarcane Status - Fixed Labels
   const FIXED_STATUS_LABELS = [
     "Harvested",
     "Growing",
@@ -779,11 +677,7 @@ const HarvestDashboard: React.FC = () => {
     [statusCounts, statusColorMap]
   );
 
-  // Note: Using fixed status labels, so all statuses are pre-assigned colors
-
-  // Map Points for Map - Filtered by harvest range when harvest chart is active
   const plotPoints = useMemo(() => {
-    // If harvest chart is active, filter by harvest range
     let dataToUse = filteredData;
     if (activeChart === CHART_TYPES.HARVEST) {
       dataToUse = filteredData.filter((item) => {
@@ -793,7 +687,6 @@ const HarvestDashboard: React.FC = () => {
         return false;
       });
     }
-
     return dataToUse.map((item, idx) => ({
       id: item.id || idx,
       position: [item.Latitude, item.Longitude] as [number, number],
@@ -804,7 +697,6 @@ const HarvestDashboard: React.FC = () => {
     }));
   }, [filteredData, activeChart, harvestRange]);
 
-  // Brix Value Prediction: Total Area vs Days
   const brixData = useMemo(() => {
     const brixAreaByDay: { [key: number]: number } = {};
     filteredData.forEach((item) => {
@@ -821,9 +713,7 @@ const HarvestDashboard: React.FC = () => {
       .sort((a, b) => a.day - b.day);
   }, [filteredData]);
 
-  // Line Chart Data for Ready to Harvest (Days vs Prediction Yield) - Aggregated for better performance
   const harvestData = useMemo(() => {
-    // Filter data based on harvest range
     const rangeFilteredData = filteredData.filter((item) => {
       if (typeof item.Days === "number") {
         return item.Days >= harvestRange[0] && item.Days <= harvestRange[1];
@@ -831,7 +721,6 @@ const HarvestDashboard: React.FC = () => {
       return false;
     });
 
-    // Group data by days and calculate average yield for each day
     const dayGroups = rangeFilteredData.reduce(
       (acc: { [key: number]: number[] }, item) => {
         if (
@@ -848,25 +737,21 @@ const HarvestDashboard: React.FC = () => {
       {}
     );
 
-    // Calculate average yield for each day and create chart data
     return Object.entries(dayGroups)
       .map(([day, yieldValues]) => ({
         day: Number(day),
         area:
-          yieldValues.reduce((sum, val) => sum + val, 0) / yieldValues.length, // Average yield
-        count: yieldValues.length, // Number of plots for this day
-        totalYield: yieldValues.reduce((sum, val) => sum + val, 0), // Total yield
+          yieldValues.reduce((sum, val) => sum + val, 0) / yieldValues.length,
+        count: yieldValues.length,
+        totalYield: yieldValues.reduce((sum, val) => sum + val, 0),
       }))
       .sort((a, b) => a.day - b.day);
   }, [filteredData, harvestRange]);
 
-  // Stage Distribution for Bar Chart
   const stageDistribution = useMemo(() => {
     const stageCounts = filteredData.reduce(
       (acc: { [key: string]: number }, item) => {
         const stage = item.Stage;
-
-        // Group stages according to requirements
         let groupedStage = stage;
         if (stage && stage.toLowerCase().includes("vegetative")) {
           groupedStage = "Tillering Stage";
@@ -877,14 +762,12 @@ const HarvestDashboard: React.FC = () => {
         } else if (stage && stage.toLowerCase().includes("grand growth")) {
           groupedStage = "Grand Growth Stage";
         }
-
         acc[groupedStage] = (acc[groupedStage] || 0) + 1;
         return acc;
       },
       {}
     );
 
-    // Define the 4 stages in the required order with their colors
     const requiredStages = [
       { stage: "Germination Stage", color: STATUS_COLOR_PALETTE[0] },
       { stage: "Grand Growth Stage", color: STATUS_COLOR_PALETTE[1] },
@@ -892,7 +775,6 @@ const HarvestDashboard: React.FC = () => {
       { stage: "Tillering Stage", color: STATUS_COLOR_PALETTE[3] },
     ];
 
-    // Create the final array with only the 4 required stages
     return requiredStages.map(({ stage, color }) => ({
       stage,
       plots: stageCounts[stage] || 0,
@@ -900,49 +782,6 @@ const HarvestDashboard: React.FC = () => {
     }));
   }, [filteredData]);
 
-  // Representative Summary
-  const representativeSummary = useMemo(() => {
-    const repData = filteredData.reduce(
-      (acc: { [key: string]: any[] }, item) => {
-        const rep = item.representative || "Unknown";
-        if (!acc[rep]) {
-          acc[rep] = [];
-        }
-        acc[rep].push(item);
-        return acc;
-      },
-      {}
-    );
-
-    return Object.entries(repData)
-      .map(([rep, data]) => {
-        const totalArea = data.reduce(
-          (sum, item) => sum + (item["Area (Hect)"] || 0),
-          0
-        );
-        const avgYield =
-          data.reduce(
-            (sum, item) => sum + (item["Prediction Yield (T/Ha)"] || 0),
-            0
-          ) / data.length;
-        const avgBrix =
-          data.reduce((sum, item) => sum + (item["Brix (Degree)"] || 0), 0) /
-          data.length;
-
-        return {
-          representative: rep,
-          plotCount: data.length,
-          totalArea: totalArea.toFixed(2),
-          avgYield: avgYield.toFixed(2),
-          avgBrix: avgBrix.toFixed(2),
-          regions: [...new Set(data.map((item) => item.Region))],
-          statuses: [...new Set(data.map((item) => item["Sugarcane Status"]))],
-        };
-      })
-      .sort((a, b) => b.plotCount - a.plotCount);
-  }, [filteredData]);
-
-  // Key Metrics
   const keyMetrics = useMemo(() => {
     const totalArea = filteredData.reduce(
       (sum, item) => sum + (item["Area (Hect)"] || 0),
@@ -964,6 +803,7 @@ const HarvestDashboard: React.FC = () => {
           ) / filteredData.length
         ).toFixed(2)
       : "-";
+
     return [
       {
         label: "Total Area (Ha)",
@@ -995,7 +835,6 @@ const HarvestDashboard: React.FC = () => {
     ];
   }, [filteredData]);
 
-  // Map Centering Logic
   const mapCenter = useMemo((): [number, number] => {
     if (filteredData.length > 0) {
       const avgLat =
@@ -1009,7 +848,6 @@ const HarvestDashboard: React.FC = () => {
     return [19.765, 74.475];
   }, [filteredData]);
 
-  // Map Point Coloring: use sugarcane status color
   const getPlotColor = useMemo(
     () =>
       (item: HarvestData): string => {
@@ -1019,7 +857,6 @@ const HarvestDashboard: React.FC = () => {
     [statusColorMap]
   );
 
-  // --- Map recentering effect ---
   function MapAutoCenter({ center }: MapAutoCenterProps) {
     const map = useMap();
     useEffect(() => {
@@ -1040,7 +877,7 @@ const HarvestDashboard: React.FC = () => {
       <label className="block text-sm font-medium text-gray-700 mb-2">
         {label}
       </label>
-      <div className="relative  box-border">
+      <div className="relative box-border">
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -1052,7 +889,6 @@ const HarvestDashboard: React.FC = () => {
             </option>
           ))}
         </select>
-        {/* Chevron icon positioned absolutely inside the select container */}
         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
       </div>
     </div>
@@ -1061,38 +897,7 @@ const HarvestDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 lg:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
-          {/* Data Loading Status */}
-          {loading && (
-            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
-                <span className="text-blue-800">
-                  Fetching data from {REPRESENTATIVE_ENDPOINTS.length}{" "}
-                  representative endpoints...
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Data Summary
-          {!loading && rawData.length > 0 && (
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <span className="text-green-800">
-                  ✅ Successfully loaded {rawData.length} data points from{" "}
-                  {new Set(rawData.map((item) => item.representative)).size}{" "}
-                  representatives
-                </span>
-                <span className="text-sm text-green-600">
-                  {filteredData.length} points match current filters
-                </span>
-              </div>
-            </div>
-          )} */}
-
-          {/* Date Range */}
           <div className="flex flex-wrap items-center gap-4 mb-6">
             <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border shadow-sm">
               <Calendar className="w-4 h-4 text-blue-500" />
@@ -1107,7 +912,6 @@ const HarvestDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Key Metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
             {keyMetrics.map((metric, index) => {
               const IconComponent = metric.icon;
@@ -1129,43 +933,37 @@ const HarvestDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Sidebar - Filters */}
           <div className="lg:col-span-3 space-y-2">
-            {/* Filters */}
             <div className="bg-white rounded-xl p-2 border-gray-100">
               <FilterDropdown
                 label="Region"
                 value={filters.region}
-                options={REGION_OPTIONS}
+                options={regionOptions}
                 onChange={(value) =>
                   setFilters((prev) => ({ ...prev, region: value }))
                 }
               />
-
               <FilterDropdown
                 label="Representative"
                 value={filters.representative}
-                options={ALL_REPRESENTATIVES}
+                options={representativeOptions}
                 onChange={(value) =>
                   setFilters((prev) => ({ ...prev, representative: value }))
                 }
               />
-
               <FilterDropdown
                 label="Sugarcane Type"
                 value={filters.sugarcaneType}
-                options={SUGARCANE_TYPE_OPTIONS}
+                options={sugarcaneTypeOptions}
                 onChange={(value) =>
                   setFilters((prev) => ({ ...prev, sugarcaneType: value }))
                 }
               />
-
               <FilterDropdown
                 label="Variety"
                 value={filters.variety}
-                options={VARIETY_OPTIONS}
+                options={varietyOptions}
                 onChange={(value) =>
                   setFilters((prev) => ({ ...prev, variety: value }))
                 }
@@ -1173,11 +971,8 @@ const HarvestDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Center - Map and Sugarcane Status */}
           <div className="lg:col-span-9 space-y-6">
-            {/* Map and Sugarcane Status Container */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Map */}
               <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="relative w-full h-[400px]">
                   <div
@@ -1192,7 +987,6 @@ const HarvestDashboard: React.FC = () => {
                   >
                     <Maximize2 className="w-4 h-4" />
                   </div>
-
                   <div ref={mapWrapperRef} className="w-full h-full">
                     <MapContainer
                       center={mapCenter}
@@ -1216,8 +1010,6 @@ const HarvestDashboard: React.FC = () => {
                         tileSize={256}
                         zoomOffset={0}
                       />
-
-                      {/* Main field polygon */}
                       <Polygon
                         positions={[
                           [19.764, 74.474],
@@ -1231,8 +1023,6 @@ const HarvestDashboard: React.FC = () => {
                           weight: 2,
                         }}
                       />
-
-                      {/* Plot points with interactive markers */}
                       {plotPoints.map((plot) => (
                         <CircleMarker
                           key={plot.id}
@@ -1269,14 +1059,12 @@ const HarvestDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Sugarcane Status */}
               <div className="lg:col-span-1 bg-white rounded-xl p-6 shadow-sm border border-gray-100 h-[400px] flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">
                     Sugarcane Status
                   </h3>
                 </div>
-
                 <div className="flex-1 mb-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <RechartsPieChart>
@@ -1304,7 +1092,6 @@ const HarvestDashboard: React.FC = () => {
                     </RechartsPieChart>
                   </ResponsiveContainer>
                 </div>
-
                 <div className="space-y-2 mb-4">
                   {plotStatusData.map((item, index) => (
                     <div
@@ -1333,7 +1120,6 @@ const HarvestDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Full Width Combined Chart Component */}
         <div className="mt-6">
           <CombinedChart
             harvestData={harvestData}
