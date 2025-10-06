@@ -1,9 +1,7 @@
-
 import React, { useState } from "react";
 import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
 import { DashboardGrid } from "./components/DashboardGrid";
-
 
 import ManagerHomeGrid from "./components/ManagerHomeGrid";
 import OwnerHomeGrid from "./components/OwnerHomeGrid";
@@ -29,19 +27,25 @@ import AddFarm from "./components/Add Farm";
 import TaskCalendar from "./components/TaskCalendar";
 import ViewList from "./components/ViewList";
 import { Tasklist } from "./components/Tasklist";
-import {PestDisease} from './components/pestt/Pest & Disease';
+import { PestDisease } from "./components/pestt/Pest & Disease";
 import Fertilizer from "./components/Fertilizer";
-import Irrigation from './components/Irrigation/Irrigation';
+import Irrigation from "./components/Irrigation/Irrigation";
 import BlogCard from "./components/BlogCard";
-import AgricultureData from"./components/AgricultureData";
+import AgricultureData from "./components/AgricultureData";
 import Map from "./components/Map";
 import FarmerDashboard from "./components/FarmerDashboard";
 import OfficerDashboard from "./components/FarmCropStatus";
+import AgroDashboard from "./components/AgroDash/AgroDashboard";
+import ManagerFarmDash from "./components/ManagerFarmDash";
+import HarvestDashboard from "./components/HarvestDashboard";
 
 enum View {
   Home = "home",
   ManagerHomeGrid = "ManagerHomeGrid",
+  HarvestDashboard = "HarvestDashboard",
   Dashboard = "dashboard",
+  AgroDashboard = "AgroDashboard",
+  ManagerFarmDash = "ManagerFarmDash",
   AddUsers = "addusers",
   userList = "userlist",
   Contactuser = "Contactuser",
@@ -63,17 +67,17 @@ enum View {
   ViewList = "ViewList",
   Tasklist = "Tasklist",
   Fertilizer = "Fertilizer",
-  Irrigation="Irrigation",
-  BlogCard="BlogCard",
-  PestDisease="Pest & Disease",
-  AgricultureData="AgricultureData",
-  Map="Map",
-  FarmerDashboard="FarmerDashboard",
-  FarmCropStatus="FarmCropStatus"
+  Irrigation = "Irrigation",
+  BlogCard = "BlogCard",
+  PestDisease = "Pest & Disease",
+  AgricultureData = "AgricultureData",
+  Map = "Map",
+  FarmerDashboard = "FarmerDashboard",
+  FarmCropStatus = "FarmCropStatus",
 }
 
 interface AppProps {
-  userRole: "manager" | "admin" | "fieldofficer" | "farmer"|"owner";
+  userRole: "manager" | "admin" | "fieldofficer" | "farmer" | "owner";
   onLogout: () => void;
 }
 
@@ -81,7 +85,9 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<View>(View.Home);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
-  const [expandedSidebarMenu, setExpandedSidebarMenu] = useState<string | null>(null);
+  const [expandedSidebarMenu, setExpandedSidebarMenu] = useState<string | null>(
+    null
+  );
   const [users, setUsers] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
   const [stocks, setStocks] = useState<any[]>([]);
@@ -90,22 +96,36 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
   const [soilData, setSoilData] = useState({
     phValue: null as number | null,
     nitrogenValue: null as number | null,
-    fertilityStatus: "Moderate"
+    fertilityStatus: "Moderate",
   });
 
   const handleMenuSelect = (menu: string) => {
     setActiveSubmenu(null);
-    
+
     let nextView = View.Home;
-    
+
     switch (menu) {
       case "Farm Crop Status":
+        // Use ManagerFarmDash for manager/owner, FarmCropStatus for field officer
+        if (userRole === "manager" || userRole === "owner") {
+          nextView = View.ManagerFarmDash;
+        } else {
+          nextView = View.FarmCropStatus;
+        }
+        break;
+      case "ViewFarmerPlot":
         nextView = View.FarmCropStatus;
         break;
       case "Harvesting Planning":
-      case "Agroclimatic":
-      case "Plot View":
+        nextView = View.HarvestDashboard;
+        break;
       case "ViewFarmerPlot":
+        nextView = View.FarmCropStatus;
+        break;
+      case "Agroclimatic":
+        nextView = View.AgroDashboard;
+        break;
+      case "Plot View":
         nextView = View.Dashboard;
         setActiveSubmenu(menu);
         break;
@@ -123,7 +143,7 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
         break;
       case "Vendor list":
         nextView = View.VendorList;
-        fetch('http://localhost:5000/vendorlist')
+        fetch("http://localhost:5000/vendorlist")
           .then((response) => response.json())
           .then((data) => setUsers(data))
           .catch((error) => setUsers([]));
@@ -133,7 +153,7 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
         break;
       case "order list":
         nextView = View.orderlist;
-        fetch('http://localhost:5000/orderlist')
+        fetch("http://localhost:5000/orderlist")
           .then((response) => response.json())
           .then((data) => setItems(data))
           .catch((error) => setItems([]));
@@ -143,7 +163,7 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
         break;
       case "stock list":
         nextView = View.stocklist;
-        fetch('http://localhost:5000/stocklist')
+        fetch("http://localhost:5000/stocklist")
           .then((response) => response.json())
           .then((data) => setStocks(data))
           .catch((error) => setStocks([]));
@@ -206,7 +226,7 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
         nextView = View.Home;
         break;
     }
-    
+
     setCurrentView(nextView);
     setIsSidebarOpen(false);
   };
@@ -222,12 +242,12 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
   };
 
   const openSidebarWithMenu = (menuTitle: string) => {
-    console.log('🔧 openSidebarWithMenu called with:', menuTitle);
+    console.log("🔧 openSidebarWithMenu called with:", menuTitle);
     setIsSidebarOpen(true);
     setExpandedSidebarMenu(menuTitle);
     // Clear the expanded menu after a longer delay to allow the sidebar to open and expand
     setTimeout(() => {
-      console.log('🔧 Clearing expanded menu after timeout');
+      console.log("🔧 Clearing expanded menu after timeout");
       setExpandedSidebarMenu(null);
     }, 1000);
   };
@@ -238,48 +258,57 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
     nitrogenValue?: number | null;
     phStatistics?: { phh2o_0_5cm_mean_mean: number };
   }) => {
-    console.log('App.tsx: handleSoilDataChange called with:', data);
+    console.log("App.tsx: handleSoilDataChange called with:", data);
     setSoilData((prev) => ({
       ...prev,
       phValue: data.phValue,
-      nitrogenValue: data.nitrogenValue !== undefined ? data.nitrogenValue : null,
+      nitrogenValue:
+        data.nitrogenValue !== undefined ? data.nitrogenValue : null,
     }));
     setSelectedPlotName(data.plotName || null);
   };
 
   const renderHomeGrid = () => {
-    console.log('Rendering home grid for role:', userRole);
+    console.log("Rendering home grid for role:", userRole);
     switch (userRole) {
       case "manager":
-        console.log('Rendering ManagerHomeGrid');
-        return <ManagerHomeGrid onMenuClick={handleMenuSelect} onOpenSidebarWithMenu={openSidebarWithMenu} />;
+        console.log("Rendering ManagerHomeGrid");
+        return (
+          <ManagerHomeGrid
+            onMenuClick={handleMenuSelect}
+            onOpenSidebarWithMenu={openSidebarWithMenu}
+          />
+        );
       case "owner":
-        console.log('Rendering OwnerHomeGrid');
+        console.log("Rendering OwnerHomeGrid");
         return <OwnerHomeGrid onMenuClick={handleMenuSelect} />;
       case "fieldofficer":
-        console.log('Rendering FieldOfficerHomeGrid');
-        return <FieldOfficerHomeGrid onMenuClick={handleMenuSelect} onOpenSidebarWithMenu={openSidebarWithMenu} />;
+        console.log("Rendering FieldOfficerHomeGrid");
+        return (
+          <FieldOfficerHomeGrid
+            onMenuClick={handleMenuSelect}
+            onOpenSidebarWithMenu={openSidebarWithMenu}
+          />
+        );
       case "farmer":
-        console.log('Rendering FarmerHomeGrid');
-        return <FarmerHomeGrid   onMenuClick={handleMenuSelect} />;
+        console.log("Rendering FarmerHomeGrid");
+        return <FarmerHomeGrid onMenuClick={handleMenuSelect} />;
       default:
-        console.log('Invalid user role:', userRole);
+        console.log("Invalid user role:", userRole);
         return <div>Invalid user role: {userRole}</div>;
     }
   };
 
   return (
-            <div className="min-h-screen flex flex-col">
-          <Header 
-        toggleSidebar={toggleSidebar} 
-        isSidebarOpen={isSidebarOpen} 
-      />
-      
-      
+    <div className="min-h-screen flex flex-col">
+      <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+
       <div className="flex flex-1">
-        <div className={`fixed top-0 left-0 h-full z-40 transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? "w-64" : "w-0"
-        } overflow-hidden`}>
+        <div
+          className={`fixed top-0 left-0 h-full z-40 transition-all duration-300 ease-in-out ${
+            isSidebarOpen ? "w-64" : "w-0"
+          } overflow-hidden`}
+        >
           <Sidebar
             isOpen={isSidebarOpen}
             onMenuSelect={handleMenuSelect}
@@ -289,14 +318,16 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
             expandedMenu={expandedSidebarMenu}
           />
         </div>
-        
-        <main className={`flex-1 transition-all duration-300 ease-in-out ml-0 ${
-          isSidebarOpen ? "ml-64" : "ml-0"
-        } overflow-auto`}>
+
+        <main
+          className={`flex-1 transition-all duration-300 ease-in-out ml-0 ${
+            isSidebarOpen ? "ml-64" : "ml-0"
+          } overflow-auto`}
+        >
           <div className="w-full h-full">
-            {console.log('Current view:', currentView, 'View.Home:', View.Home)}
+            {console.log("Current view:", currentView, "View.Home:", View.Home)}
             {currentView === View.Home && renderHomeGrid()}
-            
+
             {currentView === View.Dashboard && activeSubmenu && (
               <DashboardGrid
                 submenu={activeSubmenu}
@@ -304,92 +335,97 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
                 onClose={() => setActiveSubmenu(null)}
               />
             )}
-            
+
             {currentView === View.AddUsers && (
               <Addusers setUsers={setUsers} users={users} />
             )}
-            
+
             {currentView === View.userList && (
               <UserList users={users} setUsers={setUsers} />
             )}
-            
+
             {currentView === View.Contactuser && (
               <Contactuser users={users} setUsers={setUsers} />
             )}
-            
+
             {currentView === View.Addvendor && (
               <Addvendor setUsers={setUsers} users={users} />
             )}
-            
+
             {currentView === View.VendorList && (
               <VendorList users={users} setUsers={setUsers} />
             )}
-            
+
             {currentView === View.Addorder && (
               <Addorder setItems={setItems} items={items} />
             )}
-            
+
             {currentView === View.orderlist && (
               <OrderList items={items} setItems={setItems} />
             )}
-            
+
             {currentView === View.Addstock && (
               <AddStock setStocks={setStocks} />
             )}
-            
+
             {currentView === View.stocklist && (
               <StockList stocks={stocks} setStocks={setStocks} />
             )}
-            
+
             {currentView === View.AddBooking && (
               <AddBooking bookings={bookings} setBookings={setBookings} />
             )}
-            
+
             {currentView === View.Bookinglist && (
               <BookingList bookings={bookings} setBookings={setBookings} />
             )}
-            
+
             {currentView === View.FarmList && (
               <FarmList users={users} setUsers={setUsers} />
             )}
-            
+
             {currentView === View.CalendarView && <CalendarView />}
-            
+
             {currentView === View.MyList && <MyList />}
-            
+
             {currentView === View.TeamList && (
               <TeamList setUsers={setUsers} users={users} />
             )}
-            
+
             {currentView === View.Calendar && <Calendar />}
-            
+
             {currentView === View.AddFarm && <AddFarm />}
-            
+
             {currentView === View.TaskCalendar && <TaskCalendar />}
-            
+
             {currentView === View.ViewList && <ViewList />}
-            
+
             {currentView === View.Tasklist && <Tasklist />}
-            
+
             {currentView === View.PestDisease && <PestDisease />}
-            
+
             {currentView === View.Fertilizer && <Fertilizer />}
-            
+
             {currentView === View.Irrigation && (
               <Irrigation selectedPlotName={selectedPlotName} />
             )}
-            
+
             {currentView === View.BlogCard && <BlogCard />}
-            
+
             {currentView === View.AgricultureData && <AgricultureData />}
-            
+
             {currentView === View.Map && (
               <Map onSoilDataChange={handleSoilDataChange} />
             )}
-            
+
             {currentView === View.FarmerDashboard && <FarmerDashboard />}
-            
+
             {currentView === View.FarmCropStatus && <OfficerDashboard />}
+
+            {currentView === View.ManagerFarmDash && <ManagerFarmDash />}
+
+            {currentView === View.AgroDashboard && <AgroDashboard />}
+            {currentView === View.HarvestDashboard && <HarvestDashboard />}
           </div>
         </main>
       </div>
