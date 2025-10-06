@@ -317,7 +317,7 @@ const FertilizerTable: React.FC = () => {
             if (profileResponse && profileResponse.plots && profileResponse.plots.length > 0) {
               // Use the first plot's farm data
               const firstPlot = profileResponse.plots[0];
-              const firstFarm = firstPlot.farms[0];
+        const firstFarm = firstPlot.farms[0];
               
               console.log('🌾 Using farm data from profile:', firstFarm);
               

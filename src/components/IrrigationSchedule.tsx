@@ -731,7 +731,7 @@ const IrrigationSchedule: React.FC = () => {
                   ) : (
                     <span className="text-xs text-gray-700 font-semibold">
                       {Number(day.etDisplayed).toFixed(2)} mm/day
-                        </span>
+                            </span>
                       )}
                     </td>
                     <td className="px-2 py-2">
