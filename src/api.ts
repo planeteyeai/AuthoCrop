@@ -5,7 +5,7 @@ import { getAuthToken, setAuthToken as setAuthTokenUtil } from './utils/auth';
 const API_BASE_URL = 'https://cropeye-server-1.onrender.com/api'; // changed to root API URL
 
 // KML/GeoJSON API URL
-const KML_API_URL = 'http://192.168.41.73:7030';
+const KML_API_URL = 'http://192.168.41.51';
 
 // Create axios instance
 const api = axios.create({
@@ -80,6 +80,42 @@ export const addUser = (data: {
   role: string;
 }) => {
   return api.post('/users/', data);
+};
+
+export const addTask = (data: {
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  assigned_to_id: number;
+  due_date: string;
+}) => {
+  return api.post('/tasks/', data);
+};
+
+export const getTasks = () => {
+  return api.get('/tasks/');
+};
+
+export const getTaskById = (id: number) => {
+  return api.get(`/tasks/${id}/`);
+};
+
+export const updateTask = (id: number, data: any) => {
+  return api.put(`/tasks/${id}/`, data);
+};
+
+export const getTasksForUser = (userId: number) => {
+  return api.get(`/tasks/?assigned_to_id=${userId}`);
+}
+
+export const getFarmersByFieldOfficer = (fieldOfficerId: number) => {
+  return api.get(`/users/farmers-by-field-officer/${fieldOfficerId}/`);
+};
+
+export const updateTaskStatus = (taskId: number, status: string) => {
+  console.log('API call: PATCH /tasks/' + taskId + '/', { status });
+  return api.patch(`/tasks/${taskId}/`, { status });
 };
 
 export const addVendor = (data: {
