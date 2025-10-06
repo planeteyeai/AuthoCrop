@@ -14,7 +14,6 @@ interface FertilizerEntry {
   chemical: string;
 }
 
-
 const videoList = [
   {
     title: "उस शेतीची ओळख आणि महाराष्ट्राचे हवामान",
@@ -39,7 +38,7 @@ const Fertilizer: React.FC = () => {
   const { loading: profileLoading, getPlotNames } = useFarmerProfile();
   const plotNames = getPlotNames();
   const PLOT_NAME = plotNames.length > 0 ? plotNames[0] : "";
-  const API_BASE_URL = "http://192.168.41.73:8003";
+  const API_BASE_URL = "http://localhost:8003";
 
   const getCurrentDate = () => {
     return new Date().toLocaleDateString("en-IN", {
@@ -61,16 +60,16 @@ const Fertilizer: React.FC = () => {
 
   const fetchNPKData = useCallback(async () => {
     if (!PLOT_NAME) {
-      console.log('Fertilizer: No plot name available, skipping NPK fetch');
+      console.log("Fertilizer: No plot name available, skipping NPK fetch");
       return;
     }
-    
+
     // Prevent multiple simultaneous requests
     if (npkFetchingRef.current) {
-      console.log('Fertilizer: NPK fetch already in progress, skipping');
+      console.log("Fertilizer: NPK fetch already in progress, skipping");
       return;
     }
-    
+
     npkFetchingRef.current = true;
     setNpkLoading(true);
     setNpkError(null);
@@ -83,12 +82,12 @@ const Fertilizer: React.FC = () => {
       return;
     }
     try {
-      const currentDate = new Date().toISOString().split('T')[0];
+      const currentDate = new Date().toISOString().split("T")[0];
       const url = `${API_BASE_URL}/analyze-npk/${encodeURIComponent(
         PLOT_NAME
       )}?end_date=${currentDate}&days_back=7`;
-      console.log('Fertilizer: Fetching NPK data for plot:', PLOT_NAME);
-      console.log('Fertilizer: API URL:', url);
+      console.log("Fertilizer: Fetching NPK data for plot:", PLOT_NAME);
+      console.log("Fertilizer: API URL:", url);
       const res = await fetch(url, {
         method: "POST",
         headers: { Accept: "application/json" },
@@ -96,15 +95,19 @@ const Fertilizer: React.FC = () => {
       });
       if (!res.ok) throw new Error(`Error: ${res.status} ${res.statusText}`);
       const json = await res.json();
-      console.log('Fertilizer: API Response:', json);
-      
+      console.log("Fertilizer: API Response:", json);
+
       // Extract NPK data from the response structure
       const npkAnalysis = json.npk_analysis;
-      
-      if (npkAnalysis && npkAnalysis.estimated_npk_uptake_perAcre && npkAnalysis.fertilizer_require_perAcre) {
+
+      if (
+        npkAnalysis &&
+        npkAnalysis.estimated_npk_uptake_perAcre &&
+        npkAnalysis.fertilizer_require_perAcre
+      ) {
         const estimatedUptake = npkAnalysis.estimated_npk_uptake_perAcre;
         const fertilizerRequire = npkAnalysis.fertilizer_require_perAcre;
-        
+
         const npk = {
           N: estimatedUptake.N,
           P: estimatedUptake.P,
@@ -114,14 +117,16 @@ const Fertilizer: React.FC = () => {
           fertilizer_K: fertilizerRequire.K,
           area_acres: npkAnalysis.area_acres,
         };
-        console.log('Fertilizer: Extracted NPK data:', npk);
+        console.log("Fertilizer: Extracted NPK data:", npk);
         setAppState((prev: any) => ({ ...prev, npkData: npk }));
         setCached(cacheKey, npk);
       } else {
-        throw new Error("Invalid NPK response structure - missing npk_analysis.estimated_npk_uptake_perAcre or npk_analysis.fertilizer_require_perAcre");
+        throw new Error(
+          "Invalid NPK response structure - missing npk_analysis.estimated_npk_uptake_perAcre or npk_analysis.fertilizer_require_perAcre"
+        );
       }
     } catch (err: any) {
-      console.error('Fertilizer: NPK fetch error:', err);
+      console.error("Fertilizer: NPK fetch error:", err);
       setNpkError(err.message || "Failed to fetch NPK data");
       setAppState((prev: any) => ({ ...prev, npkData: {} }));
     } finally {
@@ -179,7 +184,9 @@ const Fertilizer: React.FC = () => {
     {
       short: "N",
       value: npkLoading ? "Loading..." : npkData.N?.toFixed(2) ?? "No Data",
-      desc: npkData.fertilizer_N ? `Fertilizer Required: ${npkData.fertilizer_N.toFixed(2)} kg/acre` : "",
+      desc: npkData.fertilizer_N
+        ? `Fertilizer Required: ${npkData.fertilizer_N.toFixed(2)} kg/acre`
+        : "",
       bgColor: "bg-green-50",
       iconBg: "bg-green-500",
       textColor: "text-green-700",
@@ -187,7 +194,9 @@ const Fertilizer: React.FC = () => {
     {
       short: "P",
       value: npkLoading ? "Loading..." : npkData.P?.toFixed(2) ?? "No Data",
-      desc: npkData.fertilizer_P ? `Fertilizer Required: ${npkData.fertilizer_P.toFixed(2)} kg/acre` : "",
+      desc: npkData.fertilizer_P
+        ? `Fertilizer Required: ${npkData.fertilizer_P.toFixed(2)} kg/acre`
+        : "",
       bgColor: "bg-blue-50",
       iconBg: "bg-blue-500",
       textColor: "text-blue-700",
@@ -195,7 +204,9 @@ const Fertilizer: React.FC = () => {
     {
       short: "K",
       value: npkLoading ? "Loading..." : npkData.K?.toFixed(2) ?? "No Data",
-      desc: npkData.fertilizer_K ? `Fertilizer Required: ${npkData.fertilizer_K.toFixed(2)} kg/acre` : "",
+      desc: npkData.fertilizer_K
+        ? `Fertilizer Required: ${npkData.fertilizer_K.toFixed(2)} kg/acre`
+        : "",
       bgColor: "bg-yellow-50",
       iconBg: "bg-yellow-500",
       textColor: "text-yellow-700",
@@ -228,7 +239,9 @@ const Fertilizer: React.FC = () => {
               <div className="text-2xl font-bold text-red-700 mb-4">
                 ❌ No Plot Data Available
               </div>
-              <div className="text-gray-600">Please ensure you have plot data in your profile.</div>
+              <div className="text-gray-600">
+                Please ensure you have plot data in your profile.
+              </div>
             </div>
           </div>
         </div>
@@ -241,15 +254,14 @@ const Fertilizer: React.FC = () => {
       <div className="container mx-auto px-4 pt-6">
         <div className="flex justify-between items-center bg-white shadow-lg rounded-lg px-6 py-4 mb-8 border-l-4 border-green-500">
           <div className="text-2xl font-bold text-green-700 flex items-center">
-            <span className="mr-3 text-3xl">🌿</span> NPK Uptake & Fertilizer Requirements
+            <span className="mr-3 text-3xl">🌿</span> NPK Uptake & Fertilizer
+            Requirements
           </div>
           <div className="text-right">
             <div className="text-lg font-medium text-gray-700">
               {getCurrentDate()}
             </div>
-            <div className="text-sm text-gray-600 mt-1">
-              Plot: {PLOT_NAME}
-            </div>
+            <div className="text-sm text-gray-600 mt-1">Plot: {PLOT_NAME}</div>
             {npkLoading && (
               <div className="text-sm text-blue-600 mt-1">
                 📊 Loading NPK data...
@@ -262,9 +274,7 @@ const Fertilizer: React.FC = () => {
         </div>
 
         {/* NPK Cards */}
-        <div className="mb-4">
-          
-        </div>
+        <div className="mb-4"></div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
           {infoCards.map((card, idx) => (
             <div

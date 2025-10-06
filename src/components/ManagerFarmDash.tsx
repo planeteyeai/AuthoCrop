@@ -50,7 +50,7 @@ import {
 import "leaflet/dist/leaflet.css";
 import axios from "axios";
 import { getCache, setCache } from "../utils/cache";
-import { getRecentFarmers } from "../api";
+import api from "../api"; // Import the authenticated api instance
 import CommonSpinner from "./CommanSpinner";
 
 // Constants (same as FarmerDashboard)
@@ -138,14 +138,19 @@ interface PieChartWithNeedleProps {
 
 type TimePeriod = "daily" | "weekly" | "monthly" | "yearly";
 
-const OfficerDashboard: React.FC = () => {
+const ManagerFarmDash: React.FC = () => {
   // const center: [number, number] = [17.5789, 75.053]; // Unused - using mapCenter state instead
   const mapWrapperRef = useRef<HTMLDivElement>(null);
 
   // Farmer and Plot selection state
+  const [selectedFieldOfficerId, setSelectedFieldOfficerId] =
+    useState<string>("");
   const [selectedFarmerId, setSelectedFarmerId] = useState<string>("");
   const [selectedPlotId, setSelectedPlotId] = useState<string>(""); // Start empty, will be set based on farmer selection
-  const [farmers, setFarmers] = useState<any[]>([]);
+  const [fieldOfficers, setFieldOfficers] = useState<any[]>([]);
+  const [farmersForSelectedOfficer, setFarmersForSelectedOfficer] = useState<
+    any[]
+  >([]);
   const [plots, setPlots] = useState<string[]>([]);
   const [loadingFarmers, setLoadingFarmers] = useState<boolean>(false);
   const [loadingData, setLoadingData] = useState<boolean>(false);
@@ -212,7 +217,7 @@ const OfficerDashboard: React.FC = () => {
 
   // Fetch farmers list on component mount
   useEffect(() => {
-    fetchFarmers();
+    fetchManagerData();
   }, []);
 
   // NEW: Function to set plot coordinates from existing state
@@ -220,7 +225,9 @@ const OfficerDashboard: React.FC = () => {
     console.log("Fetching coordinates for plot:", plotId);
 
     // Find the selected farmer and their plot
-    const farmer = farmers.find((f) => String(f.id) === selectedFarmerId);
+    const farmer = farmersForSelectedOfficer.find(
+      (f) => String(f.id) === selectedFarmerId
+    );
     const plot = farmer?.plots?.find((p: any) => p.fastapi_plot_id === plotId);
 
     if (plot && plot.boundary?.coordinates) {
@@ -246,12 +253,28 @@ const OfficerDashboard: React.FC = () => {
     }
   };
 
+  // Update farmers dropdown when field officer changes
+  useEffect(() => {
+    if (selectedFieldOfficerId) {
+      const officer = fieldOfficers.find(
+        (fo) => String(fo.id) === selectedFieldOfficerId
+      );
+      const farmersList = officer ? officer.farmers : [];
+      setFarmersForSelectedOfficer(farmersList);
+      if (farmersList.length > 0) {
+        setSelectedFarmerId(String(farmersList[0].id));
+      } else {
+        setSelectedFarmerId("");
+      }
+    }
+  }, [selectedFieldOfficerId, fieldOfficers]);
+
   // Fetch plots when farmer is selected
   useEffect(() => {
     if (selectedFarmerId) {
       console.log("🔍 Finding farmer with ID:", selectedFarmerId);
 
-      const selectedFarmer = farmers.find(
+      const selectedFarmer = farmersForSelectedOfficer.find(
         (f) =>
           String(f.id || f.farmer_id || f.farmerId) === String(selectedFarmerId)
       );
@@ -290,12 +313,12 @@ const OfficerDashboard: React.FC = () => {
       setPlots([]);
       setSelectedPlotId("");
     }
-  }, [selectedFarmerId, farmers]);
+  }, [selectedFarmerId, farmersForSelectedOfficer]);
 
   useEffect(() => {
     if (selectedPlotId) {
       fetchAllData();
-      setPlotCoordinatesFromState(selectedPlotId);
+      setPlotCoordinatesFromState(selectedPlotId); // This will now work
     }
   }, [selectedPlotId]);
 
@@ -405,88 +428,43 @@ const OfficerDashboard: React.FC = () => {
   };
 
   // Fetch farmers from API - using authenticated endpoint
-  const fetchFarmers = async (): Promise<void> => {
+  const fetchManagerData = async (): Promise<void> => {
     setLoadingFarmers(true);
     try {
       console.log("=".repeat(60));
       console.log(
-        "🔄 FarmCropStatus: Fetching farmers under logged-in field officer..."
+        "🔄 ManagerFarmDash: Fetching field officers and their farmers..."
       );
       console.log(
-        "📍 Endpoint: https://cropeye-server-1.onrender.com/api/farms/recent-farmers/"
+        "📍 Endpoint: https://cropeye-server-1.onrender.com/api/users/my-field-officers/"
       );
 
-      const token = localStorage.getItem("token");
-      console.log(
-        "🔑 Bearer Token Status:",
-        token ? "✅ Token found in localStorage" : "❌ No token found"
+      // Use authenticated API call from api.ts
+      const response = await api.get(
+        "https://cropeye-server-1.onrender.com/api/users/my-field-officers/"
       );
-      if (token) {
-        console.log("🔑 Token preview:", `${token.substring(0, 30)}...`);
-      }
-
-      // Use authenticated API call from api.ts (automatically includes Bearer token)
-      const response = await getRecentFarmers();
-
-      // API returns { farmers: [...] } structure, not direct array
-      const apiResponse = response.data;
-      const farmersData = apiResponse.farmers || apiResponse || [];
+      const responseData = response.data;
+      // Extract the array of field officers from the response object
+      const officersData = responseData.field_officers || [];
 
       console.log("=".repeat(60));
-      console.log("✅ FarmCropStatus: Raw API response:", apiResponse);
-      console.log("✅ FarmCropStatus: Extracted farmers array:", farmersData);
+      console.log("✅ ManagerFarmDash: Raw API response:", responseData);
       console.log(
-        "📊 FarmCropStatus: Total farmers found:",
-        farmersData.length
+        "✅ ManagerFarmDash: Extracted field officers array:",
+        officersData
       );
+      setFieldOfficers(officersData);
 
-      // Log each farmer with their plots
-      farmersData.forEach((farmer: any, index: number) => {
-        const farmerPlots = farmer.plots || [];
-        const plotIds = farmerPlots.map((plot: any) => plot.fastapi_plot_id);
-
-        console.log(`👨‍🌾 Farmer ${index + 1}:`, {
-          id: farmer.id,
-          name: `${farmer.first_name} ${farmer.last_name}`,
-          email: farmer.email,
-          plotsCount: farmerPlots.length,
-          plotIds: plotIds,
-          firstPlot: farmerPlots[0]?.fastapi_plot_id || null,
-        });
-      });
-
-      console.log(
-        "⚡ Setting farmers state with",
-        farmersData.length,
-        "farmers"
-      );
-      setFarmers(farmersData);
-      console.log("✅ Farmers state updated successfully");
-
-      // Auto-select first farmer if available
-      if (farmersData.length > 0) {
-        const firstFarmer = farmersData[0];
-        const farmerId = String(firstFarmer.id);
-        const farmerPlots = firstFarmer.plots || [];
-        const plotIds = farmerPlots.map((plot: any) => plot.fastapi_plot_id);
-
-        console.log("✅ FarmCropStatus: Auto-selecting first farmer:", {
-          id: farmerId,
-          name: `${firstFarmer.first_name} ${firstFarmer.last_name}`,
-          email: firstFarmer.email,
-          plotsCount: farmerPlots.length,
-          plotIds: plotIds,
-          firstPlotId: plotIds[0] || null,
-        });
-
-        setSelectedFarmerId(farmerId);
+      // Auto-select first field officer if available
+      if (officersData.length > 0) {
+        setSelectedFieldOfficerId(String(officersData[0].id));
       } else {
         console.warn(
-          "⚠️ FarmCropStatus: No farmers found under this field officer"
+          "⚠️ ManagerFarmDash: No field officers found for this manager"
         );
       }
     } catch (error: any) {
-      console.error("❌ FarmCropStatus: Error fetching farmers:", error);
+      console.error("❌ ManagerFarmDash: Error fetching manager data:", error);
       console.error("Error details:", error.response?.data);
 
       // Show user-friendly error message
@@ -864,7 +842,7 @@ const OfficerDashboard: React.FC = () => {
   };
 
   // Show loading spinner while fetching initial farmers data
-  if (loadingFarmers && farmers.length === 0) {
+  if (loadingFarmers && fieldOfficers.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
         <CommonSpinner />
@@ -872,10 +850,15 @@ const OfficerDashboard: React.FC = () => {
     );
   }
 
+  const totalFarmers = fieldOfficers.reduce(
+    (acc, officer) => acc + (officer.farmers?.length || 0),
+    0
+  );
+
   // Log farmers state before rendering
   console.log("🎨 FarmCropStatus Render - Current State:", {
-    farmersCount: farmers.length,
-    farmersArray: farmers,
+    officerCount: fieldOfficers.length,
+    totalFarmers: totalFarmers,
     selectedFarmerId,
     selectedPlotId,
     loadingFarmers,
@@ -939,7 +922,39 @@ const OfficerDashboard: React.FC = () => {
                 <div className="flex flex-col flex-1 sm:flex-none">
                   <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                     <Users className="w-4 h-4" />
-                    Farmers ({farmers.length})
+                    Field Officer ({fieldOfficers.length})
+                  </label>
+                  <select
+                    className="px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm w-full sm:w-64"
+                    value={selectedFieldOfficerId}
+                    onChange={(e) => setSelectedFieldOfficerId(e.target.value)}
+                    disabled={loadingFarmers}
+                  >
+                    {loadingFarmers ? (
+                      <option>Loading...</option>
+                    ) : fieldOfficers.length === 0 ? (
+                      <option>No officers found</option>
+                    ) : (
+                      <>
+                        <option value="">Select an officer</option>
+                        {fieldOfficers.map((officer) => (
+                          <option
+                            key={`officer-${officer.id}`}
+                            value={officer.id}
+                          >
+                            {officer.first_name} {officer.last_name} (
+                            {officer.farmers.length} farmers)
+                          </option>
+                        ))}
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                <div className="flex flex-col flex-1 sm:flex-none">
+                  <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <Users className="w-4 h-4" /> Farmers (
+                    {farmersForSelectedOfficer.length})
                   </label>
                   <select
                     className="px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm w-full sm:w-64"
@@ -951,16 +966,19 @@ const OfficerDashboard: React.FC = () => {
                       );
                       setSelectedFarmerId(e.target.value);
                     }}
-                    disabled={loadingFarmers}
+                    disabled={
+                      !selectedFieldOfficerId ||
+                      farmersForSelectedOfficer.length === 0
+                    }
                   >
                     {loadingFarmers ? (
                       <option>Loading farmers...</option>
-                    ) : farmers.length === 0 ? (
+                    ) : farmersForSelectedOfficer.length === 0 ? (
                       <option>No farmers found</option>
                     ) : (
                       <>
                         <option value="">Select a farmer</option>
-                        {farmers.map((farmer, index) => {
+                        {farmersForSelectedOfficer.map((farmer, index) => {
                           const farmerId = String(farmer.id);
                           const farmerName =
                             `${farmer.first_name} ${farmer.last_name}`.trim();
@@ -1643,4 +1661,4 @@ const OfficerDashboard: React.FC = () => {
   );
 };
 
-export default OfficerDashboard;
+export default ManagerFarmDash;

@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
 import { DashboardGrid } from "./components/DashboardGrid";
+import { jwtDecode } from "jwt-decode";
 
 import ManagerHomeGrid from "./components/ManagerHomeGrid";
 import OwnerHomeGrid from "./components/OwnerHomeGrid";
@@ -98,6 +99,50 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
     nitrogenValue: null as number | null,
     fertilityStatus: "Moderate",
   });
+
+  // NEW: Add currentUser state
+  const [
+    currentUser,
+    setCurrentUser,
+  ] = useState<{
+    id: number;
+    role: string;
+    name: string;
+  } | null>(null);
+
+  // NEW: Get user from JWT token
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      try {
+        const decoded: any = jwtDecode(token);
+        console.log("Decoded token:", decoded);
+
+        setCurrentUser({
+          id: decoded.user_id || decoded.id,
+          role: decoded.role || userRole,
+          name: decoded.username || decoded.first_name || "User",
+        });
+      } catch (error) {
+        console.error("Error decoding token:", error);
+        // Fallback for development/testing
+        setCurrentUser({
+          id: 3, // Default field officer ID for testing
+          role: userRole,
+          name: "Test User",
+        });
+      }
+    } else {
+      // No token - set default for testing
+      console.warn("No token found, using default user");
+      setCurrentUser({
+        id: 3,
+        role: userRole,
+        name: "Test User",
+      });
+    }
+  }, [userRole]);
 
   const handleMenuSelect = (menu: string) => {
     setActiveSubmenu(null);
@@ -341,7 +386,15 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
             )}
 
             {currentView === View.userList && (
-              <UserList users={users} setUsers={setUsers} />
+              // <UserList users={users} setUsers={setUsers} />
+              <UserList
+                users={users}
+                setUsers={setUsers}
+                currentUserId={currentUser.id}
+                currentUserRole={
+                  currentUser.role as "owner" | "manager" | "fieldofficer" | "farmer"
+                }
+              />
             )}
 
             {currentView === View.Contactuser && (
@@ -392,16 +445,51 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
               <TeamList setUsers={setUsers} users={users} />
             )}
 
-            {currentView === View.Calendar && <Calendar />}
+            {/* {currentView === View.Calendar && <Calendar />} */}
+
+            {currentView === View.Calendar && (
+              <Calendar
+                currentUserId={currentUser.id}
+                currentUserRole={
+                  currentUser.role as "manager" | "fieldofficer" | "farmer"
+                }
+              />
+            )}
 
             {currentView === View.AddFarm && <AddFarm />}
 
-            {currentView === View.TaskCalendar && <TaskCalendar />}
+            {/* {currentView === View.TaskCalendar && <TaskCalendar currentUserId={3} currentUserRole="fieldofficer" />} */}
 
-            {currentView === View.ViewList && <ViewList />}
+            {currentView === View.TaskCalendar && currentUser && (
+              <TaskCalendar
+                currentUserId={currentUser.id}
+                currentUserRole={
+                  currentUser.role as "manager" | "fieldofficer" | "farmer"
+                }
+              />
+            )}
 
-            {currentView === View.Tasklist && <Tasklist />}
+            {/* {currentView === View.ViewList && <ViewList />}
+            
+            {currentView === View.Tasklist && <Tasklist  />} */}
 
+            {currentView === View.ViewList && (
+              <ViewList
+                currentUserId={currentUser.id}
+                currentUserRole={
+                  currentUser.role as "manager" | "fieldofficer" | "farmer"
+                }
+                currentUserName={currentUser.name}
+              />
+            )}
+
+            {/* UPDATED: Tasklist with currentUser */}
+            {currentView === View.Tasklist && currentUser && (
+              <Tasklist
+                currentUserId={currentUser.id}
+                currentUserRole={currentUser.role as 'manager' | 'fieldofficer' | 'farmer'}
+                currentUserName={currentUser.name} 
+            )}
             {currentView === View.PestDisease && <PestDisease />}
 
             {currentView === View.Fertilizer && <Fertilizer />}

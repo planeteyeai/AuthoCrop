@@ -1,5 +1,13 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { MapContainer, TileLayer, Polygon, useMap, Popup, Rectangle, ZoomControl } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Polygon,
+  useMap,
+  Popup,
+  Rectangle,
+  ZoomControl,
+} from "react-leaflet";
 import { LatLngTuple, LeafletMouseEvent } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./Map.css";
@@ -86,9 +94,12 @@ const tooltipStyles = `
 `;
 
 // Inject styles if not already injected
-if (typeof document !== 'undefined' && !document.querySelector('#map-tooltip-styles')) {
+if (
+  typeof document !== "undefined" &&
+  !document.querySelector("#map-tooltip-styles")
+) {
   const styleSheet = document.createElement("style");
-  styleSheet.id = 'map-tooltip-styles';
+  styleSheet.id = "map-tooltip-styles";
   styleSheet.innerText = tooltipStyles;
   document.head.appendChild(styleSheet);
 }
@@ -96,20 +107,20 @@ if (typeof document !== 'undefined' && !document.querySelector('#map-tooltip-sty
 // Classification ranges for vegetation indices with gradient color schemes
 const CLASS_RANGES = {
   VV: [
-    { label: "Weak", min: -20, max: -12, color: "#90EE90" },      // Light green
-    { label: "Stress", min: -12, max: -11, color: "#32CD32" },      // Lime green
-    { label: "Moderate", min: -11, max: -10, color: "#228B22" },    // Forest green
-    { label: "Healthy", min: -10, max: 0, color: "#006400" },       // Dark green
+    { label: "Weak", min: -20, max: -12, color: "#90EE90" }, // Light green
+    { label: "Stress", min: -12, max: -11, color: "#32CD32" }, // Lime green
+    { label: "Moderate", min: -11, max: -10, color: "#228B22" }, // Forest green
+    { label: "Healthy", min: -10, max: 0, color: "#006400" }, // Dark green
   ],
   RVI: [
-    { label: "Dry", min: -1, max: -0.3, color: "#E6F3FF" },        // Very light blue
+    { label: "Dry", min: -1, max: -0.3, color: "#E6F3FF" }, // Very light blue
     { label: "Less Uptake", min: -0.2, max: 0.1, color: "#87CEEB" }, // Sky blue
     { label: "Sufficient Uptake", min: 0.2, max: 0.4, color: "#4682B4" }, // Steel blue
-    { label: "Adequate", min: 0.4, max: 0.8, color: "#1E90FF" },   // Dodger blue
+    { label: "Adequate", min: 0.4, max: 0.8, color: "#1E90FF" }, // Dodger blue
     { label: "Excess", min: 0.8, max: Infinity, color: "#000080" }, // Navy blue
   ],
   SWI: [
-    { label: "Dry", min: -0.75, max: -0.5, color: "#9fd4d2" },     // Light sky blue
+    { label: "Dry", min: -0.75, max: -0.5, color: "#9fd4d2" }, // Light sky blue
     { label: "Water Stress", min: -0.5, max: -0.3, color: "#8fc7c5" }, // Steel blue
     { label: "Moist Ground", min: -0.3, max: -0.1, color: "#8fe3e0" }, // Dodger blue
     { label: "Shallow Water", min: -0.1, max: 0, color: "#74dbd8" }, // Medium blue
@@ -125,7 +136,9 @@ const LAYER_LABELS: Record<string, string> = {
 };
 
 // Set fixed zoom level component
-const SetFixedZoom: React.FC<{ coordinates: number[][] }> = ({ coordinates }) => {
+const SetFixedZoom: React.FC<{ coordinates: number[][] }> = ({
+  coordinates,
+}) => {
   const map = useMap();
 
   useEffect(() => {
@@ -138,13 +151,15 @@ const SetFixedZoom: React.FC<{ coordinates: number[][] }> = ({ coordinates }) =>
 
     if (latlngs.length) {
       // Calculate center point of the plot
-      const centerLat = latlngs.reduce((sum, coord) => sum + coord[0], 0) / latlngs.length;
-      const centerLng = latlngs.reduce((sum, coord) => sum + coord[1], 0) / latlngs.length;
-      
+      const centerLat =
+        latlngs.reduce((sum, coord) => sum + coord[0], 0) / latlngs.length;
+      const centerLng =
+        latlngs.reduce((sum, coord) => sum + coord[1], 0) / latlngs.length;
+
       // Set fixed zoom level to 18 for detailed view
       map.setView([centerLat, centerLng], 18, {
         animate: true,
-        duration: 1.5
+        duration: 1.5,
       });
     }
   }, [coordinates, map]);
@@ -155,28 +170,27 @@ const SetFixedZoom: React.FC<{ coordinates: number[][] }> = ({ coordinates }) =>
 // Updated custom descriptions for each classification
 const CLASSIFICATION_DESCRIPTIONS: Record<string, Record<string, string>> = {
   VV: {
-    "Weak": "damaged or weak crop",
-    "Stress": "crop under stress",
-    "Moderate": "Crop under normal growth",
-    "Healthy": "proper growth",
+    Weak: "damaged or weak crop",
+    Stress: "crop under stress",
+    Moderate: "Crop under normal growth",
+    Healthy: "proper growth",
   },
   RVI: {
-    "Dry": "weak root",
+    Dry: "weak root",
     "Less Uptake": "weak roots",
     "Sufficient Uptake": "healthy roots",
-    "Sufficient": "healthy roots", // Alternative
-    "Adequate": "healthy roots",
-    "Excess": "root logging",
+    Sufficient: "healthy roots", // Alternative
+    Adequate: "healthy roots",
+    Excess: "root logging",
   },
   SWI: {
-    "Dry": "less soil moisture",
+    Dry: "less soil moisture",
     "Water Stress": "Irrigation need",
     "Moist Ground": "no irrigation require",
     "Shallow Water": "water logging",
     "Water Bodies": "Large water source",
   },
 };
-
 
 interface MapProps {
   onHealthDataChange?: (data: {
@@ -213,6 +227,7 @@ interface MapProps {
     suckingPercentage: number;
     suckingPixels: number;
   }) => void;
+  onPlotChange?: (plotName: string | null) => void;
 }
 
 // Simplified CustomTileLayer without cache busting that might be causing issues
@@ -222,10 +237,10 @@ const CustomTileLayer: React.FC<{
   key?: string;
 }> = ({ url, opacity = 0.7, key }) => {
   // Log the URL for debugging
-  console.log('CustomTileLayer URL:', url);
+  console.log("CustomTileLayer URL:", url);
 
   if (!url) {
-    console.log('No URL provided to CustomTileLayer');
+    console.log("No URL provided to CustomTileLayer");
     return null;
   }
 
@@ -240,18 +255,18 @@ const CustomTileLayer: React.FC<{
       // Add error handling to see what's happening
       eventHandlers={{
         tileerror: (e: any) => {
-          console.error('Tile loading error:', e);
-          console.error('Failed URL:', e.tile?.src);
+          console.error("Tile loading error:", e);
+          console.error("Failed URL:", e.tile?.src);
         },
         tileload: (e: any) => {
-          console.log('Tile loaded successfully:', e.tile?.src);
+          console.log("Tile loaded successfully:", e.tile?.src);
         },
         loading: () => {
-          console.log('Tiles loading started');
+          console.log("Tiles loading started");
         },
         load: () => {
-          console.log('All tiles loaded successfully');
-        }
+          console.log("All tiles loaded successfully");
+        },
       }}
     />
   );
@@ -275,12 +290,15 @@ const getClassificationColor = (layer: string, className: string): string => {
   const ranges = CLASS_RANGES[layer as keyof typeof CLASS_RANGES];
   if (!ranges) return "#000000";
 
-  const range = ranges.find(r => r.label === className);
+  const range = ranges.find((r) => r.label === className);
   return range?.color || "#000000";
 };
 
 // Function to check if a point is inside polygon
-const isPointInPolygon = (point: [number, number], polygon: [number, number][]): boolean => {
+const isPointInPolygon = (
+  point: [number, number],
+  polygon: [number, number][]
+): boolean => {
   const [x, y] = point;
   let inside = false;
 
@@ -288,7 +306,7 @@ const isPointInPolygon = (point: [number, number], polygon: [number, number][]):
     const [xi, yi] = polygon[i];
     const [xj, yj] = polygon[j];
 
-    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
       inside = !inside;
     }
   }
@@ -309,11 +327,14 @@ const Map: React.FC<MapProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mapCenter] = useState<LatLngTuple>([
-    17.842832246588202,
-    74.91558702408217,
+    17.842832246588202, 74.91558702408217,
   ]);
-  const [selectedPlotName, setSelectedPlotName] = useState("Sarang Gulve 122436");
-  const [activeLayer, setActiveLayer] = useState<"VV" | "RVI" | "SWI" | "PEST">("VV");
+  const [selectedPlotName, setSelectedPlotName] = useState(
+    "Sarang Gulve 122436"
+  );
+  const [activeLayer, setActiveLayer] = useState<"VV" | "RVI" | "SWI" | "PEST">(
+    "VV"
+  );
   const [pestData, setPestData] = useState<any>(null);
   const [hoveredPlotInfo, setHoveredPlotInfo] = useState<{
     x: number;
@@ -332,26 +353,31 @@ const Map: React.FC<MapProps> = ({
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Add state for selected legend class
-  const [selectedLegendClass, setSelectedLegendClass] = useState<string | null>(null);
+  const [selectedLegendClass, setSelectedLegendClass] = useState<string | null>(
+    null
+  );
 
   // Add layer change counter to force tile layer re-render
   const [layerChangeKey, setLayerChangeKey] = useState(0);
 
   // Update layer change key when active layer changes
   useEffect(() => {
-    setLayerChangeKey(prev => prev + 1);
+    setLayerChangeKey((prev) => prev + 1);
   }, [activeLayer]);
 
   // Function to get current date in YYYY-MM-DD format
   const getCurrentDate = () => {
     const today = new Date();
     const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
 
-  const getClassificationDescription = (layer: string, className: string): string => {
+  const getClassificationDescription = (
+    layer: string,
+    className: string
+  ): string => {
     if (!className || className === "-") return "";
 
     let cleanClassName = className.trim();
@@ -375,40 +401,60 @@ const Map: React.FC<MapProps> = ({
 
   // Auto-select first plot from farmer profile when profile loads
   useEffect(() => {
-    console.log('🗺️ Map useEffect: profileLoading:', profileLoading, 'profile:', profile);
-    
+    console.log(
+      "🗺️ Map useEffect: profileLoading:",
+      profileLoading,
+      "profile:",
+      profile
+    );
+
     // Wait for profile to load before setting plot name
     if (profileLoading || !profile) {
-      console.log('🗺️ Map useEffect: Waiting for profile to load...');
+      console.log("🗺️ Map useEffect: Waiting for profile to load...");
       return;
     }
 
     // Get the first plot from the loaded profile
-    const plotNames = profile.plots?.map(plot => plot.fastapi_plot_id) || [];
+    const plotNames = profile.plots?.map((plot) => plot.fastapi_plot_id) || [];
     const defaultPlot = plotNames.length > 0 ? plotNames[0] : null;
-    
-    console.log('🗺️ Map useEffect: Available plots:', plotNames);
-    console.log('🗺️ Map useEffect: Setting default plot from profile:', defaultPlot);
-    console.log('🗺️ Map useEffect: Profile plots data:', profile.plots);
-    
+
+    console.log("🗺️ Map useEffect: Available plots:", plotNames);
+    console.log(
+      "🗺️ Map useEffect: Setting default plot from profile:",
+      defaultPlot
+    );
+    console.log("🗺️ Map useEffect: Profile plots data:", profile.plots);
+
     if (defaultPlot) {
       setSelectedPlotName(defaultPlot);
-      localStorage.setItem('selectedPlot', defaultPlot);
-      
+      onPlotChange?.(defaultPlot);
+      localStorage.setItem("selectedPlot", defaultPlot);
+
       // Fetch data for the selected plot
-      console.log('🗺️ Map useEffect: Fetching data for plot:', defaultPlot);
+      console.log("🗺️ Map useEffect: Fetching data for plot:", defaultPlot);
       fetchPlotData(defaultPlot);
       fetchFieldAnalysis(defaultPlot);
       fetchPestData(defaultPlot);
     } else {
-      console.log('🗺️ Map useEffect: No plot name available, skipping data fetch');
-      console.log('🗺️ Map useEffect: Profile structure:', {
+      console.log(
+        "🗺️ Map useEffect: No plot name available, skipping data fetch"
+      );
+      console.log("🗺️ Map useEffect: Profile structure:", {
         hasPlots: !!profile.plots,
         plotsLength: profile.plots?.length,
-        plotsData: profile.plots
+        plotsData: profile.plots,
       });
     }
   }, [profile, profileLoading]);
+
+  // Fetch data when selectedPlotName changes
+  useEffect(() => {
+    if (selectedPlotName) {
+      fetchPlotData(selectedPlotName);
+      fetchFieldAnalysis(selectedPlotName);
+      fetchPestData(selectedPlotName);
+    }
+  }, [selectedPlotName]);
 
   const fetchPlotData = async (plotName: string) => {
     setLoading(true);
@@ -416,7 +462,7 @@ const Map: React.FC<MapProps> = ({
     try {
       const currentDate = getCurrentDate();
       const resp = await fetch(
-        ` http://192.168.41.73:7031/analyze?plot_name=${plotName}&end_date=${currentDate}&days_back=7`,
+        `http://192.168.41.51:3000/analyze?plot_name=${plotName}&end_date=${currentDate}&days_back=7`,
         {
           method: "POST",
           headers: {
@@ -437,7 +483,6 @@ const Map: React.FC<MapProps> = ({
     }
   };
 
-
   const fetchFieldAnalysis = async (plotName: string) => {
     if (!plotName) {
       onFieldAnalysisChange?.({
@@ -453,7 +498,7 @@ const Map: React.FC<MapProps> = ({
       console.log("Map.tsx: Fetching field analysis for plot:", plotName);
       const currentDate = getCurrentDate();
       const resp = await fetch(
-        `http://192.168.41.73:7002/analyze?plot_name=${plotName}&end_date=${currentDate}&days_back=7`,
+        `http://192.168.41.51:7002/analyze?plot_name=${plotName}&end_date=${currentDate}&days_back=7`,
         {
           method: "POST",
           headers: {
@@ -462,7 +507,10 @@ const Map: React.FC<MapProps> = ({
         }
       );
 
-      if (!resp.ok) throw new Error(`Field analysis API failed: ${resp.status} ${resp.statusText}`);
+      if (!resp.ok)
+        throw new Error(
+          `Field analysis API failed: ${resp.status} ${resp.statusText}`
+        );
 
       const data = await resp.json();
       console.log("Map.tsx: Field analysis API response:", data);
@@ -472,15 +520,15 @@ const Map: React.FC<MapProps> = ({
       if (Array.isArray(data)) {
         // Find the most recent data for this plot
         const plotData = data.filter((item: any) => {
-          const itemPlotName = item.plot_name || item.plot || item.name || '';
+          const itemPlotName = item.plot_name || item.plot || item.name || "";
           return itemPlotName === plotName;
         });
 
         if (plotData.length > 0) {
           // Sort by date and get the latest
           plotData.sort((a: any, b: any) => {
-            const dateA = a.date || a.analysis_date || '';
-            const dateB = b.date || b.analysis_date || '';
+            const dateA = a.date || a.analysis_date || "";
+            const dateB = b.date || b.analysis_date || "";
             return dateB.localeCompare(dateA);
           });
           fieldData = plotData[0];
@@ -494,9 +542,21 @@ const Map: React.FC<MapProps> = ({
       }
 
       // Extract field analysis values
-      const overallHealth = fieldData?.overall_health ?? fieldData?.health_score ?? fieldData?.field_health ?? 0;
-      const healthStatus = fieldData?.health_status ?? fieldData?.status ?? fieldData?.condition ?? "Unknown";
-      const meanValue = fieldData?.statistics?.mean ?? fieldData?.mean ?? fieldData?.average ?? 0;
+      const overallHealth =
+        fieldData?.overall_health ??
+        fieldData?.health_score ??
+        fieldData?.field_health ??
+        0;
+      const healthStatus =
+        fieldData?.health_status ??
+        fieldData?.status ??
+        fieldData?.condition ??
+        "Unknown";
+      const meanValue =
+        fieldData?.statistics?.mean ??
+        fieldData?.mean ??
+        fieldData?.average ??
+        0;
 
       const fieldAnalysisResult = {
         plotName: fieldData.plot_name ?? plotName,
@@ -507,7 +567,10 @@ const Map: React.FC<MapProps> = ({
         },
       };
 
-      console.log("Map.tsx: Calling onFieldAnalysisChange with:", fieldAnalysisResult);
+      console.log(
+        "Map.tsx: Calling onFieldAnalysisChange with:",
+        fieldAnalysisResult
+      );
       onFieldAnalysisChange?.(fieldAnalysisResult);
     } catch (err) {
       console.error("Map.tsx: Error in fetchFieldAnalysis:", err);
@@ -527,10 +590,13 @@ const Map: React.FC<MapProps> = ({
     }
 
     try {
-      console.log("Map.tsx: Fetching chewing pest detection for plot:", plotName);
+      console.log(
+        "Map.tsx: Fetching chewing pest detection for plot:",
+        plotName
+      );
       const currentDate = getCurrentDate();
       const resp = await fetch(
-        `http://192.168.41.73:7031/pest-detection-combined?plot_name=${plotName}&end_date=${currentDate}&pest_threshold=0.3&nir_threshold=0.15&ndwi_threshold=0.4&cloud_threshold=30`,
+        `http://192.168.41.51:3000/pest-detection-combined?plot_name=${plotName}&end_date=${currentDate}&pest_threshold=0.3&nir_threshold=0.15&ndwi_threshold=0.4&cloud_threshold=30`,
         {
           method: "POST",
           headers: {
@@ -539,7 +605,10 @@ const Map: React.FC<MapProps> = ({
         }
       );
 
-      if (!resp.ok) throw new Error(`Chewing pest detection API failed: ${resp.status} ${resp.statusText}`);
+      if (!resp.ok)
+        throw new Error(
+          `Chewing pest detection API failed: ${resp.status} ${resp.statusText}`
+        );
 
       const data = await resp.json();
       console.log("Map.tsx: Chewing pest detection API response:", data);
@@ -548,24 +617,34 @@ const Map: React.FC<MapProps> = ({
 
       // Call the pest data change callback with all pest type data from pixel_summary
       if (data?.pixel_summary && onPestDataChange) {
-        const chewingPestPercentage = data.pixel_summary.chewing_affected_pixel_percentage || 0;
-        const suckingPercentage = data.pixel_summary.sucking_affected_pixel_percentage || 0;
-        const fungiiPercentage = data.pixel_summary.fungii_affected_pixel_percentage || 0;
-        const soilBornePercentage = data.pixel_summary.SoilBorne_affected_pixel_percentage || 0;
-        const totalAffectedPercentage = chewingPestPercentage + suckingPercentage + fungiiPercentage + soilBornePercentage;
+        const chewingPestPercentage =
+          data.pixel_summary.chewing_affected_pixel_percentage || 0;
+        const suckingPercentage =
+          data.pixel_summary.sucking_affected_pixel_percentage || 0;
+        const fungiiPercentage =
+          data.pixel_summary.fungii_affected_pixel_percentage || 0;
+        const soilBornePercentage =
+          data.pixel_summary.SoilBorne_affected_pixel_percentage || 0;
+        const totalAffectedPercentage =
+          chewingPestPercentage +
+          suckingPercentage +
+          fungiiPercentage +
+          soilBornePercentage;
         const healthyPercentage = 100 - totalAffectedPercentage;
-        
+
         onPestDataChange({
           plotName: plotName,
           pestPercentage: totalAffectedPercentage,
           healthyPercentage: healthyPercentage,
           totalPixels: data.pixel_summary.total_pixel_count || 0,
-          pestAffectedPixels: (data.pixel_summary.chewing_affected_pixel_count || 0) + 
-                             (data.pixel_summary.sucking_affected_pixel_count || 0) + 
-                             (data.pixel_summary.fungii_affected_pixel_count || 0) + 
-                             (data.pixel_summary.SoilBorne_pixel_count || 0),
+          pestAffectedPixels:
+            (data.pixel_summary.chewing_affected_pixel_count || 0) +
+            (data.pixel_summary.sucking_affected_pixel_count || 0) +
+            (data.pixel_summary.fungii_affected_pixel_count || 0) +
+            (data.pixel_summary.SoilBorne_pixel_count || 0),
           chewingPestPercentage: chewingPestPercentage,
-          chewingPestPixels: data.pixel_summary.chewing_affected_pixel_count || 0,
+          chewingPestPixels:
+            data.pixel_summary.chewing_affected_pixel_count || 0,
           suckingPercentage: suckingPercentage,
           suckingPixels: data.pixel_summary.sucking_affected_pixel_count || 0,
         });
@@ -579,21 +658,26 @@ const Map: React.FC<MapProps> = ({
   const getActiveLayerUrl = () => {
     if (activeLayer === "PEST") {
       const pestTileUrl = pestData?.features?.[0]?.properties?.tile_url;
-      console.log('Pest tile URL:', pestTileUrl);
+      console.log("Pest tile URL:", pestTileUrl);
       return pestTileUrl;
     }
 
     const urls = plotData?.features?.[0]?.properties?.tile_urls;
-    console.log('All tile URLs:', urls); // Debug log
+    console.log("All tile URLs:", urls); // Debug log
 
     if (!urls) {
-      console.log('No tile URLs found in plot data');
+      console.log("No tile URLs found in plot data");
       return null;
     }
 
-    const layerUrlKey = `${activeLayer}_tile_url` as "VV_tile_url" | "RVI_tile_url" | "SWI_tile_url";
+    const layerUrlKey = `${activeLayer}_tile_url` as
+      | "VV_tile_url"
+      | "RVI_tile_url"
+      | "SWI_tile_url";
     const url = urls[layerUrlKey];
-    console.log(`Active layer: ${activeLayer}, URL key: ${layerUrlKey}, URL: ${url}`); // Debug log
+    console.log(
+      `Active layer: ${activeLayer}, URL key: ${layerUrlKey}, URL: ${url}`
+    ); // Debug log
 
     return url;
   };
@@ -612,7 +696,11 @@ const Map: React.FC<MapProps> = ({
     const healthy = ["Healthy", "Over Growth"];
     const goodPx = ndvi.classifications
       .filter((c: any) => healthy.some((h) => c.class_name?.includes(h)))
-      .reduce((sum: number, c: any) => sum + (c && typeof c.pixel_count === 'number' ? c.pixel_count : 0), 0);
+      .reduce(
+        (sum: number, c: any) =>
+          sum + (c && typeof c.pixel_count === "number" ? c.pixel_count : 0),
+        0
+      );
 
     const total = ndvi.total_pixels || 1;
 
@@ -631,36 +719,40 @@ const Map: React.FC<MapProps> = ({
   const legendData = useMemo(() => {
     if (activeLayer === "PEST") {
       // Get all pest type percentages from pixel_summary in the API response
-      const chewingPestPercentage = pestData?.pixel_summary?.chewing_affected_pixel_percentage || 0;
-      const suckingPercentage = pestData?.pixel_summary?.sucking_affected_pixel_percentage || 0;
-      const fungiiPercentage = pestData?.pixel_summary?.fungii_affected_pixel_percentage || 0;
-      const soilBornePercentage = pestData?.pixel_summary?.SoilBorne_affected_pixel_percentage || 0;
-      
+      const chewingPestPercentage =
+        pestData?.pixel_summary?.chewing_affected_pixel_percentage || 0;
+      const suckingPercentage =
+        pestData?.pixel_summary?.sucking_affected_pixel_percentage || 0;
+      const fungiiPercentage =
+        pestData?.pixel_summary?.fungii_affected_pixel_percentage || 0;
+      const soilBornePercentage =
+        pestData?.pixel_summary?.SoilBorne_affected_pixel_percentage || 0;
+
       return [
         {
           label: "Chewing Pests",
           color: "#DC2626", // Red-600
           percentage: Math.round(chewingPestPercentage), // Display as rounded whole number (e.g., 9)
-          description: "Areas affected by chewing pests"
+          description: "Areas affected by chewing pests",
         },
         {
-          label: "Sucking Pests", 
+          label: "Sucking Pests",
           color: "#B91C1C", // Red-700
           percentage: Math.round(suckingPercentage), // Display as rounded whole number (e.g., 3)
-          description: "Areas affected by sucking disease"
+          description: "Areas affected by sucking disease",
         },
         {
           label: "Fungi",
           color: "#991B1B", // Red-800
           percentage: Math.round(fungiiPercentage), // Display fungii percentage from API
-          description: "fungii infections affecting plants"
+          description: "fungii infections affecting plants",
         },
         {
           label: "Soil    Borne",
           color: "#7F1D1D", // Red-900
           percentage: Math.round(soilBornePercentage), // Display SoilBorne percentage from API
-          description: "SoilBorne infections affecting plants"
-        }
+          description: "SoilBorne infections affecting plants",
+        },
       ];
     }
 
@@ -675,12 +767,15 @@ const Map: React.FC<MapProps> = ({
     const totalPixels = analysis.total_pixels || 1;
 
     return CLASS_RANGES[activeLayer].map((range) => {
-      const matching = analysis.classifications.filter((c: any) =>
-        c?.class_name && c.class_name.toLowerCase().includes(range.label.toLowerCase())
+      const matching = analysis.classifications.filter(
+        (c: any) =>
+          c?.class_name &&
+          c.class_name.toLowerCase().includes(range.label.toLowerCase())
       );
 
       const pixelCount = matching.reduce(
-        (sum: number, c: any) => sum + (typeof c.pixel_count === 'number' ? c.pixel_count : 0),
+        (sum: number, c: any) =>
+          sum + (typeof c.pixel_count === "number" ? c.pixel_count : 0),
         0
       );
 
@@ -689,10 +784,13 @@ const Map: React.FC<MapProps> = ({
       // Debug: Log matching for SWI layer
       if (activeLayer === "SWI") {
         console.log(`Legend item "${range.label}":`, {
-          matching: matching.map((c: any) => ({ class_name: c.class_name, pixel_count: c.pixel_count })),
+          matching: matching.map((c: any) => ({
+            class_name: c.class_name,
+            pixel_count: c.pixel_count,
+          })),
           totalPixels,
           pixelCount,
-          percentage
+          percentage,
         });
       }
 
@@ -708,138 +806,191 @@ const Map: React.FC<MapProps> = ({
   // FIXED: Get filtered pixels based on selected legend class
   const getFilteredPixels = useMemo(() => {
     if (!selectedLegendClass) return [];
-    
+
     // For pest detection, show pixels for all pest categories
     if (activeLayer === "PEST") {
       if (!pestData || !currentPlotFeature) return [];
-      
+
       // Show pixels for any pest category
-      if (!["Chewing Pests", "sucking Pests", "fungii", "SoilBorne"].includes(selectedLegendClass)) return [];
-      
+      if (
+        !["Chewing Pests", "sucking Pests", "fungii", "SoilBorne"].includes(
+          selectedLegendClass
+        )
+      )
+        return [];
+
       let coordinates = [];
       let pestType = "";
-      
+
       if (selectedLegendClass === "Chewing Pests") {
-        coordinates = pestData.pixel_summary?.chewing_affected_pixel_coordinates || [];
+        coordinates =
+          pestData.pixel_summary?.chewing_affected_pixel_coordinates || [];
         pestType = "Chewing Pests";
       } else if (selectedLegendClass === "sucking Pests") {
-        coordinates = pestData.pixel_summary?.sucking_affected_pixel_coordinates || [];
+        coordinates =
+          pestData.pixel_summary?.sucking_affected_pixel_coordinates || [];
         pestType = "sucking Pests";
       } else if (selectedLegendClass === "fungii") {
-        coordinates = pestData.pixel_summary?.fungii_affected_pixel_coordinates || [];
+        coordinates =
+          pestData.pixel_summary?.fungii_affected_pixel_coordinates || [];
         pestType = "fungii";
       } else if (selectedLegendClass === "SoilBorne") {
-        coordinates = pestData.pixel_summary?.SoilBorne_affected_pixel_coordinates || [];
+        coordinates =
+          pestData.pixel_summary?.SoilBorne_affected_pixel_coordinates || [];
         pestType = "SoilBorne";
       }
-      
+
       if (!coordinates || !Array.isArray(coordinates)) return [];
-      
+
       // Convert API coordinates to pixel objects
-      const actualPixels = coordinates.map((coord, index) => {
-        if (!Array.isArray(coord) || coord.length < 2) return null;
-        
-        return {
-          geometry: { coordinates: [coord[0], coord[1]] }, // [lng, lat]
-          properties: {
-            pixel_id: `${pestType.toLowerCase().replace(/\s+/g, '-')}-${index}`,
-            pest_type: pestType,
-            pest_category: pestType
-          }
-        };
-      }).filter(Boolean); // Remove any null entries
-      
+      const actualPixels = coordinates
+        .map((coord, index) => {
+          if (!Array.isArray(coord) || coord.length < 2) return null;
+
+          return {
+            geometry: { coordinates: [coord[0], coord[1]] }, // [lng, lat]
+            properties: {
+              pixel_id: `${pestType
+                .toLowerCase()
+                .replace(/\s+/g, "-")}-${index}`,
+              pest_type: pestType,
+              pest_category: pestType,
+            },
+          };
+        })
+        .filter(Boolean); // Remove any null entries
+
       return actualPixels;
     }
-    
+
     if (!plotData?.features || !currentPlotFeature) return [];
-    
+
     // Don't show pixels if percentage is 99% or higher (almost entire plot is one classification)
-    const selectedLegendItem = legendData.find(item => item.label === selectedLegendClass);
+    const selectedLegendItem = legendData.find(
+      (item) => item.label === selectedLegendClass
+    );
     if (selectedLegendItem && selectedLegendItem.percentage >= 99) return [];
-    
+
     // Get plot boundary coordinates
     const plotGeometry = currentPlotFeature.geometry;
     if (!plotGeometry || plotGeometry.type !== "Polygon") return [];
-    
-    const plotBoundary = plotGeometry.coordinates[0].map((coord: [number, number]) => 
-      [coord[0], coord[1]] as [number, number]
+
+    const plotBoundary = plotGeometry.coordinates[0].map(
+      (coord: [number, number]) => [coord[0], coord[1]] as [number, number]
     );
-    
+
     // Get all pixel features (features with feature_type === "pixel_data")
     const pixelFeatures = plotData.features.filter(
       (feature: any) => feature?.properties?.feature_type === "pixel_data"
     );
-    
+
     if (!pixelFeatures.length) return [];
-    
+
     console.log(`Total pixel features found: ${pixelFeatures.length}`);
     console.log(`Selected legend class: ${selectedLegendClass}`);
     console.log(`Active layer: ${activeLayer}`);
-    
+
     // Debug: Log sample pixel values for SWI layer
     if (activeLayer === "SWI") {
-      console.log('Sample SWI pixel values:', pixelFeatures.slice(0, 10).map((p: any) => ({
-        id: p.id || 'unknown',
-        value: p.properties.SWI,
-        coords: p.geometry.coordinates
-      })));
+      console.log(
+        "Sample SWI pixel values:",
+        pixelFeatures.slice(0, 10).map((p: any) => ({
+          id: p.id || "unknown",
+          value: p.properties.SWI,
+          coords: p.geometry.coordinates,
+        }))
+      );
     }
-    
+
     // Get the classification range for the selected legend class
-    const classRange = CLASS_RANGES[activeLayer]?.find(range => 
-      range.label === selectedLegendClass
+    const classRange = CLASS_RANGES[activeLayer]?.find(
+      (range) => range.label === selectedLegendClass
     );
-    
+
     if (!classRange) {
-      console.log(`No class range found for ${selectedLegendClass} in ${activeLayer}`);
+      console.log(
+        `No class range found for ${selectedLegendClass} in ${activeLayer}`
+      );
       return [];
     }
-    
+
     console.log(`Class range for ${selectedLegendClass}:`, classRange);
-    
+
     // Filter pixels based on the classification range
     const filteredPixels = pixelFeatures.filter((pixel: any) => {
       const pixelValue = pixel?.properties?.[activeLayer];
-      
-      if (typeof pixelValue !== 'number') {
-        console.log(`Pixel ${pixel?.id || 'unknown'} has non-numeric value:`, pixelValue);
+
+      if (typeof pixelValue !== "number") {
+        console.log(
+          `Pixel ${pixel?.id || "unknown"} has non-numeric value:`,
+          pixelValue
+        );
         return false;
       }
-      
+
       // Check if pixel value falls within the classification range
-      const isInRange = pixelValue >= classRange.min && 
-                       (classRange.max === Infinity ? true : pixelValue < classRange.max);
-      
-      console.log(`Pixel ${pixel.id || 'unknown'} value: ${pixelValue}, range: ${classRange.min} to ${classRange.max}, inRange: ${isInRange}`);
-      
+      const isInRange =
+        pixelValue >= classRange.min &&
+        (classRange.max === Infinity ? true : pixelValue < classRange.max);
+
+      console.log(
+        `Pixel ${pixel.id || "unknown"} value: ${pixelValue}, range: ${
+          classRange.min
+        } to ${classRange.max}, inRange: ${isInRange}`
+      );
+
       if (!isInRange) return false;
-      
+
       // Check if pixel is inside plot boundary
       const pixelCoords = pixel?.geometry?.coordinates;
-      if (!pixelCoords || !Array.isArray(pixelCoords) || pixelCoords.length < 2) {
-        console.log(`Pixel ${pixel?.id || 'unknown'} has invalid coordinates:`, pixelCoords);
+      if (
+        !pixelCoords ||
+        !Array.isArray(pixelCoords) ||
+        pixelCoords.length < 2
+      ) {
+        console.log(
+          `Pixel ${pixel?.id || "unknown"} has invalid coordinates:`,
+          pixelCoords
+        );
         return false;
       }
-      const isInsidePlot = isPointInPolygon([pixelCoords[0], pixelCoords[1]], plotBoundary);
-      
+      const isInsidePlot = isPointInPolygon(
+        [pixelCoords[0], pixelCoords[1]],
+        plotBoundary
+      );
+
       if (!isInsidePlot) {
-        console.log(`Pixel ${pixel.id || 'unknown'} is outside plot boundary`);
+        console.log(`Pixel ${pixel.id || "unknown"} is outside plot boundary`);
         return false;
       }
-      
+
       return true;
     });
-    
-    console.log(`Filtered pixels for "${selectedLegendClass}":`, filteredPixels.length);
-    console.log('Sample pixel values:', filteredPixels.slice(0, 5).map((p: any) => ({
-      value: p.properties[activeLayer],
-      coords: p.geometry.coordinates,
-      classification: classifyPixelValue(activeLayer, p.properties[activeLayer])
-    })));
-    
+
+    console.log(
+      `Filtered pixels for "${selectedLegendClass}":`,
+      filteredPixels.length
+    );
+    console.log(
+      "Sample pixel values:",
+      filteredPixels.slice(0, 5).map((p: any) => ({
+        value: p.properties[activeLayer],
+        coords: p.geometry.coordinates,
+        classification: classifyPixelValue(
+          activeLayer,
+          p.properties[activeLayer]
+        ),
+      }))
+    );
+
     return filteredPixels;
-  }, [plotData, selectedLegendClass, activeLayer, currentPlotFeature, legendData]);
+  }, [
+    plotData,
+    selectedLegendClass,
+    activeLayer,
+    currentPlotFeature,
+    legendData,
+  ]);
 
   // Handle legend click
   const handleLegendClick = (label: string, percentage: number) => {
@@ -858,28 +1009,48 @@ const Map: React.FC<MapProps> = ({
     if (layerName === "PEST") {
       if (!pestData?.pixel_summary) return null;
 
-      const chewingPestPercentage = pestData.pixel_summary.chewing_affected_pixel_percentage || 0;
-      const suckingPercentage = pestData.pixel_summary.sucking_affected_pixel_percentage || 0;
-      const fungiiPercentage = pestData.pixel_summary.fungii_affected_pixel_percentage || 0;
-      const soilBornePercentage = pestData.pixel_summary.SoilBorne_affected_pixel_percentage || 0;
-      
+      const chewingPestPercentage =
+        pestData.pixel_summary.chewing_affected_pixel_percentage || 0;
+      const suckingPercentage =
+        pestData.pixel_summary.sucking_affected_pixel_percentage || 0;
+      const fungiiPercentage =
+        pestData.pixel_summary.fungii_affected_pixel_percentage || 0;
+      const soilBornePercentage =
+        pestData.pixel_summary.SoilBorne_affected_pixel_percentage || 0;
+
       // Determine the most prominent pest type
       let className = "Healthy";
       let description = "no pest damage detected";
       let value = 0;
-      
+
       // Find the highest percentage pest type
       const pestTypes = [
-        { name: "Chewing Pests", percentage: chewingPestPercentage, description: "chewing pest damage detected in area" },
-        { name: "sucking Pests", percentage: suckingPercentage, description: "sucking disease damage detected in area" },
-        { name: "fungii", percentage: fungiiPercentage, description: "fungii infections detected in area" },
-        { name: "SoilBorne", percentage: soilBornePercentage, description: "SoilBorne infections detected in area" }
+        {
+          name: "Chewing Pests",
+          percentage: chewingPestPercentage,
+          description: "chewing pest damage detected in area",
+        },
+        {
+          name: "sucking Pests",
+          percentage: suckingPercentage,
+          description: "sucking disease damage detected in area",
+        },
+        {
+          name: "fungii",
+          percentage: fungiiPercentage,
+          description: "fungii infections detected in area",
+        },
+        {
+          name: "SoilBorne",
+          percentage: soilBornePercentage,
+          description: "SoilBorne infections detected in area",
+        },
       ];
-      
-      const dominantPest = pestTypes.reduce((prev, current) => 
-        (current.percentage > prev.percentage) ? current : prev
+
+      const dominantPest = pestTypes.reduce((prev, current) =>
+        current.percentage > prev.percentage ? current : prev
       );
-      
+
       if (dominantPest.percentage > 0) {
         className = dominantPest.name;
         description = dominantPest.description;
@@ -938,18 +1109,22 @@ const Map: React.FC<MapProps> = ({
     const allLayersInfo: any[] = [];
     const layerOrder = ["VV", "RVI", "SWI", "PEST"] as const;
 
-    layerOrder.forEach(layer => {
+    layerOrder.forEach((layer) => {
       if (layer === "PEST") {
         const layerInfo = getLayerClassificationInfo(layer, 0);
         if (layerInfo) {
           allLayersInfo.push(layerInfo);
         }
       } else {
-        const layerAnalysis = currentPlotFeature?.properties.indices_analysis.find(
-          (i: any) => i.index_name === layer
-        );
+        const layerAnalysis =
+          currentPlotFeature?.properties.indices_analysis.find(
+            (i: any) => i.index_name === layer
+          );
         if (layerAnalysis) {
-          const layerInfo = getLayerClassificationInfo(layer, layerAnalysis.current_value || 0);
+          const layerInfo = getLayerClassificationInfo(
+            layer,
+            layerAnalysis.current_value || 0
+          );
           if (layerInfo) {
             allLayersInfo.push(layerInfo);
           }
@@ -1009,10 +1184,13 @@ const Map: React.FC<MapProps> = ({
     return getFilteredPixels.map((pixel: any, index: number) => {
       const coords = pixel?.geometry?.coordinates;
       if (!coords || !Array.isArray(coords) || coords.length < 2) {
-        console.error(`Invalid pixel coordinates for pixel at index ${index}:`, coords);
+        console.error(
+          `Invalid pixel coordinates for pixel at index ${index}:`,
+          coords
+        );
         return null;
       }
-      
+
       // Create a much smaller square around the pixel coordinates to stay within plot boundary
       const squareSize = 0.000025; // Reduced size to ensure squares stay within plot boundary
       const bounds: [LatLngTuple, LatLngTuple] = [
@@ -1049,25 +1227,34 @@ const Map: React.FC<MapProps> = ({
               const allLayersInfo: any[] = [];
               const layerOrder = ["VV", "RVI", "SWI", "PEST"] as const;
 
-              layerOrder.forEach(layer => {
+              layerOrder.forEach((layer) => {
                 if (layer === "PEST") {
                   if (pestData?.pixel_summary) {
-                    const pestCategory = pixel?.properties?.pest_category || "Healthy";
+                    const pestCategory =
+                      pixel?.properties?.pest_category || "Healthy";
                     let description = "no pest damage detected";
                     let value = 0;
-                    
+
                     if (pestCategory === "Chewing Pests") {
                       description = "chewing pest damage detected in area";
-                      value = pestData.pixel_summary.chewing_affected_pixel_percentage || 0;
+                      value =
+                        pestData.pixel_summary
+                          .chewing_affected_pixel_percentage || 0;
                     } else if (pestCategory === "sucking Pests") {
                       description = "sucking disease damage detected in area";
-                      value = pestData.pixel_summary.sucking_affected_pixel_percentage || 0;
+                      value =
+                        pestData.pixel_summary
+                          .sucking_affected_pixel_percentage || 0;
                     } else if (pestCategory === "fungii") {
                       description = "fungii infections detected in area";
-                      value = pestData.pixel_summary.fungii_affected_pixel_percentage || 0;
+                      value =
+                        pestData.pixel_summary
+                          .fungii_affected_pixel_percentage || 0;
                     } else if (pestCategory === "SoilBorne") {
                       description = "SoilBorne infections detected in area";
-                      value = pestData.pixel_summary.SoilBorne_affected_pixel_percentage || 0;
+                      value =
+                        pestData.pixel_summary
+                          .SoilBorne_affected_pixel_percentage || 0;
                     }
 
                     allLayersInfo.push({
@@ -1081,9 +1268,15 @@ const Map: React.FC<MapProps> = ({
                   }
                 } else {
                   const pixelValue = pixel?.properties?.[layer]; // Get pixel value for each layer
-                  if (typeof pixelValue === 'number') {
-                    const pixelClassName = classifyPixelValue(layer, pixelValue);
-                    const pixelDescription = getClassificationDescription(layer, pixelClassName);
+                  if (typeof pixelValue === "number") {
+                    const pixelClassName = classifyPixelValue(
+                      layer,
+                      pixelValue
+                    );
+                    const pixelDescription = getClassificationDescription(
+                      layer,
+                      pixelClassName
+                    );
 
                     allLayersInfo.push({
                       layer: layer,
@@ -1114,7 +1307,7 @@ const Map: React.FC<MapProps> = ({
               hoverTimeoutRef.current = setTimeout(() => {
                 setHoveredPlotInfo(null);
               }, 100);
-            }
+            },
           }}
         />
       );
@@ -1146,8 +1339,9 @@ const Map: React.FC<MapProps> = ({
               onChange={(e) => {
                 const newPlot = e.target.value;
                 setSelectedPlotName(newPlot);
-                localStorage.setItem('selectedPlot', newPlot);
-                
+                onPlotChange?.(newPlot);
+                localStorage.setItem("selectedPlot", newPlot);
+
                 // Fetch new data for selected plot
                 fetchPlotData(newPlot);
                 fetchFieldAnalysis(newPlot);
@@ -1155,40 +1349,55 @@ const Map: React.FC<MapProps> = ({
               }}
               disabled={loading}
             >
-              {profile.plots?.map(plot => {
+              {profile.plots?.map((plot) => {
                 // Create display name in format: gat_number_plot_number (e.g., "123_456")
-                let displayName = '';
-                
+                let displayName = "";
+
                 // Check if we have actual user-entered values (not empty or generated ones)
-                if (plot.gat_number && plot.plot_number && 
-                    plot.gat_number.trim() !== "" && plot.plot_number.trim() !== "" &&
-                    !plot.gat_number.startsWith('GAT_') && 
-                    !plot.plot_number.startsWith('PLOT_')) {
+                if (
+                  plot.gat_number &&
+                  plot.plot_number &&
+                  plot.gat_number.trim() !== "" &&
+                  plot.plot_number.trim() !== "" &&
+                  !plot.gat_number.startsWith("GAT_") &&
+                  !plot.plot_number.startsWith("PLOT_")
+                ) {
                   // Use the actual user-entered values in format: gat_plot
                   displayName = `${plot.gat_number}_${plot.plot_number}`;
-                } else if (plot.gat_number && plot.gat_number.trim() !== "" && !plot.gat_number.startsWith('GAT_')) {
+                } else if (
+                  plot.gat_number &&
+                  plot.gat_number.trim() !== "" &&
+                  !plot.gat_number.startsWith("GAT_")
+                ) {
                   // Only gat_number is user-entered
                   displayName = plot.gat_number;
-                } else if (plot.plot_number && plot.plot_number.trim() !== "" && !plot.plot_number.startsWith('PLOT_')) {
+                } else if (
+                  plot.plot_number &&
+                  plot.plot_number.trim() !== "" &&
+                  !plot.plot_number.startsWith("PLOT_")
+                ) {
                   // Only plot_number is user-entered
                   displayName = plot.plot_number;
                 } else {
                   // No valid user input - show location info
                   const village = plot.address?.village;
                   const taluka = plot.address?.taluka;
-                  
+
                   if (village) {
                     displayName = `Plot in ${village}`;
                     if (taluka) {
                       displayName += `, ${taluka}`;
                     }
                   } else {
-                    displayName = 'Plot (No GAT/Plot Number)';
+                    displayName = "Plot (No GAT/Plot Number)";
                   }
                 }
-                
+
                 return (
-                  <option key={plot.fastapi_plot_id} value={plot.fastapi_plot_id}>
+                  <option
+                    key={plot.fastapi_plot_id}
+                    value={plot.fastapi_plot_id}
+                  >
                     {displayName}
                   </option>
                 );
@@ -1197,9 +1406,17 @@ const Map: React.FC<MapProps> = ({
           </div>
         )}
 
-        {profileLoading && <div className="loading-indicator">Loading farmer profile...</div>}
-        {!profileLoading && !selectedPlotName && <div className="error-message">No plot data available for this farmer</div>}
-        {loading && <div className="loading-indicator">Loading plot data...</div>}
+        {profileLoading && (
+          <div className="loading-indicator">Loading farmer profile...</div>
+        )}
+        {!profileLoading && !selectedPlotName && (
+          <div className="error-message">
+            No plot data available for this farmer
+          </div>
+        )}
+        {loading && (
+          <div className="loading-indicator">Loading plot data...</div>
+        )}
         {error && <div className="error-message">{error}</div>}
       </div>
 
@@ -1207,7 +1424,8 @@ const Map: React.FC<MapProps> = ({
         <button
           className="fullscreen-btn"
           onClick={() => {
-            if (!document.fullscreenElement) mapWrapperRef.current?.requestFullscreen();
+            if (!document.fullscreenElement)
+              mapWrapperRef.current?.requestFullscreen();
             else document.exitFullscreen();
           }}
         >
@@ -1217,9 +1435,10 @@ const Map: React.FC<MapProps> = ({
         {currentPlotFeature && (
           <div className="plot-info">
             <div className="plot-area">
-              {currentPlotFeature.properties?.area_acres 
-                ? currentPlotFeature.properties.area_acres.toFixed(2) 
-                : '0.00'}acre
+              {currentPlotFeature.properties?.area_acres
+                ? currentPlotFeature.properties.area_acres.toFixed(2)
+                : "0.00"}
+              acre
             </div>
           </div>
         )}
@@ -1239,14 +1458,17 @@ const Map: React.FC<MapProps> = ({
             maxZoom={22}
           />
 
-          {currentPlotFeature?.geometry?.coordinates?.[0] && Array.isArray(currentPlotFeature.geometry.coordinates[0]) && (
-            <SetFixedZoom coordinates={currentPlotFeature.geometry.coordinates[0]} />
-          )}
+          {currentPlotFeature?.geometry?.coordinates?.[0] &&
+            Array.isArray(currentPlotFeature.geometry.coordinates[0]) && (
+              <SetFixedZoom
+                coordinates={currentPlotFeature.geometry.coordinates[0]}
+              />
+            )}
 
           {/* Debug: Show active layer URL in console and render tile layer */}
           {(() => {
             const activeUrl = getActiveLayerUrl();
-            console.log('Rendering active layer with URL:', activeUrl);
+            console.log("Rendering active layer with URL:", activeUrl);
             return activeUrl ? (
               <CustomTileLayer
                 url={activeUrl}
@@ -1254,8 +1476,11 @@ const Map: React.FC<MapProps> = ({
                 key={`${activeLayer}-layer-${layerChangeKey}`}
               />
             ) : (
-              <div style={{ display: 'none' }}>
-                {(() => { console.log('No active layer URL available'); return null; })()}
+              <div style={{ display: "none" }}>
+                {(() => {
+                  console.log("No active layer URL available");
+                  return null;
+                })()}
               </div>
             );
           })()}
@@ -1280,24 +1505,30 @@ const Map: React.FC<MapProps> = ({
                   }`}
                   onClick={() => handleLegendClick(item.label, item.percentage)}
                   style={{
-                    pointerEvents: item.percentage === 0 ? 'none' : 'auto',
-                    cursor: item.percentage >= 99 ? 'not-allowed' : 'pointer'
+                    pointerEvents: item.percentage === 0 ? "none" : "auto",
+                    cursor: item.percentage >= 99 ? "not-allowed" : "pointer",
                   }}
-                  title={item.percentage >= 99 ? 'High coverage (99%+) - no individual pixels to show' : ''}
+                  title={
+                    item.percentage >= 99
+                      ? "High coverage (99%+) - no individual pixels to show"
+                      : ""
+                  }
                 >
                   <div
                     className="legend-circle-bottom cursor-pointer transition-all duration-150 bg-orange-500"
                     style={{
                       // background: `orange`,
                       // border: `5px solid ${item.color}`,
-                      boxShadow: `0 5px 8px ${item.color}40`
+                      boxShadow: `0 5px 8px ${item.color}40`,
                     }}
                   >
                     <div className="legend-percentage-bottom font-bold text-xlg text-white-900">
                       {item.percentage}
                     </div>
                   </div>
-                  <div className="legend-label-bottom text-white-500">{item.label}</div>
+                  <div className="legend-label-bottom text-white-500">
+                    {item.label}
+                  </div>
                   {item.pixelCount && (
                     <div className="legend-pixel-count-bottom text-lg ">
                       {item.pixelCount} pixels
@@ -1315,19 +1546,23 @@ const Map: React.FC<MapProps> = ({
             style={{
               left: hoveredPlotInfo.x + 10,
               top: hoveredPlotInfo.y - 20,
-              transform: hoveredPlotInfo.x > window.innerWidth - 350 ? 'translateX(-100%)' : 'none'
+              transform:
+                hoveredPlotInfo.x > window.innerWidth - 350
+                  ? "translateX(-100%)"
+                  : "none",
             }}
           >
             {hoveredPlotInfo.allLayersInfo.map((layerInfo, index) => (
               <div key={index} className="enhanced-tooltip-line">
                 <span className="layer-name">{layerInfo.label}:</span>
-                <span className="layer-description">{layerInfo.description}</span>
+                <span className="layer-description">
+                  {layerInfo.description}
+                </span>
               </div>
             ))}
           </div>
         )}
       </div>
-
     </div>
   );
 };

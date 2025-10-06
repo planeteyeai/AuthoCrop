@@ -8,44 +8,38 @@ interface DashboardGridProps {
 }
 
 const dashboardUrls: { [role: string]: { [submenu: string]: string } } = {
-  Manager: {
+  manager: {
     "Farm Crop Status":
       "https://app.powerbi.com/view?r=eyJrIjoiNmUwNmVjYTYtZTIwNC00NTk2LTg5NTYtYTlkZDE2Mjc0MTA3IiwidCI6ImYwY2M0NzU1LWY3M2EtNGI3ZS1iMmRmLTM3YjY0N2M5NzNiNyJ9",
-    "Harvesting Planning":
-      "https://app.powerbi.com/view?r=eyJrIjoiMjcwYzdlZmMtMTBkYS00Zjk5LTliNDItNThiOTMxNzljNzM1IiwidCI6ImYwY2M0NzU1LWY3M2EtNGI3ZS1iMmRmLTM3YjY0N2M5NzNiNyJ9",
-    "Agroclimatic":
+    Agroclimatic:
       "https://app.powerbi.com/view?r=eyJrIjoiZWUwNTYxMjMtZWM1NC00MjYwLTkyMmQtMDg5OWFiMTlmYjYzIiwidCI6ImYwY2M0NzU1LWY3M2EtNGI3ZS1iMmRmLTM3YjY0N2M5NzNiNyJ9",
   },
-  Farmer: {
+  farmer: {
     "Plot View":
       "https://app.powerbi.com/view?r=eyJrIjoiM2ZlMTk3MWYtZTQyMC00ZTk5LTkxMDUtZTdkNjcxNGZiNjFjIiwidCI6ImYwY2M0NzU1LWY3M2EtNGI3ZS1iMmRmLTM3YjY0N2M5NzNiNyJ9",
   },
-  Owner: {
+  owner: {
     "Farm Crop Status":
       "https://app.powerbi.com/view?r=eyJrIjoiMGM1ZmI4NzEtYWUzNi00NmM1LTk4OWYtMTg1MjZkYzJjYzMzIiwidCI6ImYwY2M0NzU1LWY3M2EtNGI3ZS1iMmRmLTM3YjY0N2M5NzNiNyJ9",
     "Harvesting Planning":
       "https://app.powerbi.com/view?r=eyJrIjoiMjlhOGFmZTYtMzc4My00OTVhLTgwYTYtNTA4MDNhZTUzYWM4IiwidCI6ImYwY2M0NzU1LWY3M2EtNGI3ZS1iMmRmLTM3YjY0N2M5NzNiNyJ9",
-    "Agroclimatic":
+    Agroclimatic:
       "https://app.powerbi.com/view?r=eyJrIjoiMzFhN2Q5OWYtMjBmNi00NzljLTkzOGYtMWEyYTU4ZDBmODVkIiwidCI6ImYwY2M0NzU1LWY3M2EtNGI3ZS1iMmRmLTM3YjY0N2M5NzNiNyJ9",
-    "Resources": "https://app.powerbi.com/view?r=...",
+    Resources: "https://app.powerbi.com/view?r=...",
     "Plot Bird View": "https://app.powerbi.com/view?r=...",
   },
-  FieldOfficer: {
+  fieldofficer: {
     ViewFarmerPlot:
       "https://app.powerbi.com/view?r=eyJrIjoiMGM1ZmI4NzEtYWUzNi00NmM1LTk4OWYtMTg1MjZkYzJjYzMzIiwidCI6ImYwY2M0NzU1LWY3M2EtNGI3ZS1iMmRmLTM3YjY0N2M5NzNiNyJ9",
   },
 };
 
-const DashboardGrid: React.FC<DashboardGridProps> = ({
-  userRole,
-  submenu,
-}) => {
+const DashboardGrid: React.FC<DashboardGridProps> = ({ userRole, submenu }) => {
   const url = dashboardUrls[userRole]?.[submenu];
 
   return (
     <div className="flex flex-col h-screen w-full">
       {/* Header */}
-      
 
       {/* Iframe */}
       {url ? (

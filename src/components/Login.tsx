@@ -375,50 +375,50 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
               {/* Login Form */}
               <form onSubmit={handleLogin} className="space-y-6 w-[50%]">
-                <div className="relative">
-                  <div className="flex items-center border border-gray-300 rounded-lg px-3 py-3 bg-white focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
-                    <Mail className="w-5 h-5 mr-3 text-gray-500" />
-                    <input
-                      type="email"
+                    <div className="relative">
+                      <div className="flex items-center border border-gray-300 rounded-lg px-3 py-3 bg-white focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
+                        <Mail className="w-5 h-5 mr-3 text-gray-500" />
+                        <input
+                          type="email"
                       placeholder="Enter email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full outline-none text-gray-700"
-                      required
-                      disabled={loading}
-                    />
-                  </div>
-                </div>
-                
-                <div className="relative">
-                  <div className="flex items-center border border-gray-300 rounded-lg px-3 py-3 bg-white focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
+                          className="w-full outline-none text-gray-700"
+                          required
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="relative">
+                      <div className="flex items-center border border-gray-300 rounded-lg px-3 py-3 bg-white focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
                     <Lock className="w-5 h-5 mr-3 text-gray-500" />
-                    <input
+                        <input
                       type="password"
                       placeholder="Enter password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full outline-none text-gray-700"
-                      required
-                      disabled={loading}
-                    />
-                  </div>
-                </div>
-                
-                <button
-                  type="submit"
-                  disabled={loading || !email.trim() || !password.trim()}
-                  className="w-full bg-emerald-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {loading ? (
-                    <div className="flex items-center justify-center">
-                      <Satellite className="w-5 h-5 animate-spin mr-2" />
-                      Submitting...
+                          required
+                          disabled={loading}
+                        />
+                      </div>
                     </div>
-                  ) : (
+                    
+                    <button
+                      type="submit"
+                  disabled={loading || !email.trim() || !password.trim()}
+                      className="w-full bg-emerald-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {loading ? (
+                        <div className="flex items-center justify-center">
+                          <Satellite className="w-5 h-5 animate-spin mr-2" />
+                      Submitting...
+                        </div>
+                      ) : (
                     'Submit'
-                  )}
-                </button>
+                      )}
+                    </button>
               </form>
             </motion.div>
           </div>

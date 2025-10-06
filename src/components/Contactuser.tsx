@@ -23,11 +23,6 @@ import { getUserRole } from '../utils/auth';
 
 
 
-
-
-
-
-
 interface Contact {
   id: number;
   name: string;
@@ -588,8 +583,8 @@ const Contactuser: React.FC<ContactuserProps> = () => {
                                         onClick={(e) => e.stopPropagation()}
                                       >
                                         <Phone size={14} />
-                                        {contact.phone}
-                                      </a>
+                      {contact.phone}
+                    </a>
                                     )}
                                     {contact.email !== 'N/A' && (
                                       <a 

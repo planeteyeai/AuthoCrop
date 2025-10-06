@@ -1,421 +1,371 @@
 import React, { useEffect, useState } from 'react';
-import { Download, Edit, Search, Trash2, Users, List, Clock, Calendar, User } from 'lucide-react';
-
-const USERS = [
-  { label: 'Manager', value: 'manger@124', role: 'manager' },
-  { label: 'Field Officer', value: 'filed@crops', role: 'fieldofficer' },
-  { label: 'Farmer', value: 'AjayDhale', role: 'farmer' },
-];
+import { Download, Edit, Search, Trash2, List, Calendar, RefreshCw } from 'lucide-react';
+import { getTasksForUser } from '../api';
 
 const ITEMS_PER_PAGE = 5;
 
 interface ListTask {
   id: number;
-  taskName?: string;
-  itemName?: string;
-  assigned: string;
-  date?: string;
-  selectedDate?: string;
-  farmerName?: string;
-  status?: 'Pending' | 'Completed' | 'InProcess';
-  assignedTime?: string;
-  fieldOfficer?: string;
-  assignedBy?: string;
-  submittedBy?: string;
-  submittedAt?: string;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  assigned_to: {
+    id: number;
+    username: string;
+    first_name: string;
+    last_name: string;
+  };
+  created_by: {
+    id: number;
+    username: string;
+    first_name: string;
+    last_name: string;
+  };
+  due_date: string;
+  created_at?: string;
 }
 
-export const Tasklist: React.FC = () => {
-  // Default to field officer if only that role should see this page
-  const [currentUser, setCurrentUser] = useState(USERS[1]);
+interface TasklistProps {
+  currentUserId: number;
+  currentUserRole: 'manager' | 'fieldofficer' | 'farmer';
+  currentUserName?: string;
+}
+
+export const Tasklist: React.FC<TasklistProps> = ({ 
+  currentUserId , 
+  currentUserRole,
+  currentUserName = 'User'
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [tasks, setTasks] = useState<ListTask[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Fetch tasks for TaskList
-  useEffect(() => {
-    let endpoint = '';
-    if (currentUser.role === 'manager') {
-      endpoint = `http://localhost:5000/fieldofficertasks?assignedBy=${currentUser.value}`;
-    } else if (currentUser.role === 'fieldofficer') {
-      endpoint = `http://localhost:5000/fieldofficertasks?fieldOfficer=${currentUser.value}`;
-    } else if (currentUser.role === 'farmer') {
-      endpoint = `http://localhost:5000/farmartasks?farmerName=${currentUser.value}`;
+  const fetchTasks = async () => {
+    if (!currentUserId) {
+      console.error('No currentUserId provided');
+      return;
     }
-    if (endpoint) {
-      fetch(endpoint)
-        .then((res) => res.json())
-        .then((data) => setTasks(data))
-        .catch(() => setTasks([]));
-    } else {
+
+    setLoading(true);
+    try {
+      console.log('Fetching tasks for user ID:', currentUserId);
+      const response = await getTasksForUser(currentUserId);
+      
+      const tasksData = response.data.results 
+        ? response.data.results 
+        : (Array.isArray(response.data) ? response.data : []);
+      
+      const filteredTasks = tasksData.filter((task: any) =>
+        task.assigned_to && task.assigned_to.id === currentUserId
+      );
+      
+      console.log(`Tasks assigned to user ${currentUserId}:`, filteredTasks.length);
+      setTasks(filteredTasks);
+      
+    } catch (error: any) {
+      console.error('Error fetching tasks:', error);
       setTasks([]);
+    } finally {
+      setLoading(false);
     }
-  }, [currentUser]);
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, [currentUserId]);
 
   const handleEdit = (_id: number) => {
-    // Optional: edit logic
+    // Edit logic
   };
 
-  const handleDelete = (id: number) => {
-    setTasks(tasks.filter((task) => task.id !== id));
+  const handleDelete = async (id: number) => {
+    if (confirm('Are you sure you want to delete this task?')) {
+      setTasks(tasks.filter((task) => task.id !== id));
+    }
   };
 
-  const handleStatusChange = (taskId: number, newStatus: 'Pending' | 'Completed' | 'InProcess') => {
+  const handleStatusChange = (taskId: number, newStatus: string) => {
     setTasks(prev =>
       prev.map(task =>
-        task.id === taskId
-          ? { ...task, status: newStatus }
-          : task
+        task.id === taskId ? { ...task, status: newStatus } : task
       )
     );
-    let endpoint = '';
-    if (currentUser.role === 'manager' || currentUser.role === 'fieldofficer') {
-      endpoint = `http://localhost:5000/fieldofficertasks/${taskId}`;
-    } else if (currentUser.role === 'farmer') {
-      endpoint = `http://localhost:5000/farmartasks/${taskId}`;
-    }
-    if (endpoint) {
-      fetch(endpoint, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      }).catch(() => {});
-    }
   };
 
   const handleDownload = () => {
     const csv = [
-      ['Task Name', 'Assigned To', 'Farmer', 'Date', 'Status', 'Time'],
-      ...tasks.map(({ taskName, assigned, farmerName, date, status, assignedTime }) => [
-        taskName || '',
-        assigned,
-        farmerName || 'N/A',
-        date || '',
-        status || 'Pending',
-        assignedTime || 'N/A',
+      ['Title', 'Description', 'Priority', 'Status', 'Due Date', 'Created At'],
+      ...tasks.map(({ title, description, priority, status, due_date, created_at }) => [
+        title,
+        description,
+        priority,
+        status,
+        new Date(due_date).toLocaleDateString(),
+        created_at ? new Date(created_at).toLocaleString() : 'N/A',
       ]),
     ]
       .map((row) => row.join(','))
       .join('\n');
+    
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `${currentUser.value}-task-list.csv`;
+    a.download = `${currentUserName}-assigned-tasks.csv`;
     a.click();
   };
 
-  const filtered = tasks.filter(
-    (task) =>
-      (task.taskName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (task.assigned?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (task.farmerName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (task.date || '').includes(searchTerm)
-  );
-
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginatedData = filtered.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-
-  const getStatusColor = (status?: 'Pending' | 'Completed' | 'InProcess') => {
-    if (!status) return 'bg-gray-100 text-gray-800';
-    switch (status) {
-      case 'Completed':
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'completed':
         return 'bg-green-100 text-green-800';
-      case 'InProcess':
+      case 'in_progress':
         return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-yellow-100 text-yellow-800';
     }
   };
 
-  const formatTime = (timeString: string | undefined) => {
-    if (!timeString) return 'N/A';
-    try {
-      return new Date(timeString).toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return 'N/A';
+  const getPriorityColor = (priority: string) => {
+    switch (priority.toLowerCase()) {
+      case 'high':
+        return 'bg-red-100 text-red-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-green-100 text-green-800';
     }
   };
 
+  const filterTasks = (tasks: ListTask[]) => {
+    return tasks.filter(
+      (task) =>
+        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.priority.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
+  const filteredTasks = filterTasks(tasks);
+  const totalPages = Math.ceil(filteredTasks.length / ITEMS_PER_PAGE);
+  const paginatedTasks = filteredTasks.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   return (
-    <div className="max-w-7xl mx-auto p-3 sm:p-6 bg-gray-100 min-h-screen">
-      {/* Only show user selector for manager and farmer roles */}
-      {(currentUser.role === 'manager' || currentUser.role === 'farmer') && (
-        <div className="mb-4 flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-          <div className="flex items-center space-x-2">
-            <User className="w-4 h-4 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">Current User:</span>
+    <div className="max-w-7xl mx-auto p-3 sm:p-6 bg-gray-100 min-h-screen space-y-6">
+      <div className="bg-white rounded-lg shadow-md p-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-2.5 text-gray-400 h-4 w-4" />
+            <input
+              type="text"
+              placeholder="Search tasks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
-          <select
-            value={currentUser.value}
-            onChange={e => {
-              const user = USERS.find(u => u.value === e.target.value)!;
-              setCurrentUser(user);
-            }}
-            className="px-3 py-2 border border-gray-300 rounded text-sm w-full sm:w-auto"
-          >
-            {USERS.map(u => (
-              <option key={u.value} value={u.value}>{u.label} ({u.value})</option>
-            ))}
-          </select>
-        </div>
-      )}
-      
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 max-w-7xl mx-auto">
-        {/* Header Section - Responsive */}
-        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 space-y-4 lg:space-y-0">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-700">
-            {currentUser.label} Task Management
-          </h2>
           
-          {/* Actions Section - Responsive */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-            {/* Search Bar */}
-            <div className="relative flex-1 sm:flex-none sm:w-64">
-              <Search className="absolute left-3 top-2.5 text-gray-400 h-4 w-4" />
-              <input
-                type="text"
-                placeholder="Search tasks..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            
-            {/* Download Button */}
-            <button 
-              onClick={handleDownload} 
-              className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Download</span>
-            </button>
-          </div>
+          <button
+            onClick={fetchTasks}
+            disabled={loading}
+            className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
         </div>
-        {/* Desktop Table View */}
-        <div className="hidden lg:block overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-gray-100 text-gray-600">
-              <tr>
-                <th className="px-4 py-3 font-medium">Task Name</th>
-                <th className="px-4 py-3 font-medium">Assigned To</th>
-                <th className="px-4 py-3 font-medium">Farmer</th>
-                <th className="px-4 py-3 font-medium">Date</th>
-                <th className="px-4 py-3 font-medium">Time</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedData.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-8 text-gray-500">
-                    <div className="flex flex-col items-center">
-                      <List className="w-12 h-12 text-gray-300 mb-2" />
-                      <p>No tasks found</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                paginatedData.map((task) => (
-                  <tr key={task.id} className="border-b hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium">{task.taskName || task.itemName}</td>
-                    <td className="px-4 py-3">{task.assigned || task.fieldOfficer || task.assignedBy || '-'}</td>
-                    <td className="px-4 py-3">{task.farmerName || 'N/A'}</td>
-                    <td className="px-4 py-3">{task.date || task.selectedDate}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center">
-                        <Clock className="w-4 h-4 mr-1 text-gray-400" />
-                        {formatTime(task.assignedTime)}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
-                        {task.status || 'Pending'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center space-x-2">
-                        <select
-                          value={task.status || 'Pending'}
-                          onChange={(e) => handleStatusChange(task.id, e.target.value as 'Pending' | 'Completed' | 'InProcess')}
-                          className="text-xs border rounded px-2 py-1 focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="Pending">Pending</option>
-                          <option value="InProcess">In Process</option>
-                          <option value="Completed">Completed</option>
-                        </select>
-                        <button
-                          onClick={() => handleEdit(task.id)}
-                          className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
-                          title="Edit task"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(task.id)}
-                          className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
-                          title="Delete task"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+      </div>
+      
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 space-y-4 lg:space-y-0">
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-700">
+              My Tasks
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Tasks assigned to you
+            </p>
+          </div>
+          
+          <button 
+            onClick={handleDownload} 
+            className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Download
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-gray-500">Loading tasks...</p>
+          </div>
+        ) : (
+          <>
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-100 text-gray-600">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Title</th>
+                    <th className="px-4 py-3 font-medium">Description</th>
+                    <th className="px-4 py-3 font-medium">Priority</th>
+                    <th className="px-4 py-3 font-medium">Due Date</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium">Actions</th>
                   </tr>
+                </thead>
+                <tbody>
+                  {paginatedTasks.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center py-8 text-gray-500">
+                        <div className="flex flex-col items-center">
+                          <List className="w-12 h-12 text-gray-300 mb-2" />
+                          <p>No tasks found</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedTasks.map((task) => (
+                      <tr key={task.id} className="border-b hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 font-medium">{task.title}</td>
+                        <td className="px-4 py-3 max-w-xs truncate">{task.description}</td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                            {task.priority}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {new Date(task.due_date).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
+                            {task.status === 'in_progress' ? 'In Progress' : task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center space-x-2">
+                            <select
+                              value={task.status}
+                              onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                              className="text-xs border rounded px-2 py-1 focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="in_progress">In Progress</option>
+                              <option value="completed">Completed</option>
+                            </select>
+                            <button
+                              onClick={() => handleEdit(task.id)}
+                              className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(task.id)}
+                              className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="lg:hidden space-y-4">
+              {paginatedTasks.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <List className="w-16 h-16 text-gray-300 mb-4 mx-auto" />
+                  <p className="text-lg font-medium">No tasks found</p>
+                </div>
+              ) : (
+                paginatedTasks.map((task) => (
+                  <div key={task.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="font-semibold text-gray-900">{task.title}</h3>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
+                        {task.status === 'in_progress' ? 'In Progress' : task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                      </span>
+                    </div>
+                    
+                    <p className="text-sm text-gray-600 mb-3">{task.description}</p>
+                    
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center text-sm">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(task.priority)} mr-2`}>
+                          {task.priority}
+                        </span>
+                        <Calendar className="w-4 h-4 mr-1 text-gray-400" />
+                        {new Date(task.due_date).toLocaleDateString()}
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <select
+                        value={task.status}
+                        onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                        className="flex-1 px-3 py-2 border rounded-lg text-sm"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                      
+                      <button
+                        onClick={() => handleEdit(task.id)}
+                        className="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(task.id)}
+                        className="px-3 py-2 bg-red-50 text-red-600 rounded-lg"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile Card View */}
-        <div className="lg:hidden space-y-4">
-          {paginatedData.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <div className="flex flex-col items-center">
-                <List className="w-16 h-16 text-gray-300 mb-4" />
-                <p className="text-lg font-medium">No tasks found</p>
-                <p className="text-sm">Try adjusting your search criteria</p>
-              </div>
             </div>
-          ) : (
-            paginatedData.map((task) => (
-              <div key={task.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                {/* Task Header */}
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="font-semibold text-gray-900 text-base leading-tight">
-                    {task.taskName || task.itemName}
-                  </h3>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
-                    {task.status || 'Pending'}
-                  </span>
-                </div>
 
-                {/* Task Details */}
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Users className="w-4 h-4 mr-2 text-gray-400" />
-                    <span className="font-medium">Assigned To:</span>
-                    <span className="ml-1">{task.assigned || task.fieldOfficer || task.assignedBy || '-'}</span>
-                  </div>
-                  
-                  {task.farmerName && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <User className="w-4 h-4 mr-2 text-gray-400" />
-                      <span className="font-medium">Farmer:</span>
-                      <span className="ml-1">{task.farmerName}</span>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                    <span className="font-medium">Date:</span>
-                    <span className="ml-1">{task.date || task.selectedDate}</span>
-                  </div>
-                  
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Clock className="w-4 h-4 mr-2 text-gray-400" />
-                    <span className="font-medium">Time:</span>
-                    <span className="ml-1">{formatTime(task.assignedTime)}</span>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <select
-                    value={task.status || 'Pending'}
-                    onChange={(e) => handleStatusChange(task.id, e.target.value as 'Pending' | 'Completed' | 'InProcess')}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            {totalPages > 1 && (
+              <div className="mt-6 flex justify-between items-center">
+                <p className="text-sm text-gray-600">
+                  Showing {paginatedTasks.length} of {filteredTasks.length} entries
+                </p>
+                
+                <div className="flex items-center space-x-2">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+                    className="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 text-sm"
                   >
-                    <option value="Pending">Pending</option>
-                    <option value="InProcess">In Process</option>
-                    <option value="Completed">Completed</option>
-                  </select>
-                  
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleEdit(task.id)}
-                      className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
-                      title="Edit task"
-                    >
-                      <Edit className="w-4 h-4 mr-1" />
-                      <span className="text-sm">Edit</span>
-                    </button>
-                    <button
-                      onClick={() => handleDelete(task.id)}
-                      className="flex-1 flex items-center justify-center px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
-                      title="Delete task"
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      <span className="text-sm">Delete</span>
-                    </button>
-                  </div>
+                    Previous
+                  </button>
+                  <span className="text-sm text-gray-600">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
+                    className="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 text-sm"
+                  >
+                    Next
+                  </button>
                 </div>
               </div>
-            ))
-          )}
-        </div>
-        {/* Pagination - Responsive */}
-        <div className="mt-6 flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
-          <p className="text-sm text-gray-600 order-2 sm:order-1">
-            Showing {paginatedData.length} of {filtered.length} entries
-          </p>
-          
-          {totalPages > 1 && (
-            <div className="flex items-center space-x-2 order-1 sm:order-2">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                className="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
-              >
-                Previous
-              </button>
-              
-              {/* Page Numbers */}
-              <div className="flex items-center space-x-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-                  
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        currentPage === pageNum
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-              
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                className="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

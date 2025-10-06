@@ -309,7 +309,7 @@ const CalendarView: React.FC = () => {
             </div>
           )}
 
-          <label className="block mb-2 font-medium">Select Team</label>
+          {/* <label className="block mb-2 font-medium">Select Team</label>
           <select
             name="team"
             value={task.team}
@@ -321,7 +321,7 @@ const CalendarView: React.FC = () => {
             <option value="weather">Weather</option>
             <option value="growth">Growth</option>
             <option value="pest">Pest</option>
-          </select>
+          </select> */}
 
           <label className="block mb-2 font-medium">Selected Date</label>
           <input
@@ -331,14 +331,14 @@ const CalendarView: React.FC = () => {
             className="w-full mb-4 p-2 border border-gray-300 rounded bg-gray-100"
           />
 
-          <label className="block mb-2 font-medium">Message</label>
+          {/* <label className="block mb-2 font-medium">Message</label>
           <textarea
             name="message"
             value={task.message}
             onChange={handleChange}
             className="w-full mb-4 p-2 border border-gray-300 rounded"
             rows={2}
-          />
+          /> */}
 
           <div className="flex justify-between gap-4">
             <button

@@ -5,7 +5,7 @@ import { getAuthToken, setAuthToken as setAuthTokenUtil } from './utils/auth';
 const API_BASE_URL = 'https://cropeye-server-1.onrender.com/api'; // changed to root API URL
 
 // KML/GeoJSON API URL
-const KML_API_URL = 'http://192.168.41.73:7030';
+const KML_API_URL = 'http://192.168.41.51';
 
 // Create axios instance
 const api = axios.create({
@@ -80,6 +80,42 @@ export const addUser = (data: {
   role: string;
 }) => {
   return api.post('/users/', data);
+};
+
+export const addTask = (data: {
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  assigned_to_id: number;
+  due_date: string;
+}) => {
+  return api.post('/tasks/', data);
+};
+
+export const getTasks = () => {
+  return api.get('/tasks/');
+};
+
+export const getTaskById = (id: number) => {
+  return api.get(`/tasks/${id}/`);
+};
+
+export const updateTask = (id: number, data: any) => {
+  return api.put(`/tasks/${id}/`, data);
+};
+
+export const getTasksForUser = (userId: number) => {
+  return api.get(`/tasks/?assigned_to_id=${userId}`);
+}
+
+export const getFarmersByFieldOfficer = (fieldOfficerId: number) => {
+  return api.get(`/users/farmers-by-field-officer/${fieldOfficerId}/`);
+};
+
+export const updateTaskStatus = (taskId: number, status: string) => {
+  console.log('API call: PATCH /tasks/' + taskId + '/', { status });
+  return api.patch(`/tasks/${taskId}/`, { status });
 };
 
 export const addVendor = (data: {
@@ -793,7 +829,18 @@ export const registerFarmerAllInOne = async (data: {
     distance_motor_to_plot_m?: number;
   };
 }) => {
-  return api.post("/farms/register-farmer/", data);
+  console.log("🚀 Sending registration request to API:", JSON.stringify(data, null, 2));
+  try {
+    const response = await api.post("/farms/register-farmer/", data);
+    console.log("✅ Registration successful:", response.data);
+    return response;
+  } catch (error: any) {
+    console.error("❌ Registration API error:", error);
+    console.error("❌ Error response:", error.response?.data);
+    console.error("❌ Error status:", error.response?.status);
+    console.error("❌ Error details:", JSON.stringify(error.response?.data, null, 2));
+    throw error;
+  }
 };
 
 // Simplified farmer registration - uses ONLY all-in-one API for ALL users
@@ -919,7 +966,10 @@ const convertToAllInOneFormat = (formData: any, plots: any[]) => {
       },
       // Conditional irrigation details based on type
       ...(firstPlot.irrigation_Type === "drip" ? {
-        plants_per_acre: parseFloat(firstPlot.plants_Per_Acre) || 2000,
+        plants_per_acre: parseFloat(firstPlot.plants_Per_Acre) || 
+          (parseFloat(firstPlot.spacing_A) && parseFloat(firstPlot.spacing_B) 
+            ? Math.floor(43560 / (parseFloat(firstPlot.spacing_A) * parseFloat(firstPlot.spacing_B))) 
+            : 2000),
         flow_rate_lph: parseFloat(firstPlot.flow_Rate) || 2.5,
         emitters_count: parseInt(firstPlot.emitters) || 150,
       } : firstPlot.irrigation_Type === "flood" ? {
