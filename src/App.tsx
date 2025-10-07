@@ -443,7 +443,10 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
             {currentView === View.MyList && <MyList />}
 
             {currentView === View.TeamList && (
-              <TeamList setUsers={setUsers} users={users} />
+               <TeamList 
+                  currentUserId={currentUser.id}
+                  currentUserRole={currentUser.role}
+                />
             )}
 
             {/* {currentView === View.Calendar && <Calendar />} */}
