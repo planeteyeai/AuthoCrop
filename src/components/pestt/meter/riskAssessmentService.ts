@@ -268,7 +268,7 @@ export async function fetchPlantationDate(): Promise<string> {
     }
     
     // First try to get user data
-    let response = await fetch('http://192.168.41.73:8000/api/users/me/', {
+    let response = await fetch('http://192.168.41.51:8000/api/users/me/', {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -284,7 +284,7 @@ export async function fetchPlantationDate(): Promise<string> {
     
     // Try to get farms for this user
     try {
-      const farmsResponse = await fetch(`http://192.168.41.73:8000/api/farms/?farmer_id=${userData.id}`, {
+      const farmsResponse = await fetch(`http://192.168.41.51:8000/api/farms/?farmer_id=${userData.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
