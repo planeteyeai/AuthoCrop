@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Download, Info, Satellite } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
-import { useFarmerProfile } from "../hooks/useFarmerProfile";
+import { useFarmerProfile } from "../hooks/useFarmerProfile"
+import { RefreshCw } from "lucide-react";
 
 interface NutrientData {
   name: string;
@@ -172,7 +173,7 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
         const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
         const plantationDate = "2025-01-01"; // Default plantation date
         
-        const apiUrl = `http://192.168.41.51:8003/analyze-npk/${currentPlotName}?end_date=${currentDate}&days_back=7`;
+        const apiUrl = `https://dev-soil.cropeye.ai/analyze-npk/${currentPlotName}?end_date=${currentDate}&days_back=7`;
         console.log('🌱 SoilAnalysis: Making API call to:', apiUrl);
         console.log('🌱 SoilAnalysis: Plot name:', currentPlotName);
         console.log('🌱 SoilAnalysis: Current date:', currentDate);
@@ -839,7 +840,7 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
 
       {loading && (
         <div className="text-center py-4 text-gray-500 flex items-center justify-center">
-          <Satellite className="w-4 h-4 animate-spin mr-2" />
+          {/* <Satellite className="w-4 h-4 animate-spin mr-2" /> */}
           Loading soil data...
         </div>
       )}
@@ -848,7 +849,9 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
 
       {profileLoading && (
         <div className="text-center py-8 text-gray-500">
-          <Satellite className="w-8 h-8 mx-auto mb-2 text-gray-400 animate-spin" />
+          {/* <Satellite className="w-8 h-8 mx-auto mb-2 text-gray-400 animate-spin" /> */}
+          <RefreshCw className="h-5 w-5 animate-spin text-blue-600" />
+
           <p>Loading farmer profile...</p>
         </div>
       )}

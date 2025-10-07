@@ -175,7 +175,7 @@ const IrrigationSchedule: React.FC = () => {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - 7);
       
-      const apiUrl = `http://192.168.41.51:7002/plots/${plotName}/compute-et/`;
+      const apiUrl = `https://dev-field.cropeye.ai/plots/${plotName}/compute-et/`;
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

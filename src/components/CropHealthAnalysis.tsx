@@ -427,7 +427,7 @@ const CropHealthAnalysis: React.FC = () => {
         <div className="flex items-center justify-center flex-1">
           <div className="text-center">
             <div className="animate-spin mx-auto mb-4">
-              <Satellite className="h-12 w-12 text-blue-500" />
+              {/* <Satellite className="h-12 w-12 text-blue-500" /> */}
             </div>
             <p className="text-gray-600">Loading risk assessment...</p>
           </div>

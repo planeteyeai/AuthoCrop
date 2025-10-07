@@ -232,7 +232,7 @@ const AgroDashboard: React.FC = () => {
       try {
         setLoading(true);
         const today = new Date().toISOString().slice(0, 10);
-        const url = `http://localhost:9000/plots/agroStats?end_date=${today}`;
+        const url = `https://dev-events.cropeye.ai/plots/agroStats?end_date=${today}`;
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

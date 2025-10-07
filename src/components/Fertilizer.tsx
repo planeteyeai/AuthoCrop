@@ -38,7 +38,7 @@ const Fertilizer: React.FC = () => {
   const { loading: profileLoading, getPlotNames } = useFarmerProfile();
   const plotNames = getPlotNames();
   const PLOT_NAME = plotNames.length > 0 ? plotNames[0] : "";
-  const API_BASE_URL = "http://localhost:8003";
+  const API_BASE_URL = "https://dev-soil.cropeye.ai";
 
   const getCurrentDate = () => {
     return new Date().toLocaleDateString("en-IN", {

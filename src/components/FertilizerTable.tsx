@@ -557,7 +557,7 @@ const FertilizerTable: React.FC = () => {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
-          <Satellite className="w-8 h-8 animate-spin text-blue-500" />
+          {/* <Satellite className="w-8 h-8 animate-spin text-blue-500" /> */}
           <span className="ml-2 text-gray-600">Loading fertilizer data...</span>
         </div>
       ) : error ? (

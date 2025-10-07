@@ -76,17 +76,17 @@ const EvapotranspirationCard: React.FC = () => {
       // Multiple attempts: 7002 POST, 8009 POST, 7002 GET
       const attempts: Array<{ url: string; init?: RequestInit; note: string }> = [
         {
-          url: `http://192.168.41.51:7002/plots/${plotName}/compute-et/`,
+          url: `https://dev-field.cropeye.ai/plots/${plotName}/compute-et/`,
           init: { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) },
           note: '7002 POST',
         },
         {
-          url: `http://192.168.41.51:8009/plots/${plotName}/compute-et/`,
+          url: `https://dev-field.cropeye.ai/plots/${plotName}/compute-et/`,
           init: { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) },
           note: '8009 POST',
         },
         {
-          url: `http://192.168.41.51:7002/plots/${encodeURIComponent(plotName)}/compute-et/?start_date=${startDateStr}&end_date=${currentDate}`,
+          url: `https://dev-field.cropeye.ai/plots/${encodeURIComponent(plotName)}/compute-et/?start_date=${startDateStr}&end_date=${currentDate}`,
           init: { method: 'GET' },
           note: '7002 GET',
         },

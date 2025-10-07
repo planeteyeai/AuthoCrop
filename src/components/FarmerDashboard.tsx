@@ -189,9 +189,9 @@ const PieChartWithNeedle: React.FC<PieChartWithNeedleProps> = ({
   );
 };
 
-const BASE_URL = "http://localhost:9000"; // Base URL for most services
+const BASE_URL = "https://dev-events.cropeye.ai"; // Base URL for most services
 const OPTIMAL_BIOMASS = 150;
-const SOIL_API_URL = "http://localhost:8003";
+const SOIL_API_URL = "https://dev-soil.cropeye.ai";
 const SOIL_DATE = "2025-10-03";
 
 const OTHER_FARMERS_RECOVERY = {
@@ -415,7 +415,7 @@ const FarmerDashboard: React.FC = () => {
 
       // --- NEW: Fetch all plot stats from the consolidated endpoint ---
       const agroStatsCacheKey = `agroStats_${today}`;
-      const agroStatsUrl = `http://localhost:9000/plots/agroStats?end_date=${today}`;
+      const agroStatsUrl = `https://dev-events.cropeye.ai/plots/agroStats?end_date=${today}`;
       console.log(`[DB] 1. Fetching bulk plot data from: ${agroStatsUrl}`);
 
       let allPlotsData = getCache(agroStatsCacheKey);
@@ -1258,7 +1258,7 @@ const FarmerDashboard: React.FC = () => {
               <Thermometer className="w-5 h-5 text-yellow-600" />
               <div className="text-right">
                 <div className="text-lg font-bold text-gray-800">
-                  {metrics.soilPH || "-"}
+                  {metrics.soilPH?.toFixed(2) || "-"}
                 </div>
                 <div className="text-xs font-semibold text-yellow-600">pH</div>
               </div>

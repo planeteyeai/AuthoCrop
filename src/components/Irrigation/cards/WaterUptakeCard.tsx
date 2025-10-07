@@ -144,7 +144,7 @@ const WaterUptakeCard: React.FC = () => {
         setError(null);
         
         console.log("WaterUptakeCard: Fetching efficiency for plot:", plotName);
-        const url = `http://192.168.41.51:3000/wateruptake?plot_name=${plotName}&end_date=${currentDate}&days_back=7`;
+        const url = `https://dev-plot.cropeye.ai/wateruptake?plot_name=${plotName}&end_date=${currentDate}&days_back=7`;
         console.log("WaterUptakeCard: Request URL:", url);
         const response = await fetch(
           url,
