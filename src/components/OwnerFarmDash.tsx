@@ -54,9 +54,9 @@ import api from "../api"; // Import the authenticated api instance
 import CommonSpinner from "./CommanSpinner";
 
 // Constants (same as FarmerDashboard)
-const BASE_URL = "http://localhost:9000";
+const BASE_URL = "https://dev-events.cropeye.ai";
 const OPTIMAL_BIOMASS = 150;
-const SOIL_API_URL = "http://localhost:8003";
+const SOIL_API_URL = "https://dev-soil.cropeye.ai";
 const SOIL_DATE = "2025-10-03";
 
 // const OTHER_FARMERS_RECOVERY = {
@@ -389,7 +389,7 @@ const OwnerFarmDash: React.FC = () => {
       let allPlotsData = getCache(agroStatsCacheKey);
       if (!allPlotsData) {
         const agroStatsRes = await axios.get(
-          `http://localhost:9000/plots/agroStats?end_date=${today}`
+          `https://dev-events.cropeye.ai/plots/agroStats?end_date=${today}`
         );
         allPlotsData = agroStatsRes.data;
         setCache(agroStatsCacheKey, allPlotsData);
