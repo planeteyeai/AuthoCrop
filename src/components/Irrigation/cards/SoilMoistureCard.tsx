@@ -79,20 +79,30 @@ const SoilMoistureCard: React.FC<SoilMoistureCardProps> = ({
   }, [plotName]);
 
   const fetchSoilMoistureStack = async (plot: string): Promise<SoilMoistureStackResponse> => {
-    const base = 'http://192.168.41.73:9006';
+    const base = 'http://192.168.41.51:7002';
     const attempts: Array<{ url: string; init?: RequestInit; note: string }> = [
       { url: `${base}/soil-moisture/${encodeURIComponent(plot)}`, note: 'GET path param' },
       { url: `${base}/soil-moisture/${encodeURIComponent(plot)}/`, note: 'GET path param trailing slash' },
       { url: `${base}/soil-moisture?plot_name=${encodeURIComponent(plot)}`, note: 'GET query param' },
+      { url: `${base}/soil-moisture/${encodeURIComponent(plot)}`, init: { method: 'POST', headers: { 'Content-Type': 'application/json' } }, note: 'POST path param' },
+      { url: `${base}/soil-moisture`, init: { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plot_name: plot }) }, note: 'POST body JSON' },
     ];
+    let lastErr: any = null;
     for (const attempt of attempts) {
       try {
+        console.log('SoilMoistureCard fetch attempt:', attempt.note, attempt.url);
         const resp = await fetch(attempt.url, attempt.init);
-        if (!resp.ok) continue;
+        if (!resp.ok) {
+          const body = await resp.text().catch(() => '');
+          lastErr = new Error(`HTTP ${resp.status}: ${body || resp.statusText}`);
+          continue;
+        }
         return await resp.json();
-      } catch {}
+      } catch (e) {
+        lastErr = e;
+      }
     }
-    throw new Error('Soil moisture API failed');
+    throw lastErr || new Error('Soil moisture API failed');
   };
 
   const fetchYesterdayFromStack = async () => {

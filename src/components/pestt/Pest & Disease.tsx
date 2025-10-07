@@ -20,6 +20,7 @@ export const PestDisease: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<'Pests' | 'Diseases' | 'Weeds' | null>(null);
   const [selectedRiskLevel, setSelectedRiskLevel] = useState<'High' | 'Moderate' | 'Low' | null>(null);
   const [expandedCardKey, setExpandedCardKey] = useState<string | null>(null);
+  const [chemModal, setChemModal] = useState<{ open: boolean; title: string; chemicals: string[] }>({ open: false, title: '', chemicals: [] });
 
   useEffect(() => {
     loadRiskAssessment();
@@ -184,7 +185,7 @@ export const PestDisease: React.FC = () => {
             <SingleCategoryRiskMeter
               category="Weeds"
               highCount={2}
-              moderateCount={2}
+              moderateCount={1}
               lowCount={1}
               // icon="🌿"
               onRiskClick={handleRiskClick}
@@ -266,33 +267,41 @@ export const PestDisease: React.FC = () => {
                 if (selectedRiskLevel === 'High') {
                   filteredWeeds = weedsData.slice(0, 2); // First 2 weeds for High risk
                 } else if (selectedRiskLevel === 'Moderate') {
-                  filteredWeeds = weedsData.slice(2, 4); // Next 2 weeds for Moderate risk
+                  filteredWeeds = weedsData.slice(2, 3); // Next 1 weed for Moderate risk
                 } else {
-                  filteredWeeds = weedsData.slice(4, 5); // Last 1 weed for Low risk
+                  filteredWeeds = weedsData.slice(3, 4); // Last 1 weed for Low risk
                 }
                 
                 return filteredWeeds.map((weed, index) => (
-                  <div key={index} className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-lg border-2 border-gray-200 hover:shadow-xl transition-shadow">
-                    <h4 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
-                      <span className="text-xl sm:text-2xl">🌿</span>
-                      {weed.name}
-                    </h4>
-                    <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
-                      <div className="flex flex-col sm:flex-row sm:items-start">
-                        <span className="font-semibold text-gray-700 sm:w-28 mb-1 sm:mb-0">Season:</span>
-                        <span className="text-gray-600">{weed.season}</span>
+                  <div key={index} className="bg-[#fbf3ea] rounded-lg sm:rounded-xl p-4 sm:p-6 shadow border border-orange-200">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-1">
+                        <h4 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
+                          Weed Detected: {weed.name}
+                        </h4>
+                        <div className="text-sm text-gray-800 mb-2">
+                          <span className="font-semibold text-black">Active Months:</span> {Array.isArray(weed.months) ? weed.months.join(', ') : ''}
+                        </div>
+                        <ul className="text-sm text-gray-700 space-y-1 list-disc ml-5">
+                          {weed.when && <li><span className="font-semibold">When:</span> {weed.when}</li>}
+                          {weed.where && <li><span className="font-semibold">Where:</span> {weed.where}</li>}
+                          {weed.why && <li><span className="font-semibold">Why:</span> {weed.why}</li>}
+                        </ul>
+                        <div className="mt-4">
+                          <button
+                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-semibold text-sm"
+                            onClick={() => setChemModal({ open: true, title: weed.name, chemicals: Array.isArray(weed.chemical) ? weed.chemical : [] })}
+                          >
+                            ACTION
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex flex-col sm:flex-row sm:items-start">
-                        <span className="font-semibold text-gray-700 sm:w-28 mb-1 sm:mb-0">Chemical:</span>
-                        <span className="text-gray-600 break-words">{weed.chemical}</span>
-                      </div>
-                      <div className="flex flex-col sm:flex-row sm:items-start">
-                        <span className="font-semibold text-gray-700 sm:w-28 mb-1 sm:mb-0">Dosage:</span>
-                        <span className="text-gray-600 break-words">{weed.dosage}</span>
-                      </div>
-                      <div className="flex flex-col sm:flex-row sm:items-start">
-                        <span className="font-semibold text-gray-700 sm:w-28 mb-1 sm:mb-0">Organic:</span>
-                        <span className="text-gray-600">{weed.organic}</span>
+                      <div className="w-28 h-28 sm:w-32 sm:h-32 rounded overflow-hidden border border-orange-200">
+                        <img
+                          src={weed.image}
+                          alt={weed.name}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                     </div>
                   </div>
@@ -308,6 +317,28 @@ export const PestDisease: React.FC = () => {
           pestName={selectedImage?.name || ''}
           onClose={closeImageModal}
         />
+
+      {chemModal.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-4 sm:p-6 w-11/12 max-w-md shadow-lg">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-lg font-bold text-gray-800">Chemical Recommendations</h4>
+              <button className="text-gray-500 hover:text-gray-700" onClick={() => setChemModal({ open: false, title: '', chemicals: [] })}>✕</button>
+            </div>
+            <div className="text-sm text-gray-700 mb-2 font-semibold">{chemModal.title}</div>
+            <ul className="list-disc ml-5 text-sm text-gray-700 space-y-1">
+              {chemModal.chemicals.length ? chemModal.chemicals.map((c, i) => (
+                <li key={i}>{c}</li>
+              )) : (
+                <li>No data</li>
+              )}
+            </ul>
+            <div className="text-right mt-4">
+              <button className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm" onClick={() => setChemModal({ open: false, title: '', chemicals: [] })}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

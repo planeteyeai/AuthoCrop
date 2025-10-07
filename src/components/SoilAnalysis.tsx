@@ -172,7 +172,7 @@ const SoilAnalysis: React.FC<SoilAnalysisProps> = ({
         const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
         const plantationDate = "2025-01-01"; // Default plantation date
         
-        const apiUrl = `http://192.168.41.73:8003/analyze-npk/${currentPlotName}?end_date=${currentDate}&days_back=7`;
+        const apiUrl = `http://192.168.41.51:8003/analyze-npk/${currentPlotName}?end_date=${currentDate}&days_back=7`;
         console.log('🌱 SoilAnalysis: Making API call to:', apiUrl);
         console.log('🌱 SoilAnalysis: Plot name:', currentPlotName);
         console.log('🌱 SoilAnalysis: Current date:', currentDate);

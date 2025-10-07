@@ -20,7 +20,7 @@ export const fetchWeatherForecast = async (lat: number, lon: number): Promise<We
   try {
     console.log('🌤️ Fetching weather forecast for coordinates:', { lat, lon });
     
-    const apiUrl = `https://dev-weather.cropeye.ai/forecast?lat=${lat}&lon=${lon}`;
+    const apiUrl = ` https://dev-weather.cropeye.ai/forecast?lat=${lat}&lon=${lon}`;
     console.log('🌤️ Weather Forecast API URL:', apiUrl);
     
     const response = await fetch(apiUrl, {

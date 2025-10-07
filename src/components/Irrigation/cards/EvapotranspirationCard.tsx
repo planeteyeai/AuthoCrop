@@ -66,38 +66,56 @@ const EvapotranspirationCard: React.FC = () => {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - 7); // 7 days before for better data
       const startDateStr = startDate.toISOString().split('T')[0];
-      
-      const apiUrl = `http://192.168.41.73:8009/plots/${plotName}/compute-et/`;
+
       const requestBody = {
         plot_name: plotName,
         start_date: startDateStr,
         end_date: currentDate
       };
-      
-      console.log('🌱 Plot name:', plotName);
-      console.log('🌱 Start date:', startDateStr);
-      console.log('🌱 End date:', currentDate);
-      console.log('🌱 Fetching ET from:', apiUrl);
-      console.log('🌱 Request body:', requestBody);
-      
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+
+      // Multiple attempts: 7002 POST, 8009 POST, 7002 GET
+      const attempts: Array<{ url: string; init?: RequestInit; note: string }> = [
+        {
+          url: `http://192.168.41.51:7002/plots/${plotName}/compute-et/`,
+          init: { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) },
+          note: '7002 POST',
         },
-        body: JSON.stringify(requestBody),
-      });
+        {
+          url: `http://192.168.41.51:8009/plots/${plotName}/compute-et/`,
+          init: { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) },
+          note: '8009 POST',
+        },
+        {
+          url: `http://192.168.41.51:7002/plots/${encodeURIComponent(plotName)}/compute-et/?start_date=${startDateStr}&end_date=${currentDate}`,
+          init: { method: 'GET' },
+          note: '7002 GET',
+        },
+      ];
 
-      console.log('🌱 Response status:', response.status, response.statusText);
+      let data: any = null;
+      let lastError: any = null;
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ API Error Response:', errorText);
-        if (response.status === 404) throw new Error("Plot not found - Check if plot name is correct");
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      for (const attempt of attempts) {
+        try {
+          console.log('🌱 ET attempt:', attempt.note, attempt.url);
+          const resp = await fetch(attempt.url, attempt.init);
+          if (!resp.ok) {
+            const txt = await resp.text();
+            throw new Error(`HTTP ${resp.status} ${resp.statusText} - ${txt}`);
+          }
+          data = await resp.json();
+          console.log('🌱 ET success via', attempt.note);
+          lastError = null;
+          break;
+        } catch (e) {
+          console.warn('⚠️ ET fetch failed via', attempt.note, e);
+          lastError = e;
+        }
       }
 
-      const data = await response.json();
+      if (!data) {
+        throw lastError || new Error('All ET attempts failed');
+      }
       console.log('🌱 ET API Response:', data);
       console.log('🌱 Response type:', typeof data);
       

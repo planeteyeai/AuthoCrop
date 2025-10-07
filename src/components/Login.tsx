@@ -24,7 +24,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   //   setError('');
 
   //   try {
-  //     const response = await fetch('http://192.168.41.73:8000/api/otp/', {
+  //     const response = await fetch('http://192.168.41.51:8000/api/otp/', {
   //       method: 'POST',
   //       headers: {
   //         'Content-Type': 'application/json',
@@ -59,7 +59,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   //   setError('');
 
   //   try {
-  //     const response = await fetch('http://192.168.41.73:8000/api/verify-otp/', {
+  //     const response = await fetch('http://192.168.41.51:8000/api/verify-otp/', {
   //       method: 'POST',
   //       headers: {
   //         'Content-Type': 'application/json',
@@ -84,7 +84,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   //     }
 
   //     // Fetch user information
-  //     const userResponse = await fetch('http://192.168.41.73:8000/api/users/me/', {
+  //     const userResponse = await fetch('http://192.168.41.51:8000/api/users/me/', {
   //       headers: {
   //         'Authorization': `Bearer ${token}`,
   //         'Content-Type': 'application/json',
