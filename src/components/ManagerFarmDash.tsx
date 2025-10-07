@@ -56,7 +56,7 @@ import CommonSpinner from "./CommanSpinner";
 // Constants (same as FarmerDashboard)
 const BASE_URL = "https://dev-events.cropeye.ai";
 const OPTIMAL_BIOMASS = 150;
-const SOIL_API_URL = "https://dev-soil.cropeye.aia";
+const SOIL_API_URL = "https://dev-soil.cropeye.ai";
 const SOIL_DATE = "2025-10-03";
 
 // const OTHER_FARMERS_RECOVERY = {
