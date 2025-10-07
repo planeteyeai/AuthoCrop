@@ -4,6 +4,8 @@ import { Sidebar } from "./components/Sidebar";
 import { DashboardGrid } from "./components/DashboardGrid";
 import { jwtDecode } from "jwt-decode";
 
+import OwnerFarmDash from "./components/OwnerFarmDash"; // Import for Owner
+import OwnerHarvestDash from "./components/OwnerHarvestDash"; // Import for Owner
 import ManagerHomeGrid from "./components/ManagerHomeGrid";
 import OwnerHomeGrid from "./components/OwnerHomeGrid";
 import { Addusers } from "./components/Addusers";
@@ -47,6 +49,8 @@ enum View {
   Dashboard = "dashboard",
   AgroDashboard = "AgroDashboard",
   ManagerFarmDash = "ManagerFarmDash",
+  OwnerFarmDash = "OwnerFarmDash",
+  OwnerHarvestDash = "OwnerHarvestDash",
   AddUsers = "addusers",
   userList = "userlist",
   Contactuser = "Contactuser",
@@ -149,17 +153,20 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
     switch (menu) {
       case "Farm Crop Status":
         // Use ManagerFarmDash for manager/owner, FarmCropStatus for field officer
-        if (userRole === "manager" || userRole === "owner") {
+        if (userRole === "owner") {
+          nextView = View.OwnerFarmDash;
+        } else if (userRole === "manager") {
           nextView = View.ManagerFarmDash;
         } else {
           nextView = View.FarmCropStatus;
         }
         break;
-      case "ViewFarmerPlot":
-        nextView = View.FarmCropStatus;
-        break;
       case "Harvesting Planning":
-        nextView = View.HarvestDashboard;
+        if (userRole === "owner") {
+          nextView = View.OwnerHarvestDash;
+        } else {
+          nextView = View.HarvestDashboard;
+        }
         break;
       case "ViewFarmerPlot":
         nextView = View.FarmCropStatus;
@@ -518,6 +525,10 @@ const App: React.FC<AppProps> = ({ userRole, onLogout }) => {
 
             {currentView === View.AgroDashboard && <AgroDashboard />}
             {currentView === View.HarvestDashboard && <HarvestDashboard />}
+
+            {currentView === View.OwnerFarmDash && <OwnerFarmDash />}
+
+            {currentView === View.OwnerHarvestDash && <OwnerHarvestDash />}
           </div>
         </main>
       </div>
